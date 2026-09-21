@@ -4,6 +4,10 @@ const { db, now } = require('../lib/admin');
 const { requireAuth, assertRole } = require('../lib/auth');
 const { writeAudit } = require('../lib/audit');
 
+const {
+  recordMaintenanceCompletion
+} = require('../maintenance/record-completion');
+
 const ALLOWED_ROLES = [
   'ADMIN',
   'MANAGER',
@@ -100,13 +104,25 @@ async function finalizeConfirmationHandler(request) {
 
   let beforeConfirmation;
   let afterConfirmation;
+
   let workOrderId;
   let workOrderBefore;
   let workOrderAfter;
+
   let lockBefore;
   let lockAfter;
 
+  let maintenanceResult = {
+    recorded: false,
+    reason: 'NOT_MAINTENANCE'
+  };
+
   await db.runTransaction(async (tx) => {
+    /*
+     * ============================
+     * 1. READ CONFIRMATION
+     * ============================
+     */
     const confirmationSnap =
       await tx.get(confirmationRef);
 
@@ -120,7 +136,10 @@ async function finalizeConfirmationHandler(request) {
     beforeConfirmation =
       confirmationSnap.data();
 
-    if (beforeConfirmation.status !== 'PENDING') {
+    if (
+      beforeConfirmation.status !==
+      'PENDING'
+    ) {
       throw new HttpsError(
         'failed-precondition',
         'CONFIRMATION_NOT_PENDING',
@@ -143,6 +162,11 @@ async function finalizeConfirmationHandler(request) {
       );
     }
 
+    /*
+     * ============================
+     * 2. REFERENCES
+     * ============================
+     */
     const workOrderRef = db.doc(
       `workOrders/${workOrderId}`
     );
@@ -152,8 +176,9 @@ async function finalizeConfirmationHandler(request) {
     );
 
     /*
-     * Đọc cả Work Order và Lock trước khi
-     * thực hiện bất kỳ transaction write nào.
+     * ============================
+     * 3. READ WORK ORDER + LOCK
+     * ============================
      */
     const workOrderSnap =
       await tx.get(workOrderRef);
@@ -186,8 +211,9 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * Lock phải tồn tại và phải trỏ đúng
-     * confirmation hiện tại.
+     * ============================
+     * 4. CHECK LOCK
+     * ============================
      */
     if (!lockSnap.exists) {
       throw new HttpsError(
@@ -211,8 +237,14 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * CUSTOMER_DIGITAL phải được xử lý bởi
-     * customer portal flow riêng.
+     * ============================
+     * 5. METHOD CONTROL
+     * ============================
+     */
+
+    /*
+     * CUSTOMER_DIGITAL phải được xử lý
+     * bởi customer portal flow riêng.
      */
     if (
       beforeConfirmation.confirmationMethod ===
@@ -225,8 +257,8 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * CSKH_VERIFIED chỉ dành cho Admin,
-     * Manager và Customer Service.
+     * CSKH_VERIFIED chỉ dành cho
+     * Admin / Manager / CSKH.
      */
     if (
       beforeConfirmation.confirmationMethod ===
@@ -243,6 +275,28 @@ async function finalizeConfirmationHandler(request) {
       );
     }
 
+    /*
+     * ============================
+     * 6. RECORD MAINTENANCE VISIT
+     * ============================
+     *
+     * Chỉ MAINTENANCE WO mới được ghi
+     * nhận completedVisits.
+     *
+     * Helper này cũng bảo vệ idempotency.
+     */
+    maintenanceResult =
+      await recordMaintenanceCompletion(
+        tx,
+        workOrderRef,
+        workOrderBefore
+      );
+
+    /*
+     * ============================
+     * 7. BUILD UPDATES
+     * ============================
+     */
     afterConfirmation = {
       status: 'CONFIRMED',
 
@@ -273,20 +327,34 @@ async function finalizeConfirmationHandler(request) {
 
     workOrderAfter = {
       status: 'CUSTOMER_CONFIRMED',
-      customerConfirmedAt: now(),
-      customerConfirmedBy: auth.uid,
-      updatedAt: now()
+
+      customerConfirmedAt:
+        now(),
+
+      customerConfirmedBy:
+        auth.uid,
+
+      updatedAt:
+        now()
     };
 
     lockAfter = {
       status: 'CONFIRMED',
-      confirmedAt: now(),
-      confirmedBy: auth.uid,
-      updatedAt: now()
+
+      confirmedAt:
+        now(),
+
+      confirmedBy:
+        auth.uid,
+
+      updatedAt:
+        now()
     };
 
     /*
-     * 1. Confirmation
+     * ============================
+     * 8. WRITE CONFIRMATION
+     * ============================
      */
     tx.update(
       confirmationRef,
@@ -294,7 +362,9 @@ async function finalizeConfirmationHandler(request) {
     );
 
     /*
-     * 2. Work Order
+     * ============================
+     * 9. WRITE WORK ORDER
+     * ============================
      */
     tx.update(
       workOrderRef,
@@ -302,7 +372,9 @@ async function finalizeConfirmationHandler(request) {
     );
 
     /*
-     * 3. Confirmation Lock
+     * ============================
+     * 10. WRITE CONFIRMATION LOCK
+     * ============================
      */
     tx.update(
       lockRef,
@@ -310,31 +382,70 @@ async function finalizeConfirmationHandler(request) {
     );
   });
 
+  /*
+   * ============================
+   * 11. AUDIT
+   * ============================
+   */
   await writeAudit({
     auth,
-    action: 'CONFIRM_BY_CSKH',
-    module: 'confirmations',
-    recordId: confirmationId,
+
+    action:
+      'CONFIRM_BY_CSKH',
+
+    module:
+      'confirmations',
+
+    recordId:
+      confirmationId,
+
     description:
       `Customer confirmation finalized for ${workOrderId}`,
+
     before: {
-      confirmation: beforeConfirmation,
-      workOrder: workOrderBefore,
-      lock: lockBefore
+      confirmation:
+        beforeConfirmation,
+
+      workOrder:
+        workOrderBefore,
+
+      lock:
+        lockBefore
     },
+
     after: {
-      confirmation: afterConfirmation,
-      workOrder: workOrderAfter,
-      lock: lockAfter
+      confirmation:
+        afterConfirmation,
+
+      workOrder:
+        workOrderAfter,
+
+      lock:
+        lockAfter,
+
+      maintenance:
+        maintenanceResult
     }
   });
 
   return {
     ok: true,
+
     confirmationId,
+
     workOrderId,
-    status: 'CONFIRMED',
-    workOrderStatus: 'CUSTOMER_CONFIRMED'
+
+    status:
+      'CONFIRMED',
+
+    workOrderStatus:
+      'CUSTOMER_CONFIRMED',
+
+    maintenanceVisitRecorded:
+      maintenanceResult.recorded,
+
+    completedVisits:
+      maintenanceResult.completedVisits || null
   };
 }
 
