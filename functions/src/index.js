@@ -1,3 +1,12 @@
-// Server-side V1 responsibilities: sequential codes, validation, duplicate/idempotency checks,
-// Work Order completion, confirmation, KPI, notifications and imports.
-exports.health=()=>({ok:true,environment:'DEV'});
+const { onRequest } = require('firebase-functions/v2/https');
+
+require('./lib/admin');
+
+exports.health = onRequest((req, res) => {
+  res.status(200).json({
+    ok: true,
+    environment: 'DEV',
+    service: 'duc-anh-maintenance-functions',
+    version: 'V1.0'
+  });
+});
