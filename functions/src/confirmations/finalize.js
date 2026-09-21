@@ -1,15 +1,272 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { db, now, requireAuth, assertRole, writeAudit } = require('../lib/admin');
-async function finalizeConfirmationHandler(request){
- const auth=requireAuth(request); assertRole(auth,['admin','manager','customer_service']);
- const {confirmationId,customerName,customerPhone,contactMethod,notes='',reason=''}=request.data||{};
- if(!confirmationId||!customerName) throw new HttpsError('invalid-argument','MISSING_CONFIRMATION_DATA');
- const ref=db.doc(`customerConfirmations/${confirmationId}`); const snap=await ref.get(); if(!snap.exists) throw new HttpsError('not-found','CONFIRMATION_NOT_FOUND');
- const before=snap.data(); if(before.status==='CONFIRMED') throw new HttpsError('already-exists','CONFIRMATION_ALREADY_FINAL');
- const after={status:'CONFIRMED',customerName,customerPhone:customerPhone||'',contactMethod:contactMethod||'PHONE',reason,notes,confirmedBy:auth.uid,confirmedAt:now()};
- await ref.update(after);
- await db.doc(`workOrders/${before.workOrderId}`).update({status:'CUSTOMER_CONFIRMED',customerConfirmedAt:now(),updatedAt:now()});
- await writeAudit({auth,action:'CONFIRM_BY_CSKH',module:'confirmations',recordId:confirmationId,description:'Customer confirmation finalized',before,after});
- return {ok:true};
+
+const { db, now } = require('../lib/admin');
+const { requireAuth, assertRole } = require('../lib/auth');
+const { writeAudit } = require('../lib/audit');
+
+const ALLOWED_ROLES = [
+  'ADMIN',
+  'MANAGER',
+  'CUSTOMER_SERVICE'
+];
+
+const ALLOWED_CONTACT_METHODS = [
+  'PHONE',
+  'ZALO',
+  'IN_PERSON',
+  'OTHER'
+];
+
+const ALLOWED_REASONS = [
+  'CUSTOMER_NOT_PRESENT',
+  'CUSTOMER_CANNOT_USE_PHONE',
+  'CUSTOMER_REQUESTED_CS_CONFIRMATION',
+  'SITE_RESTRICTION',
+  'OTHER'
+];
+
+async function finalizeConfirmationHandler(request) {
+  const auth = requireAuth(request);
+
+  const role = assertRole(
+    auth,
+    ALLOWED_ROLES
+  );
+
+  const {
+    confirmationId,
+    customerName,
+    customerPhone = '',
+    contactMethod = 'PHONE',
+    notes = '',
+    reason = ''
+  } = request.data || {};
+
+  if (!confirmationId || !customerName) {
+    throw new HttpsError(
+      'invalid-argument',
+      'MISSING_CONFIRMATION_DATA'
+    );
+  }
+
+  const normalizedCustomerName =
+    String(customerName).trim();
+
+  const normalizedCustomerPhone =
+    String(customerPhone || '').trim();
+
+  const normalizedContactMethod =
+    String(contactMethod)
+      .trim()
+      .toUpperCase();
+
+  const normalizedReason =
+    String(reason || '')
+      .trim()
+      .toUpperCase();
+
+  if (!ALLOWED_CONTACT_METHODS.includes(
+    normalizedContactMethod
+  )) {
+    throw new HttpsError(
+      'invalid-argument',
+      'INVALID_CONTACT_METHOD'
+    );
+  }
+
+  if (
+    normalizedReason &&
+    !ALLOWED_REASONS.includes(normalizedReason)
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      'INVALID_CONFIRMATION_REASON'
+    );
+  }
+
+  if (
+    normalizedReason === 'OTHER' &&
+    !String(notes || '').trim()
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      'CONFIRMATION_REASON_NOTE_REQUIRED'
+    );
+  }
+
+  const confirmationRef = db.doc(
+    `customerConfirmations/${confirmationId}`
+  );
+
+  let beforeConfirmation;
+  let afterConfirmation;
+  let workOrderId;
+
+  await db.runTransaction(async (tx) => {
+    const confirmationSnap =
+      await tx.get(confirmationRef);
+
+    if (!confirmationSnap.exists) {
+      throw new HttpsError(
+        'not-found',
+        'CONFIRMATION_NOT_FOUND'
+      );
+    }
+
+    beforeConfirmation =
+      confirmationSnap.data();
+
+    if (beforeConfirmation.status !== 'PENDING') {
+      throw new HttpsError(
+        'failed-precondition',
+        'CONFIRMATION_NOT_PENDING',
+        {
+          status:
+            beforeConfirmation.status
+        }
+      );
+    }
+
+    workOrderId =
+      beforeConfirmation.workOrderId;
+
+    if (!workOrderId) {
+      throw new HttpsError(
+        'failed-precondition',
+        'CONFIRMATION_MISSING_WORK_ORDER'
+      );
+    }
+
+    const workOrderRef = db.doc(
+      `workOrders/${workOrderId}`
+    );
+
+    const workOrderSnap =
+      await tx.get(workOrderRef);
+
+    if (!workOrderSnap.exists) {
+      throw new HttpsError(
+        'not-found',
+        'WORK_ORDER_NOT_FOUND'
+      );
+    }
+
+    const workOrder =
+      workOrderSnap.data();
+
+    if (
+      workOrder.status !==
+      'COMPLETED_PENDING_CONFIRMATION'
+    ) {
+      throw new HttpsError(
+        'failed-precondition',
+        'WORK_ORDER_NOT_WAITING_FOR_CONFIRMATION',
+        {
+          status: workOrder.status
+        }
+      );
+    }
+
+    /*
+     * CUSTOMER_DIGITAL cần flow khách tự xác nhận.
+     * finalizeConfirmation này dành cho
+     * CSKH / PAPER verification.
+     */
+    if (
+      beforeConfirmation.confirmationMethod ===
+      'CUSTOMER_DIGITAL'
+    ) {
+      throw new HttpsError(
+        'failed-precondition',
+        'CUSTOMER_DIGITAL_REQUIRES_CUSTOMER_ACTION'
+      );
+    }
+
+    if (
+      beforeConfirmation.confirmationMethod ===
+        'CSKH_VERIFIED' &&
+      ![
+        'ADMIN',
+        'MANAGER',
+        'CUSTOMER_SERVICE'
+      ].includes(role)
+    ) {
+      throw new HttpsError(
+        'permission-denied',
+        'CSKH_CONFIRMATION_REQUIRED'
+      );
+    }
+
+    afterConfirmation = {
+      status: 'CONFIRMED',
+
+      customerName:
+        normalizedCustomerName,
+
+      customerPhone:
+        normalizedCustomerPhone,
+
+      contactMethod:
+        normalizedContactMethod,
+
+      reason:
+        normalizedReason,
+
+      notes:
+        String(notes || '').trim(),
+
+      confirmedBy:
+        auth.uid,
+
+      confirmedAt:
+        now(),
+
+      updatedAt:
+        now()
+    };
+
+    tx.update(
+      confirmationRef,
+      afterConfirmation
+    );
+
+    tx.update(
+      workOrderRef,
+      {
+        status: 'CUSTOMER_CONFIRMED',
+        customerConfirmedAt: now(),
+        customerConfirmedBy: auth.uid,
+        updatedAt: now()
+      }
+    );
+  });
+
+  await writeAudit({
+    auth,
+    action: 'CONFIRM_BY_CSKH',
+    module: 'confirmations',
+    recordId: confirmationId,
+    description:
+      `Customer confirmation finalized for ${workOrderId}`,
+    before: beforeConfirmation,
+    after: afterConfirmation
+  });
+
+  return {
+    ok: true,
+    confirmationId,
+    workOrderId,
+    status: 'CONFIRMED'
+  };
 }
-module.exports={finalizeConfirmation:onCall({region:'asia-southeast1'},finalizeConfirmationHandler),finalizeConfirmationHandler};
+
+module.exports = {
+  finalizeConfirmation: onCall(
+    {
+      region: 'asia-southeast1'
+    },
+    finalizeConfirmationHandler
+  ),
+
+  finalizeConfirmationHandler
+};
