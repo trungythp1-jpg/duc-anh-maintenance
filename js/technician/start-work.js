@@ -1,1 +1,1 @@
-// start-work — KTV mobile-first scaffold
+export async function captureStartLocation(){return new Promise((resolve,reject)=>navigator.geolocation?.getCurrentPosition(p=>resolve({latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,timestamp:Date.now()}),reject,{enableHighAccuracy:true,timeout:10000})||reject(new Error('GEOLOCATION_UNAVAILABLE')));}

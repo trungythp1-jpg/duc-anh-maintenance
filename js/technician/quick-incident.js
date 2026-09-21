@@ -1,1 +1,1 @@
-// quick-incident — KTV mobile-first scaffold
+export function incidentDraft(data){return {...data,type:'BREAKDOWN',status:'CHECKING'};}

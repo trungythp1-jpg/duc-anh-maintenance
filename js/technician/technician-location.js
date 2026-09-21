@@ -1,1 +1,1 @@
-// technician-location — KTV mobile-first scaffold
+export const LOCATION_POLICY='EXPLICIT_START_ONLY';
