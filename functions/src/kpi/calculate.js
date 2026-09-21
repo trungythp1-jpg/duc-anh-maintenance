@@ -4,17 +4,14 @@ const { db, now } = require('../lib/admin');
  * Ghi nhận KPI Activity cho một Work Order
  * đã hoàn thành hợp lệ.
  *
- * Hàm này chỉ nên được gọi từ backend,
- * không expose trực tiếp thành onCall.
+ * Chỉ gọi từ backend và bên trong
+ * Firestore Transaction.
  */
 async function recordKpiActivity(
   tx,
   workOrderRef,
   workOrder
 ) {
-  /*
-   * Chỉ tính các Work Order bảo trì.
-   */
   if (workOrder.type !== 'MAINTENANCE') {
     return {
       recorded: false,
@@ -22,14 +19,9 @@ async function recordKpiActivity(
     };
   }
 
-  /*
-   * Chưa có người hoàn thành thì
-   * không thể xác định KPI.
-   */
   const technicianId =
     String(
-      workOrder.completedBy ||
-      ''
+      workOrder.completedBy || ''
     ).trim();
 
   if (!technicianId) {
@@ -39,7 +31,7 @@ async function recordKpiActivity(
   }
 
   /*
-   * Một WO chỉ được tạo một KPI Activity.
+   * Một Work Order chỉ tạo một KPI Activity.
    */
   if (workOrder.kpiActivityId) {
     return {
@@ -51,8 +43,8 @@ async function recordKpiActivity(
   }
 
   /*
-   * Xác định kỳ KPI theo thời điểm
-   * hoàn thành Work Order.
+   * KPI thuộc kỳ của thời điểm KTV
+   * hoàn thành công việc.
    */
   const completedAt =
     workOrder.completedAt;
@@ -81,12 +73,6 @@ async function recordKpiActivity(
   const activityRef =
     db.collection('kpiActivities').doc();
 
-  /*
-   * Snapshot dữ liệu quan trọng vào KPI Activity.
-   *
-   * Không phụ thuộc việc Work Order sau này
-   * có thay đổi thông tin hiển thị.
-   */
   const activity = {
     periodId,
 
@@ -125,8 +111,7 @@ async function recordKpiActivity(
     activityType:
       'MAINTENANCE_COMPLETED',
 
-    completedAt:
-      completedAt,
+    completedAt,
 
     createdAt:
       now()
@@ -138,8 +123,7 @@ async function recordKpiActivity(
   );
 
   /*
-   * Gắn activity ID vào Work Order.
-   * Đây là idempotency marker.
+   * Idempotency marker trên Work Order.
    */
   tx.update(
     workOrderRef,
@@ -160,6 +144,7 @@ async function recordKpiActivity(
 
   return {
     recorded: true,
+
     kpiActivityId:
       activityRef.id,
 
@@ -167,6 +152,118 @@ async function recordKpiActivity(
   };
 }
 
+/**
+ * Tính KPI tổng hợp cho một kỹ thuật viên
+ * trong một kỳ.
+ *
+ * Đây là hàm READ.
+ * Không thay đổi dữ liệu.
+ */
+async function getKpiSummary(
+  periodId,
+  technicianId
+) {
+  const normalizedPeriod =
+    String(periodId || '').trim();
+
+  const normalizedTechnician =
+    String(technicianId || '').trim();
+
+  if (!normalizedPeriod) {
+    throw new Error(
+      'KPI_PERIOD_REQUIRED'
+    );
+  }
+
+  if (!normalizedTechnician) {
+    throw new Error(
+      'KPI_TECHNICIAN_REQUIRED'
+    );
+  }
+
+  /*
+   * Lấy Target.
+   */
+  const targetRef = db.doc(
+    `kpiTargets/${normalizedPeriod}_${normalizedTechnician}`
+  );
+
+  const targetSnap =
+    await targetRef.get();
+
+  const target =
+    targetSnap.exists
+      ? Math.max(
+          0,
+          Number(
+            targetSnap.data().target || 0
+          )
+        )
+      : 0;
+
+  /*
+   * Lấy các Activity hợp lệ.
+   */
+  const activitySnap = await db
+    .collection('kpiActivities')
+    .where(
+      'periodId',
+      '==',
+      normalizedPeriod
+    )
+    .where(
+      'technicianId',
+      '==',
+      normalizedTechnician
+    )
+    .where(
+      'status',
+      '==',
+      'VALID'
+    )
+    .get();
+
+  const actual =
+    activitySnap.size;
+
+  const remaining =
+    Math.max(
+      0,
+      target - actual
+    );
+
+  const achievement =
+    target > 0
+      ? Number(
+          (
+            actual /
+            target *
+            100
+          ).toFixed(2)
+        )
+      : 0;
+
+  return {
+    periodId:
+      normalizedPeriod,
+
+    technicianId:
+      normalizedTechnician,
+
+    target,
+
+    actual,
+
+    remaining,
+
+    achievement,
+
+    activityCount:
+      activitySnap.size
+  };
+}
+
 module.exports = {
-  recordKpiActivity
+  recordKpiActivity,
+  getKpiSummary
 };
