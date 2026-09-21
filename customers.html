@@ -2,1210 +2,279 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,viewport-fit=cover"
-  >
-
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b0b0b">
-
   <title>Khách hàng — Đức Anh Maintenance</title>
-
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
 
   <style>
-    :root {
-      --da-yellow: #f5c400;
-      --da-yellow-soft: #ffd83d;
-      --da-black: #090909;
-      --da-panel: #121212;
-      --da-panel-2: #181818;
-      --da-border: #292929;
-      --da-text: #f4f4f4;
-      --da-muted: #969696;
-      --da-green: #38c793;
-      --da-red: #ef6262;
-      --da-blue: #5da9ff;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--da-black);
-      color: var(--da-text);
-      font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-    }
-
-    button,
-    input,
-    select {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    .customer-page {
-      min-height: 100vh;
-      padding: 28px;
-    }
-
-    .customer-container {
-      width: min(1500px, 100%);
-      margin: 0 auto;
-    }
-
-    /* HEADER */
-
-    .customer-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 26px;
-    }
-
-    .customer-eyebrow {
-      margin: 0 0 7px;
-      color: var(--da-yellow);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-
-    .customer-title {
-      margin: 0;
-      font-size: clamp(28px, 3vw, 38px);
-      line-height: 1.1;
-      letter-spacing: -.03em;
-    }
-
-    .customer-subtitle {
-      margin: 9px 0 0;
-      color: var(--da-muted);
-      font-size: 14px;
-    }
-
-    .primary-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      border: 0;
-      border-radius: 9px;
-      padding: 12px 17px;
-      background: var(--da-yellow);
-      color: #080808;
-      font-weight: 800;
-      transition: .2s ease;
-    }
-
-    .primary-button:hover {
-      background: var(--da-yellow-soft);
-      transform: translateY(-1px);
-    }
-
-    /* KPI */
-
-    .customer-kpis {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-
-    .kpi-card {
-      position: relative;
-      overflow: hidden;
-      min-height: 112px;
-      padding: 18px;
-      border: 1px solid var(--da-border);
-      border-radius: 12px;
-      background: linear-gradient(
-        145deg,
-        #151515,
-        #101010
-      );
-    }
-
-    .kpi-card::after {
-      content: "";
-      position: absolute;
-      right: -25px;
-      bottom: -40px;
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      background: rgba(245, 196, 0, .06);
-    }
-
-    .kpi-label {
-      color: var(--da-muted);
-      font-size: 12px;
-    }
-
-    .kpi-value {
-      margin-top: 9px;
-      font-size: 29px;
-      font-weight: 800;
-      letter-spacing: -.03em;
-    }
-
-    .kpi-note {
-      margin-top: 5px;
-      color: var(--da-muted);
-      font-size: 11px;
-    }
-
-    /* TOOLBAR */
-
-    .customer-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-      padding: 13px;
-      border: 1px solid var(--da-border);
-      border-radius: 12px;
-      background: var(--da-panel);
-    }
-
-    .search-box {
-      position: relative;
-      flex: 1;
-      min-width: 180px;
-    }
-
-    .search-box span {
-      position: absolute;
-      left: 13px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #777;
-      font-size: 14px;
-    }
-
-    .search-box input,
-    .filter-select {
-      width: 100%;
-      height: 42px;
-      border: 1px solid var(--da-border);
-      border-radius: 8px;
-      outline: none;
-      background: #0d0d0d;
-      color: var(--da-text);
-    }
-
-    .search-box input {
-      padding: 0 13px 0 37px;
-    }
-
-    .filter-select {
-      width: 175px;
-      padding: 0 12px;
-    }
-
-    .search-box input:focus,
-    .filter-select:focus {
-      border-color: var(--da-yellow);
-    }
-
-    /* TABLE */
-
-    .customer-table-card {
-      overflow: hidden;
-      border: 1px solid var(--da-border);
-      border-radius: 12px;
-      background: var(--da-panel);
-    }
-
-    .table-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--da-border);
-    }
-
-    .table-title {
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .table-count {
-      color: var(--da-muted);
-      font-size: 12px;
-    }
-
-    .table-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      width: 100%;
-      min-width: 900px;
-      border-collapse: collapse;
-    }
-
-    th {
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--da-border);
-      color: #858585;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-align: left;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 15px 16px;
-      border-bottom: 1px solid #202020;
-      color: #ddd;
-      font-size: 13px;
-      vertical-align: middle;
-    }
-
-    tbody tr {
-      transition: background .15s ease;
-    }
-
-    tbody tr:hover {
-      background: #171717;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .customer-name {
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .customer-id {
-      margin-top: 4px;
-      color: #666;
-      font-size: 10px;
-      font-family: monospace;
-    }
-
-    .muted {
-      color: var(--da-muted);
-    }
-
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 700;
-    }
-
-    .status::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-
-    .status.active {
-      background: rgba(56, 199, 147, .1);
-      color: var(--da-green);
-    }
-
-    .status.active::before {
-      background: var(--da-green);
-    }
-
-    .status.care {
-      background: rgba(245, 196, 0, .1);
-      color: var(--da-yellow);
-    }
-
-    .status.care::before {
-      background: var(--da-yellow);
-    }
-
-    .status.inactive {
-      background: rgba(239, 98, 98, .1);
-      color: var(--da-red);
-    }
-
-    .status.inactive::before {
-      background: var(--da-red);
-    }
-
-    .action-button {
-      border: 1px solid var(--da-border);
-      border-radius: 7px;
-      padding: 7px 10px;
-      background: #101010;
-      color: #ccc;
-      font-size: 11px;
-    }
-
-    .action-button:hover {
-      border-color: var(--da-yellow);
-      color: var(--da-yellow);
-    }
-
-    /* EMPTY / FOOTER */
-
-    .table-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 13px 18px;
-      border-top: 1px solid var(--da-border);
-      color: var(--da-muted);
-      font-size: 11px;
-    }
-
-    /* MODAL */
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, .78);
-      backdrop-filter: blur(5px);
-    }
-
-    .modal-backdrop.show {
-      display: flex;
-    }
-
-    .customer-modal {
-      width: min(720px, 100%);
-      max-height: min(800px, 92vh);
-      overflow-y: auto;
-      border: 1px solid var(--da-border);
-      border-radius: 14px;
-      background: #111;
-      box-shadow: 0 25px 80px rgba(0,0,0,.55);
-    }
-
-    .modal-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 19px 20px;
-      border-bottom: 1px solid var(--da-border);
-    }
-
-    .modal-head h2 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .close-button {
-      width: 34px;
-      height: 34px;
-      border: 1px solid var(--da-border);
-      border-radius: 8px;
-      background: #171717;
-      color: #aaa;
-    }
-
-    .modal-body {
-      padding: 20px;
-    }
-
-    .form-section-title {
-      margin: 0 0 13px;
-      color: var(--da-yellow);
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-
-    .form-field.full {
-      grid-column: 1 / -1;
-    }
-
-    .form-field label {
-      display: block;
-      margin-bottom: 6px;
-      color: #aaa;
-      font-size: 11px;
-    }
-
-    .form-field input,
-    .form-field select,
-    .form-field textarea {
-      width: 100%;
-      border: 1px solid var(--da-border);
-      border-radius: 8px;
-      outline: none;
-      background: #0b0b0b;
-      color: #eee;
-      padding: 11px 12px;
-    }
-
-    .form-field textarea {
-      min-height: 85px;
-      resize: vertical;
-    }
-
-    .form-field input:focus,
-    .form-field select:focus,
-    .form-field textarea:focus {
-      border-color: var(--da-yellow);
-    }
-
-    .modal-foot {
-      display: flex;
-      justify-content: flex-end;
-      gap: 9px;
-      padding: 15px 20px;
-      border-top: 1px solid var(--da-border);
-    }
-
-    .secondary-button {
-      border: 1px solid var(--da-border);
-      border-radius: 8px;
-      padding: 11px 15px;
-      background: #171717;
-      color: #ccc;
-    }
-
-    /* RESPONSIVE */
-
-    @media (max-width: 900px) {
-      .customer-page {
-        padding: 20px 16px;
-      }
-
-      .customer-kpis {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .customer-header {
-        align-items: stretch;
-      }
-
-      .primary-button {
-        white-space: nowrap;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .customer-page {
-        padding: 16px 12px;
-      }
-
-      .customer-header {
-        flex-direction: column;
-      }
-
-      .primary-button {
-        justify-content: center;
-      }
-
-      .customer-kpis {
-        grid-template-columns: 1fr 1fr;
-        gap: 9px;
-      }
-
-      .kpi-card {
-        min-height: 95px;
-        padding: 13px;
-      }
-
-      .kpi-value {
-        font-size: 24px;
-      }
-
-      .customer-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .filter-select {
-        width: 100%;
-      }
-
-      .table-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .form-field.full {
-        grid-column: auto;
-      }
-
-      .modal-backdrop {
-        align-items: flex-end;
-        padding: 0;
-      }
-
-      .customer-modal {
-        max-height: 94vh;
-        border-radius: 16px 16px 0 0;
-      }
+    :root{
+      --da-yellow:#f5c400;--da-yellow-soft:#ffd83d;--da-black:#090909;
+      --da-panel:#121212;--da-panel-2:#181818;--da-border:#292929;
+      --da-text:#f4f4f4;--da-muted:#969696;--da-green:#38c793;
+      --da-red:#ef6262;--da-blue:#5da9ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--da-black);color:var(--da-text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select,textarea{font:inherit} button{cursor:pointer}
+    .customer-page{min-height:100vh;padding:28px}.customer-container{width:min(1500px,100%);margin:0 auto}
+    .customer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px}
+    .customer-eyebrow{margin:0 0 7px;color:var(--da-yellow);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    .customer-title{margin:0;font-size:clamp(28px,3vw,38px);line-height:1.1;letter-spacing:-.03em}
+    .customer-subtitle{margin:9px 0 0;color:var(--da-muted);font-size:14px}
+    .primary-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:9px;padding:12px 17px;background:var(--da-yellow);color:#080808;font-weight:800;transition:.2s ease}
+    .primary-button:hover{background:var(--da-yellow-soft);transform:translateY(-1px)}
+    .customer-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .kpi-card{position:relative;overflow:hidden;min-height:112px;padding:18px;border:1px solid var(--da-border);border-radius:12px;background:linear-gradient(145deg,#151515,#101010)}
+    .kpi-card:after{content:"";position:absolute;right:-25px;bottom:-40px;width:110px;height:110px;border-radius:50%;background:rgba(245,196,0,.06)}
+    .kpi-label{color:var(--da-muted);font-size:12px}.kpi-value{margin-top:9px;font-size:29px;font-weight:800;letter-spacing:-.03em}.kpi-note{margin-top:5px;color:var(--da-muted);font-size:11px}
+    .customer-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:13px;border:1px solid var(--da-border);border-radius:12px;background:var(--da-panel)}
+    .search-box{position:relative;flex:1;min-width:180px}.search-box span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#777;font-size:14px}
+    .search-box input,.filter-select{width:100%;height:42px;border:1px solid var(--da-border);border-radius:8px;outline:none;background:#0d0d0d;color:var(--da-text)}
+    .search-box input{padding:0 13px 0 37px}.filter-select{width:175px;padding:0 12px}.search-box input:focus,.filter-select:focus{border-color:var(--da-yellow)}
+    .customer-table-card{overflow:hidden;border:1px solid var(--da-border);border-radius:12px;background:var(--da-panel)}
+    .table-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--da-border)}
+    .table-title{font-size:14px;font-weight:800}.table-count{color:var(--da-muted);font-size:12px}
+    .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{width:100%;min-width:900px;border-collapse:collapse}th{padding:13px 16px;border-bottom:1px solid var(--da-border);color:#858585;font-size:10px;font-weight:700;letter-spacing:.08em;text-align:left;text-transform:uppercase;white-space:nowrap}
+    td{padding:15px 16px;border-bottom:1px solid #202020;color:#ddd;font-size:13px;vertical-align:middle}tbody tr:hover{background:#171717}tbody tr:last-child td{border-bottom:0}
+    th:last-child,td:last-child{position:sticky;right:0;background:#121212;box-shadow:-10px 0 18px rgba(0,0,0,.32);z-index:1}
+    thead th:last-child{z-index:3;background:#121212}
+    tbody tr:hover td:last-child{background:#171717}
+    .customer-name{color:#fff;font-weight:700}.customer-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}.muted{color:var(--da-muted)}
+    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}.status:before{content:"";width:6px;height:6px;border-radius:50%}
+    .status.active{background:rgba(56,199,147,.1);color:var(--da-green)}.status.active:before{background:var(--da-green)}
+    .status.care{background:rgba(245,196,0,.1);color:var(--da-yellow)}.status.care:before{background:var(--da-yellow)}
+    .status.inactive{background:rgba(239,98,98,.1);color:var(--da-red)}.status.inactive:before{background:var(--da-red)}
+    .action-button,.icon-button{border:1px solid var(--da-border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}.action-button:hover,.icon-button:hover{border-color:var(--da-yellow);color:var(--da-yellow)}
+    .table-footer{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--da-border);color:var(--da-muted);font-size:11px}
+    .mobile-customer-list{display:none}
+    .customer-card{padding:15px;border-bottom:1px solid #202020}.customer-card:last-child{border-bottom:0}
+    .customer-card-top{display:flex;justify-content:space-between;gap:10px}.customer-card-contact{margin:9px 0;color:#bbb;font-size:12px;line-height:1.55}
+    .customer-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}.mini-stat{padding:9px;border:1px solid var(--da-border);border-radius:8px;background:#0d0d0d}.mini-stat b{display:block;font-size:15px}.mini-stat span{color:#777;font-size:9px}
+    .customer-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+    .detail-backdrop,.modal-backdrop{position:fixed;inset:0;z-index:1000;display:none;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+    .detail-backdrop.show,.modal-backdrop.show{display:block}
+    .detail-drawer{position:absolute;top:0;right:0;width:min(600px,100%);height:100%;overflow-y:auto;background:#111;border-left:1px solid var(--da-border);box-shadow:-25px 0 80px rgba(0,0,0,.55)}
+    .detail-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--da-border);background:rgba(17,17,17,.96);backdrop-filter:blur(10px)}
+    .detail-kicker{margin:0 0 5px;color:var(--da-yellow);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.detail-head h2{margin:0;font-size:20px}.detail-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}
+    .detail-body{padding:20px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 24px}.detail-item{padding:12px;border:1px solid var(--da-border);border-radius:9px;background:#151515}.detail-item span{display:block;color:#777;font-size:10px;margin-bottom:5px}.detail-item b{font-size:13px}
+    .detail-section-title{margin:0 0 10px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+    .detail-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.detail-tab{flex:0 0 auto;border:1px solid var(--da-border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.detail-tab.active{border-color:var(--da-yellow);background:rgba(245,196,0,.09);color:var(--da-yellow)}
+    .detail-list{display:grid;gap:8px}.detail-row{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid var(--da-border);border-radius:8px;background:#0d0d0d;font-size:12px}.detail-row span{color:#999}
+    .modal-backdrop{align-items:center;justify-content:center;padding:20px}.modal-backdrop.show{display:flex}.customer-modal{width:min(720px,100%);max-height:min(800px,92vh);overflow-y:auto;border:1px solid var(--da-border);border-radius:14px;background:#111;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:19px 20px;border-bottom:1px solid var(--da-border)}.modal-head h2{margin:0;font-size:18px}.close-button{width:34px;height:34px;border:1px solid var(--da-border);border-radius:8px;background:#171717;color:#aaa}
+    .modal-body{padding:20px}.form-section-title{margin:0 0 13px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}.form-field.full{grid-column:1/-1}.form-field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}
+    .form-field input,.form-field select,.form-field textarea{width:100%;border:1px solid var(--da-border);border-radius:8px;outline:none;background:#0b0b0b;color:#eee;padding:11px 12px}.form-field textarea{min-height:85px;resize:vertical}.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--da-yellow)}
+    .modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:15px 20px;border-top:1px solid var(--da-border)}.secondary-button{border:1px solid var(--da-border);border-radius:8px;padding:11px 15px;background:#171717;color:#ccc}
+    @media(max-width:900px){.customer-page{padding:20px 16px}.customer-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-header{align-items:stretch}}
+    @media(max-width:640px){
+      .customer-page{padding:16px 12px}.customer-header{flex-direction:column}.primary-button{width:100%}.customer-kpis{gap:9px}.kpi-card{min-height:95px;padding:13px}.kpi-value{font-size:24px}
+      .customer-toolbar{flex-direction:column;align-items:stretch}.filter-select{width:100%}.table-scroll{display:none}.mobile-customer-list{display:block}.table-footer{flex-direction:column;align-items:flex-start;gap:5px}
+      .detail-drawer{width:100%;border-left:0}.detail-grid{grid-template-columns:1fr 1fr}.modal-backdrop{align-items:flex-end;padding:0}.customer-modal{max-height:94vh;border-radius:16px 16px 0 0}.form-grid{grid-template-columns:1fr}.form-field.full{grid-column:auto}
     }
   </style>
 </head>
 
 <body>
+<main class="customer-page">
+  <div class="customer-container">
+    <header class="customer-header">
+      <div>
+        <p class="customer-eyebrow">Customer Management</p>
+        <h1 class="customer-title">Khách hàng</h1>
+        <p class="customer-subtitle">Quản lý khách hàng, tòa nhà và quan hệ dịch vụ bảo trì.</p>
+      </div>
+      <button class="primary-button" id="addCustomerButton" type="button"><span>＋</span><span>Thêm khách hàng</span></button>
+    </header>
 
-  <main class="customer-page">
-    <div class="customer-container">
+    <section class="customer-kpis">
+      <article class="kpi-card"><div class="kpi-label">Tổng khách hàng</div><div class="kpi-value">24</div><div class="kpi-note">Trong hệ thống</div></article>
+      <article class="kpi-card"><div class="kpi-label">Đang hoạt động</div><div class="kpi-value">19</div><div class="kpi-note">Đang có quan hệ dịch vụ</div></article>
+      <article class="kpi-card"><div class="kpi-label">Có hợp đồng</div><div class="kpi-value">17</div><div class="kpi-note">Hợp đồng đang theo dõi</div></article>
+      <article class="kpi-card"><div class="kpi-label">Cần chăm sóc</div><div class="kpi-value">3</div><div class="kpi-note">Cần liên hệ lại</div></article>
+    </section>
 
-      <!-- HEADER -->
-      <header class="customer-header">
-        <div>
-          <p class="customer-eyebrow">Customer Management</p>
-          <h1 class="customer-title">Khách hàng</h1>
-          <p class="customer-subtitle">
-            Quản lý khách hàng, tòa nhà và quan hệ dịch vụ bảo trì.
-          </p>
-        </div>
+    <section class="customer-toolbar">
+      <div class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Tìm tên, số điện thoại, email..." autocomplete="off"></div>
+      <select class="filter-select" id="statusFilter">
+        <option value="all">Tất cả trạng thái</option>
+        <option value="active">Đang hoạt động</option>
+        <option value="care">Cần chăm sóc</option>
+        <option value="inactive">Ngừng hoạt động</option>
+      </select>
+    </section>
 
-        <button
-          class="primary-button"
-          id="addCustomerButton"
-          type="button"
-        >
-          <span>＋</span>
-          <span>Thêm khách hàng</span>
-        </button>
-      </header>
+    <section class="customer-table-card">
+      <div class="table-header"><div class="table-title">Danh sách khách hàng</div><div class="table-count" id="tableCount">6 khách hàng</div></div>
 
-      <!-- KPI -->
-      <section class="customer-kpis">
-
-        <article class="kpi-card">
-          <div class="kpi-label">Tổng khách hàng</div>
-          <div class="kpi-value" id="totalCustomers">24</div>
-          <div class="kpi-note">Trong hệ thống</div>
-        </article>
-
-        <article class="kpi-card">
-          <div class="kpi-label">Đang hoạt động</div>
-          <div class="kpi-value" id="activeCustomers">19</div>
-          <div class="kpi-note">Đang có quan hệ dịch vụ</div>
-        </article>
-
-        <article class="kpi-card">
-          <div class="kpi-label">Có hợp đồng</div>
-          <div class="kpi-value">17</div>
-          <div class="kpi-note">Hợp đồng đang theo dõi</div>
-        </article>
-
-        <article class="kpi-card">
-          <div class="kpi-label">Cần chăm sóc</div>
-          <div class="kpi-value">3</div>
-          <div class="kpi-note">Cần liên hệ lại</div>
-        </article>
-
-      </section>
-
-      <!-- TOOLBAR -->
-      <section class="customer-toolbar">
-
-        <div class="search-box">
-          <span>⌕</span>
-          <input
-            id="searchInput"
-            type="search"
-            placeholder="Tìm tên, số điện thoại, email..."
-            autocomplete="off"
-          >
-        </div>
-
-        <select class="filter-select" id="statusFilter">
-          <option value="all">Tất cả trạng thái</option>
-          <option value="active">Đang hoạt động</option>
-          <option value="care">Cần chăm sóc</option>
-          <option value="inactive">Ngừng hoạt động</option>
-        </select>
-
-      </section>
-
-      <!-- TABLE -->
-      <section class="customer-table-card">
-
-        <div class="table-header">
-          <div class="table-title">Danh sách khách hàng</div>
-          <div class="table-count" id="tableCount">
-            6 khách hàng mẫu
-          </div>
-        </div>
-
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Khách hàng</th>
-                <th>Liên hệ</th>
-                <th>Tòa nhà</th>
-                <th>Thang máy</th>
-                <th>Phụ trách</th>
-                <th>Trạng thái</th>
-                <th></th>
-              </tr>
-            </thead>
-
-            <tbody id="customerTableBody"></tbody>
-          </table>
-        </div>
-
-        <div class="table-footer">
-          <span>Dữ liệu hiện tại là MOCK DATA — chưa kết nối Firestore.</span>
-          <span>DEV V1.0</span>
-        </div>
-
-      </section>
-
-    </div>
-  </main>
-
-  <!-- ADD CUSTOMER MODAL -->
-  <div class="modal-backdrop" id="customerModal">
-
-    <section
-      class="customer-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modalTitle"
-    >
-
-      <div class="modal-head">
-        <h2 id="modalTitle">Thêm khách hàng</h2>
-
-        <button
-          class="close-button"
-          id="closeModalButton"
-          type="button"
-          aria-label="Đóng"
-        >
-          ×
-        </button>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Khách hàng</th><th>Liên hệ</th><th>Tòa nhà</th><th>Thang máy</th><th>Phụ trách</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody id="customerTableBody"></tbody>
+        </table>
       </div>
 
-      <form id="customerForm">
+      <div class="mobile-customer-list" id="mobileCustomerList"></div>
 
-        <div class="modal-body">
-
-          <p class="form-section-title">
-            Thông tin khách hàng
-          </p>
-
-          <div class="form-grid">
-
-            <div class="form-field full">
-              <label for="customerName">
-                Tên khách hàng *
-              </label>
-
-              <input
-                id="customerName"
-                name="customerName"
-                type="text"
-                placeholder="Nhập tên khách hàng"
-                required
-              >
-            </div>
-
-            <div class="form-field">
-              <label for="customerType">
-                Loại khách hàng
-              </label>
-
-              <select id="customerType" name="customerType">
-                <option>Cá nhân</option>
-                <option>Doanh nghiệp</option>
-                <option>Ban quản lý tòa nhà</option>
-                <option>Chủ đầu tư</option>
-              </select>
-            </div>
-
-            <div class="form-field">
-              <label for="customerPhone">
-                Số điện thoại
-              </label>
-
-              <input
-                id="customerPhone"
-                name="customerPhone"
-                type="tel"
-                placeholder="Nhập số điện thoại"
-              >
-            </div>
-
-            <div class="form-field">
-              <label for="customerEmail">
-                Email
-              </label>
-
-              <input
-                id="customerEmail"
-                name="customerEmail"
-                type="email"
-                placeholder="Nhập email"
-              >
-            </div>
-
-            <div class="form-field">
-              <label for="taxCode">
-                Mã số thuế
-              </label>
-
-              <input
-                id="taxCode"
-                name="taxCode"
-                type="text"
-                placeholder="Nếu có"
-              >
-            </div>
-
-            <div class="form-field full">
-              <label for="customerAddress">
-                Địa chỉ
-              </label>
-
-              <input
-                id="customerAddress"
-                name="customerAddress"
-                type="text"
-                placeholder="Địa chỉ khách hàng"
-              >
-            </div>
-
-          </div>
-
-          <p class="form-section-title">
-            Người liên hệ
-          </p>
-
-          <div class="form-grid">
-
-            <div class="form-field">
-              <label for="contactName">
-                Họ tên
-              </label>
-
-              <input
-                id="contactName"
-                name="contactName"
-                type="text"
-                placeholder="Người liên hệ"
-              >
-            </div>
-
-            <div class="form-field">
-              <label for="contactPhone">
-                Số điện thoại
-              </label>
-
-              <input
-                id="contactPhone"
-                name="contactPhone"
-                type="tel"
-                placeholder="Số điện thoại"
-              >
-            </div>
-
-            <div class="form-field full">
-              <label for="customerNote">
-                Ghi chú
-              </label>
-
-              <textarea
-                id="customerNote"
-                name="customerNote"
-                placeholder="Thông tin bổ sung..."
-              ></textarea>
-            </div>
-
-          </div>
-
-        </div>
-
-        <div class="modal-foot">
-
-          <button
-            class="secondary-button"
-            id="cancelModalButton"
-            type="button"
-          >
-            Hủy
-          </button>
-
-          <button
-            class="primary-button"
-            type="submit"
-          >
-            Lưu khách hàng
-          </button>
-
-        </div>
-
-      </form>
-
+      <div class="table-footer"><span>Dữ liệu hiện tại là MOCK DATA — chưa kết nối Firestore.</span><span>DEV V1.2</span></div>
     </section>
   </div>
-
-  <script>
-    /*
-     * ==========================================================
-     * KHÁCH HÀNG V1 — MOCK DATA ONLY
-     * Chưa kết nối Firebase / Firestore.
-     * ==========================================================
-     */
-
-    const customers = [
-      {
-        id: "MOCK-001",
-        name: "Công ty TNHH ABC",
-        phone: "0901 234 567",
-        email: "contact@abc.vn",
-        buildings: 2,
-        elevators: 8,
-        manager: "Nguyễn Minh",
-        status: "active"
-      },
-      {
-        id: "MOCK-002",
-        name: "Ban quản lý Waterfront City",
-        phone: "0902 345 678",
-        email: "bql@waterfront.vn",
-        buildings: 1,
-        elevators: 6,
-        manager: "Trần Nam",
-        status: "active"
-      },
-      {
-        id: "MOCK-003",
-        name: "Công ty CP Hòa Phát",
-        phone: "0903 456 789",
-        email: "admin@hoaphat.vn",
-        buildings: 3,
-        elevators: 14,
-        manager: "Lê Hoàng",
-        status: "active"
-      },
-      {
-        id: "MOCK-004",
-        name: "Nguyễn Văn A",
-        phone: "0904 567 890",
-        email: "nguyenvana@email.vn",
-        buildings: 1,
-        elevators: 1,
-        manager: "Trung",
-        status: "care"
-      },
-      {
-        id: "MOCK-005",
-        name: "Công ty XYZ",
-        phone: "0905 678 901",
-        email: "info@xyz.vn",
-        buildings: 2,
-        elevators: 5,
-        manager: "Phạm Hải",
-        status: "active"
-      },
-      {
-        id: "MOCK-006",
-        name: "Khách hàng cũ — Hải Phòng",
-        phone: "0906 789 012",
-        email: "customer@email.vn",
-        buildings: 1,
-        elevators: 2,
-        manager: "Chưa phân công",
-        status: "inactive"
-      }
-    ];
-
-    const tableBody =
-      document.getElementById("customerTableBody");
-
-    const searchInput =
-      document.getElementById("searchInput");
-
-    const statusFilter =
-      document.getElementById("statusFilter");
-
-    const tableCount =
-      document.getElementById("tableCount");
-
-    const modal =
-      document.getElementById("customerModal");
-
-    const addButton =
-      document.getElementById("addCustomerButton");
-
-    const closeButton =
-      document.getElementById("closeModalButton");
-
-    const cancelButton =
-      document.getElementById("cancelModalButton");
-
-    const customerForm =
-      document.getElementById("customerForm");
-
-
-    function statusLabel(status) {
-      if (status === "active") {
-        return `
-          <span class="status active">
-            Đang hoạt động
-          </span>
-        `;
-      }
-
-      if (status === "care") {
-        return `
-          <span class="status care">
-            Cần chăm sóc
-          </span>
-        `;
-      }
-
-      return `
-        <span class="status inactive">
-          Ngừng hoạt động
-        </span>
-      `;
-    }
-
-
-    function renderCustomers() {
-
-      const keyword =
-        searchInput.value
-          .trim()
-          .toLowerCase();
-
-      const status =
-        statusFilter.value;
-
-      const filtered =
-        customers.filter(customer => {
-
-          const matchesKeyword =
-            !keyword ||
-            customer.name.toLowerCase().includes(keyword) ||
-            customer.phone.toLowerCase().includes(keyword) ||
-            customer.email.toLowerCase().includes(keyword);
-
-          const matchesStatus =
-            status === "all" ||
-            customer.status === status;
-
-          return matchesKeyword && matchesStatus;
-        });
-
-
-      tableBody.innerHTML =
-        filtered.map(customer => `
-          <tr>
-
-            <td>
-              <div class="customer-name">
-                ${customer.name}
-              </div>
-
-              <div class="customer-id">
-                ${customer.id}
-              </div>
-            </td>
-
-            <td>
-              <div>${customer.phone}</div>
-              <div class="muted">${customer.email}</div>
-            </td>
-
-            <td>
-              ${customer.buildings}
-            </td>
-
-            <td>
-              ${customer.elevators}
-            </td>
-
-            <td>
-              ${customer.manager}
-            </td>
-
-            <td>
-              ${statusLabel(customer.status)}
-            </td>
-
-            <td>
-              <button
-                class="action-button"
-                type="button"
-                data-customer="${customer.id}"
-              >
-                Xem
-              </button>
-            </td>
-
-          </tr>
-        `).join("");
-
-
-      tableCount.textContent =
-        `${filtered.length} khách hàng`;
-    }
-
-
-    function openModal() {
-      modal.classList.add("show");
-      document.body.style.overflow = "hidden";
-
-      setTimeout(() => {
-        document.getElementById("customerName")?.focus();
-      }, 50);
-    }
-
-
-    function closeModal() {
-      modal.classList.remove("show");
-      document.body.style.overflow = "";
-      customerForm.reset();
-    }
-
-
-    addButton.addEventListener(
-      "click",
-      openModal
-    );
-
-    closeButton.addEventListener(
-      "click",
-      closeModal
-    );
-
-    cancelButton.addEventListener(
-      "click",
-      closeModal
-    );
-
-
-    modal.addEventListener(
-      "click",
-      event => {
-        if (event.target === modal) {
-          closeModal();
-        }
-      }
-    );
-
-
-    searchInput.addEventListener(
-      "input",
-      renderCustomers
-    );
-
-    statusFilter.addEventListener(
-      "change",
-      renderCustomers
-    );
-
-
-    customerForm.addEventListener(
-      "submit",
-      event => {
-
-        event.preventDefault();
-
-        /*
-         * V1:
-         * Chưa ghi Firestore.
-         *
-         * Khi backend được bật:
-         * collection = "customers"
-         * Document ID = Firebase tự cấp.
-         */
-
-        alert(
-          "UI V1 đã nhận dữ liệu mẫu. " +
-          "Firestore chưa được kết nối."
-        );
-
-        closeModal();
-      }
-    );
-
-
-    document.addEventListener(
-      "click",
-      event => {
-
-        const button =
-          event.target.closest(
-            "[data-customer]"
-          );
-
-        if (!button) return;
-
-        const customerId =
-          button.dataset.customer;
-
-        const customer =
-          customers.find(
-            item => item.id === customerId
-          );
-
-        if (!customer) return;
-
-        alert(
-          `Hồ sơ khách hàng\n\n${customer.name}\n` +
-          `Tòa nhà: ${customer.buildings}\n` +
-          `Thang máy: ${customer.elevators}\n` +
-          `Phụ trách: ${customer.manager}`
-        );
-      }
-    );
-
-
-    document.addEventListener(
-      "keydown",
-      event => {
-        if (event.key === "Escape") {
-          closeModal();
-        }
-      }
-    );
-
-
-    renderCustomers();
-  </script>
-
+</main>
+
+<!-- CUSTOMER DETAIL -->
+<div class="detail-backdrop" id="detailBackdrop">
+  <aside class="detail-drawer" role="dialog" aria-modal="true">
+    <div class="detail-head">
+      <div><p class="detail-kicker">Customer Profile</p><h2 id="detailName">—</h2><div class="detail-id" id="detailId">—</div></div>
+      <button class="close-button" id="closeDetailButton" type="button" aria-label="Đóng">×</button>
+    </div>
+    <div class="detail-body">
+      <div id="detailStatus" style="margin-bottom:18px"></div>
+      <p class="detail-section-title">Thông tin</p>
+      <div class="detail-grid">
+        <div class="detail-item"><span>Số điện thoại</span><b id="detailPhone">—</b></div>
+        <div class="detail-item"><span>Email</span><b id="detailEmail">—</b></div>
+        <div class="detail-item"><span>Người phụ trách</span><b id="detailManager">—</b></div>
+        <div class="detail-item"><span>Loại khách hàng</span><b id="detailType">Doanh nghiệp</b></div>
+      </div>
+
+      <p class="detail-section-title">Quan hệ dịch vụ</p>
+      <div class="detail-grid">
+        <div class="detail-item"><span>Tòa nhà</span><b id="detailBuildings">0</b></div>
+        <div class="detail-item"><span>Thang máy</span><b id="detailElevators">0</b></div>
+        <div class="detail-item"><span>Hợp đồng</span><b id="detailContracts">2</b></div>
+        <div class="detail-item"><span>Work Order</span><b id="detailWorkOrders">3</b></div>
+      </div>
+
+      <div class="detail-tabs">
+        <button class="detail-tab active" type="button" data-tab="buildings">Tòa nhà</button>
+        <button class="detail-tab" type="button" data-tab="elevators">Thang máy</button>
+        <button class="detail-tab" type="button" data-tab="contracts">Hợp đồng</button>
+        <button class="detail-tab" type="button" data-tab="maintenance">Bảo trì</button>
+        <button class="detail-tab" type="button" data-tab="workorders">Work Order</button>
+      </div>
+      <div class="detail-list" id="detailList"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ADD CUSTOMER -->
+<div class="modal-backdrop" id="customerModal">
+  <section class="customer-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><h2 id="modalTitle">Thêm khách hàng</h2><button class="close-button" id="closeModalButton" type="button">×</button></div>
+    <form id="customerForm">
+      <div class="modal-body">
+        <p class="form-section-title">Thông tin khách hàng</p>
+        <div class="form-grid">
+          <div class="form-field full"><label for="customerName">Tên khách hàng *</label><input id="customerName" required placeholder="Nhập tên khách hàng"></div>
+          <div class="form-field"><label for="customerType">Loại khách hàng</label><select id="customerType"><option>Cá nhân</option><option>Doanh nghiệp</option><option>Ban quản lý tòa nhà</option><option>Chủ đầu tư</option></select></div>
+          <div class="form-field"><label for="customerPhone">Số điện thoại</label><input id="customerPhone" type="tel" placeholder="Nhập số điện thoại"></div>
+          <div class="form-field"><label for="customerEmail">Email</label><input id="customerEmail" type="email" placeholder="Nhập email"></div>
+          <div class="form-field"><label for="taxCode">Mã số thuế</label><input id="taxCode" placeholder="Nếu có"></div>
+          <div class="form-field full"><label for="customerAddress">Địa chỉ</label><input id="customerAddress" placeholder="Địa chỉ khách hàng"></div>
+        </div>
+        <p class="form-section-title">Người liên hệ</p>
+        <div class="form-grid">
+          <div class="form-field"><label for="contactName">Họ tên</label><input id="contactName" placeholder="Người liên hệ"></div>
+          <div class="form-field"><label for="contactPhone">Số điện thoại</label><input id="contactPhone" type="tel" placeholder="Số điện thoại"></div>
+          <div class="form-field full"><label for="customerNote">Ghi chú</label><textarea id="customerNote" placeholder="Thông tin bổ sung..."></textarea></div>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="secondary-button" id="cancelModalButton" type="button">Hủy</button><button class="primary-button" type="submit">Lưu khách hàng</button></div>
+    </form>
+  </section>
+</div>
+
+<script>
+const customers = [
+  {id:"MOCK-001",name:"Công ty TNHH ABC",phone:"0901 234 567",email:"contact@abc.vn",buildings:2,elevators:8,manager:"Nguyễn Minh",status:"active",type:"Doanh nghiệp"},
+  {id:"MOCK-002",name:"Ban quản lý Waterfront City",phone:"0902 345 678",email:"bql@waterfront.vn",buildings:1,elevators:6,manager:"Trần Nam",status:"active",type:"Ban quản lý tòa nhà"},
+  {id:"MOCK-003",name:"Công ty CP Hòa Phát",phone:"0903 456 789",email:"admin@hoaphat.vn",buildings:3,elevators:14,manager:"Lê Hoàng",status:"active",type:"Doanh nghiệp"},
+  {id:"MOCK-004",name:"Nguyễn Văn A",phone:"0904 567 890",email:"nguyenvana@email.vn",buildings:1,elevators:1,manager:"Trung",status:"care",type:"Cá nhân"},
+  {id:"MOCK-005",name:"Công ty XYZ",phone:"0905 678 901",email:"info@xyz.vn",buildings:2,elevators:5,manager:"Phạm Hải",status:"active",type:"Doanh nghiệp"},
+  {id:"MOCK-006",name:"Khách hàng cũ — Hải Phòng",phone:"0906 789 012",email:"customer@email.vn",buildings:1,elevators:2,manager:"Chưa phân công",status:"inactive",type:"Doanh nghiệp"}
+];
+
+const $ = id => document.getElementById(id);
+const tableBody=$("customerTableBody"), mobileList=$("mobileCustomerList"), searchInput=$("searchInput"), statusFilter=$("statusFilter"), tableCount=$("tableCount");
+const modal=$("customerModal"), detailBackdrop=$("detailBackdrop"), form=$("customerForm");
+
+function statusLabel(status){
+  const map={active:["Đang hoạt động","active"],care:["Cần chăm sóc","care"],inactive:["Ngừng hoạt động","inactive"]};
+  const [label,cls]=map[status]||map.inactive;
+  return `<span class="status ${cls}">${label}</span>`;
+}
+
+function filteredCustomers(){
+  const q=searchInput.value.trim().toLowerCase(), s=statusFilter.value;
+  return customers.filter(c=>{
+    const text=[c.name,c.phone,c.email,c.manager].join(" ").toLowerCase();
+    return (!q||text.includes(q))&&(s==="all"||c.status===s);
+  });
+}
+
+function renderCustomers(){
+  const list=filteredCustomers();
+  tableCount.textContent=`${list.length} khách hàng`;
+
+  tableBody.innerHTML=list.map(c=>`
+    <tr>
+      <td><div class="customer-name">${c.name}</div><div class="customer-id">${c.id}</div></td>
+      <td><div>${c.phone}</div><div class="muted">${c.email}</div></td>
+      <td>${c.buildings}</td><td>${c.elevators}</td><td>${c.manager}</td><td>${statusLabel(c.status)}</td>
+      <td><button class="action-button" data-view="${c.id}" type="button">Xem</button></td>
+    </tr>`).join("");
+
+  mobileList.innerHTML=list.map(c=>`
+    <article class="customer-card">
+      <div class="customer-card-top">
+        <div><div class="customer-name">${c.name}</div><div class="customer-id">${c.id}</div></div>
+        ${statusLabel(c.status)}
+      </div>
+      <div class="customer-card-contact">${c.phone}<br>${c.email}<br>Phụ trách: ${c.manager}</div>
+      <div class="customer-card-stats">
+        <div class="mini-stat"><b>${c.buildings}</b><span>TÒA NHÀ</span></div>
+        <div class="mini-stat"><b>${c.elevators}</b><span>THANG MÁY</span></div>
+        <div class="mini-stat"><b>2</b><span>HỢP ĐỒNG</span></div>
+      </div>
+      <div class="customer-card-bottom"><span class="muted">${c.type}</span><button class="action-button" data-view="${c.id}" type="button">Xem hồ sơ</button></div>
+    </article>`).join("");
+}
+
+function openDetail(id){
+  const c=customers.find(x=>x.id===id); if(!c)return;
+  $("detailName").textContent=c.name;$("detailId").textContent=c.id;$("detailStatus").innerHTML=statusLabel(c.status);
+  $("detailPhone").textContent=c.phone;$("detailEmail").textContent=c.email;$("detailManager").textContent=c.manager;$("detailType").textContent=c.type;
+  $("detailBuildings").textContent=c.buildings;$("detailElevators").textContent=c.elevators;
+  $("detailContracts").textContent=2;$("detailWorkOrders").textContent=3;
+  setDetailTab("buildings");detailBackdrop.classList.add("show");document.body.style.overflow="hidden";
+}
+function closeDetail(){detailBackdrop.classList.remove("show");document.body.style.overflow="";}
+function setDetailTab(tab){
+  document.querySelectorAll(".detail-tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  const data={
+    buildings:[["Tòa nhà 01","Đang quản lý"],["Tòa nhà 02","Đang quản lý"]],
+    elevators:[["Thang máy DA-001","Đang bảo trì"],["Thang máy DA-002","Đang hoạt động"],["Thang máy DA-003","Đang hoạt động"]],
+    contracts:[["Hợp đồng bảo trì","Đang hiệu lực"],["Hợp đồng nguyên tắc","Đang theo dõi"]],
+    maintenance:[["Kỳ bảo trì gần nhất","Đã hoàn thành"],["Kỳ tiếp theo","Theo lịch"]],
+    workorders:[["WO-2026-001","Đã hoàn thành"],["WO-2026-002","Đang xử lý"],["WO-2026-003","Chờ kỹ thuật viên"]]
+  };
+  $("detailList").innerHTML=(data[tab]||[]).map(x=>`<div class="detail-row"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("");
+}
+
+$("addCustomerButton").onclick=()=>{modal.classList.add("show");document.body.style.overflow="hidden";setTimeout(()=>$("customerName").focus(),50)};
+function closeModal(){modal.classList.remove("show");document.body.style.overflow="";form.reset()}
+$("closeModalButton").onclick=closeModal;$("cancelModalButton").onclick=closeModal;
+modal.onclick=e=>{if(e.target===modal)closeModal()};detailBackdrop.onclick=e=>{if(e.target===detailBackdrop)closeDetail()};
+$("closeDetailButton").onclick=closeDetail;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(b)openDetail(b.dataset.view)});
+document.querySelectorAll(".detail-tab").forEach(b=>b.onclick=()=>setDetailTab(b.dataset.tab));
+searchInput.oninput=renderCustomers;statusFilter.onchange=renderCustomers;
+form.onsubmit=e=>{e.preventDefault();alert("UI V1.1 đã nhận dữ liệu mẫu. Firestore chưa được kết nối.");closeModal()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeDetail();closeModal()}});
+renderCustomers();
+</script>
 </body>
 </html>
