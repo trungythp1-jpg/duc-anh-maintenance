@@ -62,7 +62,7 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 <body>
 <main class="page"><div class="container">
 <header class="head">
-<div><p class="eyebrow">Elevator Asset Management</p><h1>Thang máy</h1><p class="sub">Quản lý tài sản thang máy và toàn bộ vòng đời dịch vụ.</p></div>
+<div><p class="eyebrow">Elevator Asset Management</p><h1>Thang máy</h1><p class="sub">Quản lý tài sản thang máy, tủ điện và toàn bộ vòng đời dịch vụ.</p></div>
 <button class="primary" id="addButton" type="button">＋ <span>Thêm thang máy</span></button>
 </header>
 
@@ -81,11 +81,11 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 <section class="card">
 <div class="card-head"><div class="card-title">Danh sách thang máy</div><div class="count" id="count">8 thang máy</div></div>
 <div class="scroll"><table>
-<thead><tr><th>Thang máy</th><th>Tòa nhà</th><th>Khách hàng</th><th>Tải trọng</th><th>Số tầng</th><th>Máy kéo</th><th>Trạng thái</th><th></th></tr></thead>
+<thead><tr><th>Thang máy</th><th>Tòa nhà</th><th>Khách hàng</th><th>Tải trọng</th><th>Số tầng</th><th>Máy kéo</th><th>Tủ điện</th><th>Trạng thái</th><th></th></tr></thead>
 <tbody id="tbody"></tbody>
 </table></div>
 <div class="mobile-list" id="mobileList"></div>
-<div class="footer"><span>Dữ liệu hiện tại là MOCK DATA — chưa kết nối Firestore.</span><span>DEV V1.0</span></div>
+<div class="footer"><span>Dữ liệu hiện tại là MOCK DATA — chưa kết nối Firestore.</span><span>DEV V1.1</span></div>
 </section>
 </div></main>
 
@@ -103,7 +103,7 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 <div class="grid">
 <div class="item"><span>Tải trọng</span><b id="dCapacity">—</b></div><div class="item"><span>Tốc độ</span><b id="dSpeed">—</b></div>
 <div class="item"><span>Số tầng / điểm dừng</span><b id="dStops">—</b></div><div class="item"><span>Máy kéo</span><b id="dMachine">—</b></div>
-<div class="item"><span>Tủ điều khiển</span><b id="dController">—</b></div><div class="item"><span>Năm lắp đặt</span><b id="dYear">—</b></div>
+<div class="item"><span>Tủ điện</span><b id="dController">—</b></div><div class="item"><span>Năm lắp đặt</span><b id="dYear">—</b></div>
 </div>
 <p class="section-title">Dịch vụ</p>
 <div class="grid">
@@ -136,8 +136,8 @@ const $=id=>document.getElementById(id);
 function statusLabel(s){const m={active:["Đang hoạt động","active"],maint:["Đang bảo trì","maint"],care:["Cần xử lý","care"],inactive:["Ngừng hoạt động","inactive"]};const x=m[s]||m.inactive;return `<span class="status ${x[1]}">${x[0]}</span>`}
 function filtered(){const q=$("search").value.trim().toLowerCase(),s=$("status").value;return elevators.filter(e=>{const t=[e.id,e.name,e.building,e.customer,e.machine].join(" ").toLowerCase();return(!q||t.includes(q))&&(s==="all"||e.status===s)})}
 function render(){const list=filtered();$("count").textContent=`${list.length} thang máy`;
-$("tbody").innerHTML=list.map(e=>`<tr><td><div class="name">${e.name}</div><div class="id">${e.id}</div></td><td>${e.building}</td><td>${e.customer}</td><td>${e.capacity}</td><td>${e.stops}</td><td>${e.machine}</td><td>${statusLabel(e.status)}</td><td><button class="action" data-view="${e.id}" type="button">Xem</button></td></tr>`).join("");
-$("mobileList").innerHTML=list.map(e=>`<article class="elevator-item"><div class="e-top"><div><div class="name">${e.name}</div><div class="id">${e.id}</div></div>${statusLabel(e.status)}</div><div class="e-meta">${e.building}<br>${e.customer}<br>${e.machine} · ${e.capacity} · ${e.stops} điểm dừng</div><div class="stats"><div class="stat"><b>${e.capacity}</b><span>TẢI TRỌNG</span></div><div class="stat"><b>${e.stops}</b><span>ĐIỂM DỪNG</span></div><div class="stat"><b>${e.year}</b><span>LẮP ĐẶT</span></div></div><div class="bottom"><span class="muted">${e.maintenance}</span><button class="action" data-view="${e.id}" type="button">Xem hồ sơ</button></div></article>`).join("")}
+$("tbody").innerHTML=list.map(e=>`<tr><td><div class="name">${e.name}</div><div class="id">${e.id}</div></td><td>${e.building}</td><td>${e.customer}</td><td>${e.capacity}</td><td>${e.stops}</td><td>${e.machine}</td><td>${e.controller}</td><td>${statusLabel(e.status)}</td><td><button class="action" data-view="${e.id}" type="button">Xem</button></td></tr>`).join("");
+$("mobileList").innerHTML=list.map(e=>`<article class="elevator-item"><div class="e-top"><div><div class="name">${e.name}</div><div class="id">${e.id}</div></div>${statusLabel(e.status)}</div><div class="e-meta">${e.building}<br>${e.customer}<br>${e.machine} · ${e.controller} · ${e.capacity} · ${e.stops} điểm dừng</div><div class="stats"><div class="stat"><b>${e.capacity}</b><span>TẢI TRỌNG</span></div><div class="stat"><b>${e.stops}</b><span>ĐIỂM DỪNG</span></div><div class="stat"><b>${e.year}</b><span>LẮP ĐẶT</span></div></div><div class="bottom"><span class="muted">${e.maintenance}</span><button class="action" data-view="${e.id}" type="button">Xem hồ sơ</button></div></article>`).join("")}
 function openDetail(id){const e=elevators.find(x=>x.id===id);if(!e)return;
 $("dName").textContent=e.name;$("dId").textContent=e.id;$("dStatus").innerHTML=statusLabel(e.status);
 $("dBuilding").textContent=e.building;$("dCustomer").textContent=e.customer;$("dAssetStatus").textContent=e.status==="inactive"?"Ngừng hoạt động":"Đang quản lý";
