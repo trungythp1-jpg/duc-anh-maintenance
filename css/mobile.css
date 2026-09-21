@@ -1,9 +1,15 @@
-/* =====================================================
-   MOBILE / IPHONE
-   Sidebar is ONE independent scroll container.
-   ===================================================== */
+/* =========================================================
+   ĐỨC ANH MAINTENANCE — MOBILE.CSS
+   Responsive: iPhone / iPad / Mobile
+   Gold + Black Design System
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   TABLET
+   --------------------------------------------------------- */
 
 @media (max-width: 1100px) {
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -11,22 +17,44 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+
 }
 
+
+/* ---------------------------------------------------------
+   MOBILE / IPHONE
+   --------------------------------------------------------- */
+
 @media (max-width: 820px) {
+
+  /* =========================
+     PAGE BASE
+     ========================= */
 
   html,
   body {
     width: 100%;
     min-height: 100%;
+    margin: 0;
     overflow-x: hidden;
   }
 
   /*
-   * IMPORTANT:
-   * The sidebar itself scrolls.
-   * .nav MUST NOT have its own overflow.
+   * Khi sidebar mở:
+   * chỉ khóa trang phía sau,
+   * KHÔNG dùng position: fixed cho body.
+   * Điều này tránh lỗi Safari iPhone.
    */
+  html.sidebar-open,
+  html.sidebar-open body {
+    overflow: hidden;
+  }
+
+
+  /* =========================
+     SIDEBAR
+     ========================= */
+
   .sidebar {
     position: fixed;
 
@@ -35,52 +63,88 @@
     bottom: 0;
 
     width: min(82vw, 360px);
+
     height: 100dvh;
-    max-height: 100dvh;
     min-height: 0;
+    max-height: 100dvh;
 
     display: block;
 
+    background: #090909;
+
+    /*
+     * TOÀN BỘ SIDEBAR LÀ MỘT SCROLL CONTAINER.
+     * Không tạo scroll riêng cho .nav.
+     */
     overflow-y: auto;
     overflow-x: hidden;
 
     -webkit-overflow-scrolling: touch;
+
     overscroll-behavior-y: contain;
     overscroll-behavior-x: none;
 
     touch-action: pan-y;
 
-    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    /*
+     * Khoảng an toàn cho iPhone Home Indicator.
+     */
+    padding-bottom: max(30px, env(safe-area-inset-bottom));
 
+    /*
+     * Ẩn sidebar mặc định.
+     */
     transform: translate3d(-100%, 0, 0);
-    transition: transform .22s ease;
+
+    transition:
+      transform 0.22s ease;
 
     z-index: 100;
   }
+
+
+  /*
+   * SIDEBAR MỞ
+   */
 
   .sidebar.open {
     transform: translate3d(0, 0, 0);
   }
 
-  /*
-   * Brand remains visible while scrolling the menu.
-   */
+
+  /* =========================
+     BRAND
+     ========================= */
+
   .brand-block {
     position: sticky;
+
     top: 0;
+
     z-index: 5;
 
     flex: none;
 
     background: #090909;
+
     border-bottom: 1px solid #2b2b2b;
   }
 
+
+  /* =========================
+     NAV
+     ========================= */
+
   /*
-   * DO NOT create a second scroll area.
+   * QUAN TRỌNG:
+   * Không được đặt overflow-y:auto ở đây.
+   * Sidebar mới là vùng cuộn duy nhất.
    */
+
   .nav {
     display: block;
+
+    width: 100%;
 
     height: auto;
     min-height: 0;
@@ -88,165 +152,278 @@
     overflow: visible;
 
     padding-top: 18px;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
   }
+
+
+  .nav-label {
+    margin-top: 18px;
+  }
+
 
   .nav-item {
     min-height: 46px;
+
+    width: calc(100% - 24px);
+
+    margin-left: 12px;
+    margin-right: 12px;
   }
 
-  /*
-   * Footer is part of the sidebar content,
-   * therefore it can also be reached by scrolling.
-   */
+
+  /* =========================
+     SIDEBAR FOOTER
+     ========================= */
+
   .sidebar-footer {
-    margin: 10px 12px 24px;
+    margin:
+      10px 12px
+      max(24px, env(safe-area-inset-bottom));
   }
+
+
+  /* =========================
+     MAIN AREA
+     ========================= */
 
   .main-area {
     width: 100%;
     margin-left: 0;
+    min-width: 0;
   }
+
+
+  /* =========================
+     TOPBAR
+     ========================= */
 
   .topbar {
     height: 68px;
-    padding: 0 16px;
+
+    padding:
+      0 16px;
+
+    position: sticky;
+    top: 0;
+
+    z-index: 20;
   }
+
 
   .menu-button {
     display: grid;
   }
+
 
   .breadcrumb span:first-child,
   .breadcrumb strong {
     display: none;
   }
 
+
   .breadcrumb {
     font-size: 11px;
   }
 
-  .content {
-    padding: 22px 16px;
+
+  /* =========================
+     TOP ACTIONS
+     ========================= */
+
+  .top-actions {
+    gap: 7px;
   }
+
+
+  .user-text {
+    display: none;
+  }
+
+
+  /* =========================
+     CONTENT
+     ========================= */
+
+  .content {
+    padding:
+      22px 16px;
+  }
+
 
   .page-heading {
     align-items: flex-start;
+
     flex-direction: column;
+
+    gap: 15px;
   }
+
 
   h1 {
     font-size: 28px;
   }
+
 
   .primary-button {
     width: 100%;
     height: 44px;
   }
 
-  .bottom-grid {
-    grid-template-columns: 1fr;
-  }
+
+  /* =========================
+     OVERLAY
+     ========================= */
 
   /*
-   * Overlay is NOT scrollable.
-   * It only closes the sidebar.
+   * Overlay chỉ dùng để:
+   * - làm tối màn hình phía sau
+   * - nhận click/touch để đóng sidebar
+   *
+   * Không được scroll.
    */
+
   .mobile-overlay {
     position: fixed;
+
     inset: 0;
 
     display: none;
 
+    width: 100%;
+    height: 100%;
+
+    background: rgba(0, 0, 0, 0.72);
+
     z-index: 90;
 
-    background: rgba(0, 0, 0, .72);
+    cursor: pointer;
 
-    touch-action: none;
+    touch-action: manipulation;
+
+    -webkit-tap-highlight-color: transparent;
   }
+
 
   .mobile-overlay.show {
     display: block;
   }
 
-  .user-text {
-    display: none;
+
+  /* =========================
+     BOTTOM GRID
+     ========================= */
+
+  .bottom-grid {
+    grid-template-columns: 1fr;
   }
 
-  /*
-   * Prevent the page behind the open menu from moving.
-   */
-  body.sidebar-open {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-  }
 }
+
+
+/* ---------------------------------------------------------
+   SMALL IPHONE
+   --------------------------------------------------------- */
 
 @media (max-width: 560px) {
 
+  /* =========================
+     STATS
+     ========================= */
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
+
     gap: 9px;
   }
 
+
   .stat-card {
     padding: 14px;
+
     min-height: 120px;
   }
 
+
   .stat-value {
     font-size: 27px;
+
     margin-top: 12px;
   }
+
 
   .stat-top {
     font-size: 8px;
   }
 
+
   .stat-foot {
     font-size: 9px;
   }
+
+
+  /* =========================
+     PANELS
+     ========================= */
 
   .panel {
     padding: 15px;
   }
 
+
+  /* =========================
+     WORK ORDER LIST
+     ========================= */
+
   .work-row {
-    grid-template-columns: 39px 7px minmax(0, 1fr);
+    grid-template-columns:
+      39px
+      7px
+      minmax(0, 1fr);
+
     gap: 7px;
   }
 
+
   .work-row .badge {
     grid-column: 3;
+
     justify-self: start;
+
     margin-top: -9px;
     margin-bottom: 8px;
   }
+
 
   .work-info strong {
     font-size: 11px;
   }
 
+
   .work-info span {
     font-size: 9px;
   }
+
+
+  /* =========================
+     ACTIVITY
+     ========================= */
 
   .activity-head {
     display: none;
   }
 
+
   .activity-row {
     grid-template-columns: 1fr;
+
     gap: 4px;
+
     padding: 12px 0;
   }
+
 
   .activity-row span:first-child {
     color: #666;
   }
 
-  .top-actions {
-    gap: 7px;
-  }
 }
