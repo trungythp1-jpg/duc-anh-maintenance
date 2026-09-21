@@ -1,15 +1,11 @@
-const { now } = require('../lib/admin');
+const { db, now } = require('../lib/admin');
 
 /**
- * Ghi nhận một lượt bảo trì hợp lệ vào maintenanceAgreement.
+ * Ghi nhận một lượt bảo trì hợp lệ.
  *
- * Hàm này được gọi bên trong Firestore Transaction.
+ * Hàm này CHỈ được gọi bên trong Firestore Transaction.
  *
- * Chỉ áp dụng cho Work Order type = MAINTENANCE.
- *
- * Idempotency:
- * - Nếu WO đã có maintenanceVisitRecordedAt
- *   thì không cộng lại.
+ * Không export thành onCall Function.
  */
 async function recordMaintenanceCompletion(
   tx,
@@ -24,8 +20,9 @@ async function recordMaintenanceCompletion(
   }
 
   /*
-   * Nếu lượt này đã được ghi nhận trước đó,
-   * tuyệt đối không cộng lần thứ hai.
+   * Idempotency:
+   * WO này đã được ghi nhận lượt bảo trì
+   * thì không được cộng lại.
    */
   if (workOrder.maintenanceVisitRecordedAt) {
     return {
@@ -43,7 +40,7 @@ async function recordMaintenanceCompletion(
     );
   }
 
-  const agreementRef = workOrderRef.firestore.doc(
+  const agreementRef = db.doc(
     `maintenanceAgreements/${agreementId}`
   );
 
@@ -71,7 +68,8 @@ async function recordMaintenanceCompletion(
     currentCompleted + 1;
 
   /*
-   * Cập nhật Agreement.
+   * Agreement:
+   * completedVisits được server quản lý.
    */
   tx.update(
     agreementRef,
@@ -85,10 +83,8 @@ async function recordMaintenanceCompletion(
   );
 
   /*
-   * Đánh dấu ngay trên WO rằng lượt này
-   * đã được ghi nhận.
-   *
-   * Đây là lớp bảo vệ idempotency thứ hai.
+   * Work Order:
+   * đánh dấu lượt đã được ghi nhận.
    */
   tx.update(
     workOrderRef,
@@ -100,9 +96,6 @@ async function recordMaintenanceCompletion(
         workOrder.customerConfirmedBy ||
         workOrder.completedBy ||
         null,
-
-      maintenanceVisitCount:
-        nextCompleted,
 
       updatedAt:
         now()
