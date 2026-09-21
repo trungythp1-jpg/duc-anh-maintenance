@@ -34,9 +34,6 @@ async function findWorkOrderDuplicates(data, transaction = null) {
 
   const nowMs = Date.now();
 
-  const periodYear = Number(data.periodYear) || null;
-  const periodMonth = Number(data.periodMonth) || null;
-
   const active = [];
   const maintenancePeriod = [];
   const cooldown = [];
@@ -55,10 +52,8 @@ async function findWorkOrderDuplicates(data, transaction = null) {
     if (
       data.type === 'MAINTENANCE' &&
       x.type === 'MAINTENANCE' &&
-      periodYear &&
-      periodMonth &&
-      Number(x.periodYear) === periodYear &&
-      Number(x.periodMonth) === periodMonth
+      Number(x.periodYear) === Number(data.periodYear) &&
+      Number(x.periodMonth) === Number(data.periodMonth)
     ) {
       maintenancePeriod.push({
         id: doc.id,
@@ -69,18 +64,21 @@ async function findWorkOrderDuplicates(data, transaction = null) {
       });
     }
 
-    const createdMs = x.createdAt?.toMillis?.() || 0;
+    // Cooldown chỉ áp dụng cho Maintenance WO.
+    if (data.type === 'MAINTENANCE' && x.type === 'MAINTENANCE') {
+      const createdMs = x.createdAt?.toMillis?.() || 0;
 
-    if (
-      createdMs &&
-      nowMs >= createdMs &&
-      nowMs - createdMs < 20 * 60 * 1000
-    ) {
-      cooldown.push({
-        id: doc.id,
-        code: x.workOrderCode || '',
-        status: x.status || ''
-      });
+      if (
+        createdMs &&
+        nowMs >= createdMs &&
+        nowMs - createdMs < 20 * 60 * 1000
+      ) {
+        cooldown.push({
+          id: doc.id,
+          code: x.workOrderCode || '',
+          status: x.status || ''
+        });
+      }
     }
   }
 
