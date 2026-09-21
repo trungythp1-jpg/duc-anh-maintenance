@@ -8,16 +8,26 @@ const { generateWorkOrderCode } = require('../codes/work-order-code');
 const { validateWorkOrder } = require('../validation/work-order');
 const { findWorkOrderDuplicates } = require('../duplicate/work-order');
 
+const ALLOWED_ROLES = [
+  'ADMIN',
+  'MANAGER',
+  'TECHNICIAN',
+  'CUSTOMER_SERVICE',
+  'DIRECTOR'
+];
+
+function buildMaintenanceLockId(data) {
+  return [
+    String(data.elevatorId).trim(),
+    Number(data.periodYear),
+    String(Number(data.periodMonth)).padStart(2, '0')
+  ].join('_');
+}
+
 async function createWorkOrderHandler(request) {
   const auth = requireAuth(request);
 
-  assertRole(auth, [
-    'ADMIN',
-    'MANAGER',
-    'TECHNICIAN',
-    'CUSTOMER_SERVICE',
-    'DIRECTOR'
-  ]);
+  assertRole(auth, ALLOWED_ROLES);
 
   const data = validateWorkOrder(request.data || {});
 
@@ -25,58 +35,122 @@ async function createWorkOrderHandler(request) {
 
   let result;
 
-  await db.runTransaction(async (tx) => {
-    const dup = await findWorkOrderDuplicates(data, tx);
+  try {
+    await db.runTransaction(async (tx) => {
+      /*
+       * 1. Kiểm tra các WO hiện có trong transaction.
+       */
+      const dup = await findWorkOrderDuplicates(data, tx);
 
-    if (dup.active.length) {
+      if (dup.active.length) {
+        throw new HttpsError(
+          'already-exists',
+          'ELEVATOR_HAS_ACTIVE_WORK_ORDER',
+          {
+            active: dup.active
+          }
+        );
+      }
+
+      if (dup.maintenancePeriod.length) {
+        throw new HttpsError(
+          'already-exists',
+          'MAINTENANCE_PERIOD_ALREADY_HAS_WORK_ORDER',
+          {
+            existing: dup.maintenancePeriod
+          }
+        );
+      }
+
+      if (dup.cooldown.length) {
+        throw new HttpsError(
+          'resource-exhausted',
+          'WORK_ORDER_COOLDOWN',
+          {
+            existing: dup.cooldown
+          }
+        );
+      }
+
+      /*
+       * 2. Khóa duy nhất cho:
+       * Elevator + Maintenance Year + Maintenance Month.
+       *
+       * transaction.create() sẽ thất bại nếu một request khác
+       * đã tạo khóa này trước đó.
+       */
+      let maintenanceLockRef = null;
+
+      if (data.type === 'MAINTENANCE') {
+        const lockId = buildMaintenanceLockId(data);
+
+        maintenanceLockRef = db
+          .collection('workOrderMaintenanceLocks')
+          .doc(lockId);
+
+        tx.create(maintenanceLockRef, {
+          elevatorId: data.elevatorId,
+          periodYear: data.periodYear,
+          periodMonth: data.periodMonth,
+          workOrderId: ref.id,
+          createdAt: now(),
+          createdBy: auth.uid
+        });
+      }
+
+      /*
+       * 3. Chỉ sau khi validation + duplicate + lock PASS
+       * mới cấp mã Work Order.
+       */
+      const code = await generateWorkOrderCode(tx);
+
+      const record = {
+        ...data,
+        ...code,
+
+        createdBy: auth.uid,
+        createdAt: now(),
+        updatedAt: now()
+      };
+
+      /*
+       * 4. Tạo Work Order.
+       */
+      tx.create(ref, record);
+
+      result = {
+        id: ref.id,
+        ...code
+      };
+    });
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    /*
+     * Transaction.create(lock) có thể thất bại nếu
+     * maintenance lock đã tồn tại.
+     */
+    if (
+      error?.code === 6 ||
+      error?.code === 'already-exists'
+    ) {
       throw new HttpsError(
         'already-exists',
-        'ELEVATOR_HAS_ACTIVE_WORK_ORDER',
-        {
-          active: dup.active
-        }
+        'MAINTENANCE_PERIOD_ALREADY_HAS_WORK_ORDER'
       );
     }
 
-    if (dup.maintenancePeriod.length) {
-      throw new HttpsError(
-        'already-exists',
-        'MAINTENANCE_PERIOD_ALREADY_HAS_WORK_ORDER',
-        {
-          existing: dup.maintenancePeriod
-        }
-      );
-    }
+    throw new HttpsError(
+      'internal',
+      'WORK_ORDER_CREATION_FAILED'
+    );
+  }
 
-    if (dup.cooldown.length) {
-      throw new HttpsError(
-        'resource-exhausted',
-        'WORK_ORDER_COOLDOWN',
-        {
-          existing: dup.cooldown
-        }
-      );
-    }
-
-    const code = await generateWorkOrderCode(tx);
-
-    const record = {
-      ...data,
-      ...code,
-
-      createdBy: auth.uid,
-      createdAt: now(),
-      updatedAt: now()
-    };
-
-    tx.create(ref, record);
-
-    result = {
-      id: ref.id,
-      ...code
-    };
-  });
-
+  /*
+   * Audit sau khi transaction tạo WO thành công.
+   */
   await writeAudit({
     auth,
     action: 'CREATE_WORK_ORDER',
@@ -96,5 +170,6 @@ module.exports = {
     },
     createWorkOrderHandler
   ),
+
   createWorkOrderHandler
 };
