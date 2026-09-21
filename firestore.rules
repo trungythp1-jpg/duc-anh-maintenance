@@ -11,9 +11,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    /*
+     * DEV AUTHORIZATION
+     *
+     * Trong giai đoạn UI + Firestore DEV:
+     * Role được đọc trực tiếp từ:
+     *
+     * users/{request.auth.uid}.role
+     *
+     * Sau khi Cloud Functions + Custom Claims hoàn thiện,
+     * có thể chuyển sang request.auth.token.role.
+     */
     function role() {
       return signedIn()
-        ? request.auth.token.role
+        ? get(
+            /databases/$(database)/documents/users/$(request.auth.uid)
+          ).data.role
         : null;
     }
 
@@ -151,19 +164,6 @@ service cloud.firestore {
     // =========================================================
     // ELEVATOR RELATIONSHIPS
     // =========================================================
-    //
-    // Lưu lịch sử quan hệ của Elevator với:
-    // - Customer
-    // - Building
-    // - Loại quan hệ
-    //
-    // Ví dụ:
-    // Elevator → Building A → Customer A
-    // Sau này có thể chuyển:
-    // Elevator → Building B → Customer B
-    //
-    // Không xóa lịch sử quan hệ từ client.
-    // =========================================================
 
     match /elevatorRelationships/{relationshipId} {
 
@@ -266,15 +266,8 @@ service cloud.firestore {
 
       allow read: if isServiceStaff();
 
-      /*
-       * Creation must go through Cloud Function.
-       */
       allow create: if false;
 
-      /*
-       * Work Order state changes must go through
-       * controlled backend functions.
-       */
       allow update: if false;
 
       allow delete: if false;
@@ -396,9 +389,6 @@ service cloud.firestore {
       allow read: if isManagement()
         || isTechnician();
 
-      /*
-       * Target changes go through controlled backend logic.
-       */
       allow create, update: if false;
 
       allow delete: if false;
@@ -414,10 +404,6 @@ service cloud.firestore {
       allow read: if isManagement()
         || isTechnician();
 
-      /*
-       * KPI activities are generated from valid
-       * completed work orders by backend.
-       */
       allow create, update, delete: if false;
     }
 
@@ -509,10 +495,6 @@ service cloud.firestore {
 
       allow read: if isServiceStaff();
 
-      /*
-       * Confirmation creation/finalization is controlled
-       * by Cloud Functions.
-       */
       allow create, update: if false;
 
       allow delete: if false;
@@ -554,10 +536,6 @@ service cloud.firestore {
 
       allow read: if isManagement();
 
-      /*
-       * Audit records must never be directly created,
-       * modified or deleted by client.
-       */
       allow create, update, delete: if false;
     }
 
@@ -588,10 +566,6 @@ service cloud.firestore {
 
       allow read: if isAdmin();
 
-      /*
-       * Sequential codes are generated only by
-       * Cloud Functions / Admin SDK.
-       */
       allow create, update, delete: if false;
     }
 
