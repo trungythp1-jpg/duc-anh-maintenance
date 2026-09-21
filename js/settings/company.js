@@ -1,0 +1,1 @@
+import { db } from '../core/firebase.js'; import { doc,getDoc } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js'; export async function getCompanySettings(companyId='default'){if(!db)return null;const s=await getDoc(doc(db,'companySettings',companyId));return s.exists()?s.data():null;}
