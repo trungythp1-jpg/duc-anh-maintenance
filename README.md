@@ -1,13 +1,30 @@
-# Đức Anh Maintenance
+# Đức Anh Maintenance V1.0 — DEV
 
-V1.0 DEV baseline. GitHub stores source code; Firebase provides Auth, Firestore, Storage, Cloud Functions and Security Rules.
+Operational maintenance management system for elevator customers, buildings, elevators, contracts, maintenance agreements, work orders, technicians, confirmations, KPI and audit.
 
-Mobile-first for technicians; responsive for phone, iPad and desktop.
+## Architecture
+- Frontend: HTML/CSS/ES modules, responsive desktop/iPad/mobile.
+- Backend: Firebase Authentication, Firestore, Storage, Cloud Functions.
+- Source control: GitHub.
+- DEV and PROD are separate Firebase projects.
+- Firebase is the source of truth; AI is an application layer only.
 
-Core flow: Customer → Building → Elevator → Contract/Agreement → Schedule → Work Order → Confirmation → KPI.
+## Safety / data rules
+- Sequential codes are server-side and never reused.
+- User-entered elevator codes are not accepted during creation.
+- Wrong records are VOID/CANCELLED rather than physically deleted.
+- Audit logs are append-only for normal users.
+- Duplicate checks happen before code allocation.
+- Maintenance legacy imports store total/completed counts instead of fake historical work orders.
+- Technician location is captured explicitly at START WORK; no continuous tracking.
+- Secrets and service-account keys must never be committed.
 
-Data quality: validation, address suggestions/GPS, duplicate detection, server-side validation and idempotency.
+## Firebase
+This repository is source-only until the DEV Firebase project is configured. Do not add production credentials to GitHub.
 
-Numbering: Elevator, Contract and Work Order codes are server-side, sequential and never reused.
-
-Firebase rules in this scaffold are deny-by-default until role/assignment rules are implemented and emulator-tested.
+## First setup
+1. Create Firebase DEV project.
+2. Configure Authentication, Firestore, Storage and Functions.
+3. Add web config to the DEV runtime (not a service-account key).
+4. Run Emulator Suite.
+5. Execute permission and lifecycle tests before any production deployment.
