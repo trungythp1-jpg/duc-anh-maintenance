@@ -1,0 +1,1 @@
+export function renderSidebar(target,items=[]){const el=typeof target==='string'?document.querySelector(target):target;if(!el)return;el.innerHTML=`<aside class="da-sidebar"><nav>${items.map(i=>`<a href="${i.href||'#'}">${i.label}</a>`).join('')}</nav></aside>`;}

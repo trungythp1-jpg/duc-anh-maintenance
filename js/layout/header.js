@@ -1,0 +1,1 @@
+export function renderHeader(target,{title='Đức Anh Maintenance',subtitle=''}={}){const el=typeof target==='string'?document.querySelector(target):target;if(!el)return;el.innerHTML=`<header class="da-header"><div><strong>${title}</strong>${subtitle?`<small>${subtitle}</small>`:''}</div></header>`;}
