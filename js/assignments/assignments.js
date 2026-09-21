@@ -1,1 +1,1 @@
-// assignments module scaffold — Đức Anh Maintenance V1.0
+export * from './area-assignment.js'; export * from './building-assignment.js';
