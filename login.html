@@ -1,1 +1,108 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Đức Anh Maintenance — login</title><link rel="stylesheet" href="css/main.css"><link rel="stylesheet" href="css/mobile.css"></head><body><header class="app-header"><div class="brand">Đức Anh Maintenance</div></header><main class="page"><h1>login</h1><div class="card">DEV V1.0 module scaffold.</div></main></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090909">
+  <title>Đăng nhập — Đức Anh Maintenance</title>
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+  <main class="login-page">
+    <div class="login-background" aria-hidden="true">
+      <div class="glow glow-one"></div>
+      <div class="glow glow-two"></div>
+      <div class="grid-lines"></div>
+    </div>
+
+    <section class="login-shell" aria-label="Đăng nhập Đức Anh Maintenance">
+
+      <div class="brand">
+        <div class="brand-mark">DA</div>
+        <div class="brand-copy">
+          <div class="brand-name">ĐỨC ANH</div>
+          <div class="brand-sub">MAINTENANCE</div>
+        </div>
+      </div>
+
+      <div class="login-card">
+        <div class="login-heading">
+          <p class="eyebrow">HỆ THỐNG QUẢN LÝ BẢO TRÌ</p>
+          <h1>Đăng nhập</h1>
+          <p>Đăng nhập để tiếp tục quản lý hệ thống.</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <div class="input-wrap">
+              <span class="field-icon">@</span>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                inputmode="email"
+                autocomplete="username"
+                placeholder="Nhập email"
+                required
+              >
+            </div>
+            <small class="field-error" id="emailError"></small>
+          </div>
+
+          <div class="field">
+            <label for="password">Mật khẩu</label>
+            <div class="input-wrap">
+              <span class="field-icon">●</span>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Nhập mật khẩu"
+                required
+              >
+              <button
+                type="button"
+                class="password-toggle"
+                id="passwordToggle"
+                aria-label="Hiện mật khẩu"
+              >Hiện</button>
+            </div>
+            <small class="field-error" id="passwordError"></small>
+          </div>
+
+          <div class="login-options">
+            <label class="remember">
+              <input id="remember" type="checkbox">
+              <span class="checkmark"></span>
+              <span>Ghi nhớ đăng nhập</span>
+            </label>
+
+            <button type="button" class="forgot-button" id="forgotButton">
+              Quên mật khẩu?
+            </button>
+          </div>
+
+          <button class="login-button" type="submit" id="loginButton">
+            <span>Đăng nhập</span>
+            <span class="button-arrow">→</span>
+          </button>
+
+          <div class="login-message" id="loginMessage" role="status"></div>
+        </form>
+      </div>
+
+      <div class="login-footer">
+        <span>ĐỨC ANH MAINTENANCE</span>
+        <span>•</span>
+        <span>DEV V1.0</span>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="js/login.js"></script>
+</body>
+</html>
