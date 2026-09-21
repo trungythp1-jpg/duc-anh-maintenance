@@ -101,6 +101,10 @@ async function finalizeConfirmationHandler(request) {
   let beforeConfirmation;
   let afterConfirmation;
   let workOrderId;
+  let workOrderBefore;
+  let workOrderAfter;
+  let lockBefore;
+  let lockAfter;
 
   await db.runTransaction(async (tx) => {
     const confirmationSnap =
@@ -128,7 +132,9 @@ async function finalizeConfirmationHandler(request) {
     }
 
     workOrderId =
-      beforeConfirmation.workOrderId;
+      String(
+        beforeConfirmation.workOrderId || ''
+      ).trim();
 
     if (!workOrderId) {
       throw new HttpsError(
@@ -141,8 +147,19 @@ async function finalizeConfirmationHandler(request) {
       `workOrders/${workOrderId}`
     );
 
+    const lockRef = db.doc(
+      `confirmationLocks/${workOrderId}`
+    );
+
+    /*
+     * Đọc cả Work Order và Lock trước khi
+     * thực hiện bất kỳ transaction write nào.
+     */
     const workOrderSnap =
       await tx.get(workOrderRef);
+
+    const lockSnap =
+      await tx.get(lockRef);
 
     if (!workOrderSnap.exists) {
       throw new HttpsError(
@@ -151,26 +168,51 @@ async function finalizeConfirmationHandler(request) {
       );
     }
 
-    const workOrder =
+    workOrderBefore =
       workOrderSnap.data();
 
     if (
-      workOrder.status !==
+      workOrderBefore.status !==
       'COMPLETED_PENDING_CONFIRMATION'
     ) {
       throw new HttpsError(
         'failed-precondition',
         'WORK_ORDER_NOT_WAITING_FOR_CONFIRMATION',
         {
-          status: workOrder.status
+          status:
+            workOrderBefore.status
         }
       );
     }
 
     /*
-     * CUSTOMER_DIGITAL cần flow khách tự xác nhận.
-     * finalizeConfirmation này dành cho
-     * CSKH / PAPER verification.
+     * Lock phải tồn tại và phải trỏ đúng
+     * confirmation hiện tại.
+     */
+    if (!lockSnap.exists) {
+      throw new HttpsError(
+        'failed-precondition',
+        'CONFIRMATION_LOCK_NOT_FOUND'
+      );
+    }
+
+    lockBefore =
+      lockSnap.data();
+
+    if (
+      lockBefore.status !== 'PENDING' ||
+      lockBefore.confirmationId !==
+        confirmationId
+    ) {
+      throw new HttpsError(
+        'failed-precondition',
+        'CONFIRMATION_LOCK_MISMATCH'
+      );
+    }
+
+    /*
+     * CUSTOMER_DIGITAL phải được xử lý bởi
+     * customer portal flow riêng.
      */
     if (
       beforeConfirmation.confirmationMethod ===
@@ -182,6 +224,10 @@ async function finalizeConfirmationHandler(request) {
       );
     }
 
+    /*
+     * CSKH_VERIFIED chỉ dành cho Admin,
+     * Manager và Customer Service.
+     */
     if (
       beforeConfirmation.confirmationMethod ===
         'CSKH_VERIFIED' &&
@@ -225,19 +271,42 @@ async function finalizeConfirmationHandler(request) {
         now()
     };
 
+    workOrderAfter = {
+      status: 'CUSTOMER_CONFIRMED',
+      customerConfirmedAt: now(),
+      customerConfirmedBy: auth.uid,
+      updatedAt: now()
+    };
+
+    lockAfter = {
+      status: 'CONFIRMED',
+      confirmedAt: now(),
+      confirmedBy: auth.uid,
+      updatedAt: now()
+    };
+
+    /*
+     * 1. Confirmation
+     */
     tx.update(
       confirmationRef,
       afterConfirmation
     );
 
+    /*
+     * 2. Work Order
+     */
     tx.update(
       workOrderRef,
-      {
-        status: 'CUSTOMER_CONFIRMED',
-        customerConfirmedAt: now(),
-        customerConfirmedBy: auth.uid,
-        updatedAt: now()
-      }
+      workOrderAfter
+    );
+
+    /*
+     * 3. Confirmation Lock
+     */
+    tx.update(
+      lockRef,
+      lockAfter
     );
   });
 
@@ -248,15 +317,24 @@ async function finalizeConfirmationHandler(request) {
     recordId: confirmationId,
     description:
       `Customer confirmation finalized for ${workOrderId}`,
-    before: beforeConfirmation,
-    after: afterConfirmation
+    before: {
+      confirmation: beforeConfirmation,
+      workOrder: workOrderBefore,
+      lock: lockBefore
+    },
+    after: {
+      confirmation: afterConfirmation,
+      workOrder: workOrderAfter,
+      lock: lockAfter
+    }
   });
 
   return {
     ok: true,
     confirmationId,
     workOrderId,
-    status: 'CONFIRMED'
+    status: 'CONFIRMED',
+    workOrderStatus: 'CUSTOMER_CONFIRMED'
   };
 }
 
