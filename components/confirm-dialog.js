@@ -1,0 +1,1 @@
+// confirm-dialog component scaffold
