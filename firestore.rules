@@ -1,6 +1,548 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} { allow read, write: if false; }
+
+    // =========================================================
+    // COMMON HELPERS
+    // =========================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return signedIn()
+        ? request.auth.token.role
+        : null;
+    }
+
+    function isAdmin() {
+      return role() == 'ADMIN';
+    }
+
+    function isManager() {
+      return role() == 'MANAGER';
+    }
+
+    function isDirector() {
+      return role() == 'DIRECTOR';
+    }
+
+    function isCSKH() {
+      return role() == 'CUSTOMER_SERVICE';
+    }
+
+    function isTechnician() {
+      return role() == 'TECHNICIAN';
+    }
+
+    function isWarehouse() {
+      return role() == 'WAREHOUSE';
+    }
+
+    function isManagement() {
+      return isAdmin()
+        || isManager()
+        || isDirector();
+    }
+
+    function isServiceStaff() {
+      return isAdmin()
+        || isManager()
+        || isTechnician()
+        || isCSKH()
+        || isDirector();
+    }
+
+    // =========================================================
+    // USER
+    // =========================================================
+
+    match /users/{userId} {
+
+      allow read: if signedIn()
+        && (
+          isManagement()
+          || request.auth.uid == userId
+        );
+
+      allow create: if isAdmin();
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'displayName',
+              'phone',
+              'photoUrl',
+              'updatedAt'
+            ])
+        );
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // COMPANY SETTINGS
+    // =========================================================
+
+    match /companySettings/{companyId} {
+
+      allow read: if signedIn();
+
+      allow create, update: if isAdmin();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // CUSTOMERS
+    // =========================================================
+
+    match /customers/{customerId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // BUILDINGS
+    // =========================================================
+
+    match /buildings/{buildingId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // ELEVATORS
+    // =========================================================
+
+    match /elevators/{elevatorId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // SERVICE AREAS
+    // =========================================================
+
+    match /serviceAreas/{areaId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // SERVICE CONTRACTS
+    // =========================================================
+
+    match /serviceContracts/{contractId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // MAINTENANCE AGREEMENTS
+    // =========================================================
+
+    match /maintenanceAgreements/{agreementId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // MAINTENANCE SCHEDULES
+    // =========================================================
+
+    match /maintenanceSchedules/{scheduleId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH()
+        || isTechnician();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // CHECKLIST TEMPLATES
+    // =========================================================
+
+    match /checklistTemplates/{templateId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // WORK ORDERS
+    // =========================================================
+
+    match /workOrders/{workOrderId} {
+
+      allow read: if isServiceStaff();
+
+      /*
+       * Creation must go through Cloud Function.
+       * This prevents clients from manually generating
+       * workOrderCode and bypassing duplicate controls.
+       */
+      allow create: if false;
+
+      /*
+       * Work Order state changes must go through
+       * controlled backend functions.
+       */
+      allow update: if false;
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // WORK ORDER MAINTENANCE LOCKS
+    // =========================================================
+
+    match /workOrderMaintenanceLocks/{lockId} {
+
+      allow read: if isManagement();
+
+      // Created only by Cloud Functions.
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================
+    // INCIDENTS
+    // =========================================================
+
+    match /incidents/{incidentId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isTechnician();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // REPAIRS
+    // =========================================================
+
+    match /repairs/{repairId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isTechnician();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // PARTS / INVENTORY
+    // =========================================================
+
+    match /parts/{partId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isWarehouse();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // TECHNICIAN ASSIGNMENTS
+    // =========================================================
+
+    match /technicianAssignments/{assignmentId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // ASSIGNMENT CHANGES
+    // =========================================================
+
+    match /assignmentChanges/{changeId} {
+
+      allow read: if isManagement();
+
+      allow create: if isAdmin()
+        || isManager();
+
+      allow update, delete: if false;
+    }
+
+    // =========================================================
+    // KPI PERIODS
+    // =========================================================
+
+    match /kpiPeriods/{periodId} {
+
+      allow read: if isManagement()
+        || isTechnician();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // KPI TARGETS
+    // =========================================================
+
+    match /kpiTargets/{targetId} {
+
+      allow read: if isManagement()
+        || isTechnician();
+
+      /*
+       * Target changes should go through controlled
+       * backend logic so reason + audit can be enforced.
+       */
+      allow create, update: if false;
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // KPI ACTIVITIES
+    // =========================================================
+
+    match /kpiActivities/{activityId} {
+
+      allow read: if isManagement()
+        || isTechnician();
+
+      /*
+       * KPI activities are generated from valid
+       * completed work orders by backend.
+       */
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================
+    // NOTIFICATIONS
+    // =========================================================
+
+    match /notifications/{notificationId} {
+
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isManagement()
+        );
+
+      allow create, update: if false;
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // NOTIFICATION RULES
+    // =========================================================
+
+    match /notificationRules/{ruleId} {
+
+      allow read: if isManagement();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // NOTIFICATION LOGS
+    // =========================================================
+
+    match /notificationLogs/{logId} {
+
+      allow read: if isManagement();
+
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================
+    // CUSTOMER NOTIFICATION PREFERENCES
+    // =========================================================
+
+    match /customerNotificationPreferences/{customerId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // CUSTOMER PORTAL SESSIONS
+    // =========================================================
+
+    match /customerPortalSessions/{sessionId} {
+
+      allow read: if signedIn()
+        && (
+          isManagement()
+          || resource.data.userId == request.auth.uid
+        );
+
+      allow create, update: if false;
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // CUSTOMER CONFIRMATIONS
+    // =========================================================
+
+    match /customerConfirmations/{confirmationId} {
+
+      allow read: if isServiceStaff();
+
+      /*
+       * Confirmation creation/finalization is controlled
+       * by Cloud Functions.
+       */
+      allow create, update: if false;
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // CONFIRMATION LOCKS
+    // =========================================================
+
+    match /confirmationLocks/{workOrderId} {
+
+      allow read: if isManagement();
+
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================
+    // IMPORT JOBS
+    // =========================================================
+
+    match /importJobs/{importJobId} {
+
+      allow read: if isManagement();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // ACTIVITY / AUDIT LOGS
+    // =========================================================
+
+    match /activityLogs/{logId} {
+
+      allow read: if isManagement();
+
+      /*
+       * Audit records must never be directly created,
+       * modified or deleted by client.
+       */
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================
+    // CODE ADJUSTMENT REQUESTS
+    // =========================================================
+
+    match /codeAdjustmentRequests/{requestId} {
+
+      allow read: if isManagement();
+
+      allow create: if isAdmin()
+        || isManager();
+
+      allow update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+    // =========================================================
+    // SYSTEM COUNTERS
+    // =========================================================
+
+    match /systemCounters/{counterId} {
+
+      allow read: if isAdmin();
+
+      /*
+       * Sequential codes are generated only by
+       * Cloud Functions / Admin SDK.
+       */
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================
+    // DEFAULT DENY
+    // =========================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
