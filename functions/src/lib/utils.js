@@ -17,7 +17,17 @@ function normalizePhone(phone) {
   return value;
 }
 
+function normalizeText(value) {
+  return clean(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/\s+/g, ' ');
+}
+
 module.exports = {
   clean,
-  normalizePhone
+  normalizePhone,
+  normalizeText
 };
