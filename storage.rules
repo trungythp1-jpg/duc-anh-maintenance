@@ -1,6 +1,157 @@
 rules_version = '2';
+
 service firebase.storage {
+
   match /b/{bucket}/o {
-    match /{allPaths=**} { allow read, write: if false; }
+
+    // =========================================================
+    // COMMON HELPERS
+    // =========================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return signedIn()
+        ? request.auth.token.role
+        : null;
+    }
+
+    function isAdmin() {
+      return role() == 'ADMIN';
+    }
+
+    function isManager() {
+      return role() == 'MANAGER';
+    }
+
+    function isDirector() {
+      return role() == 'DIRECTOR';
+    }
+
+    function isCSKH() {
+      return role() == 'CUSTOMER_SERVICE';
+    }
+
+    function isTechnician() {
+      return role() == 'TECHNICIAN';
+    }
+
+    function isWarehouse() {
+      return role() == 'WAREHOUSE';
+    }
+
+    function isManagement() {
+      return isAdmin()
+        || isManager()
+        || isDirector();
+    }
+
+    function isServiceStaff() {
+      return isAdmin()
+        || isManager()
+        || isTechnician()
+        || isCSKH()
+        || isDirector();
+    }
+
+    // =========================================================
+    // COMPANY SETTINGS
+    // =========================================================
+
+    match /company-settings/{companyId}/{allPaths=**} {
+
+      allow read: if signedIn();
+
+      allow write: if isAdmin();
+    }
+
+    // =========================================================
+    // ELEVATOR FILES
+    // =========================================================
+
+    match /elevators/{elevatorId}/{allPaths=**} {
+
+      allow read: if isServiceStaff();
+
+      allow write: if isAdmin()
+        || isManager();
+    }
+
+    // =========================================================
+    // WORK ORDER FILES
+    // =========================================================
+
+    match /work-orders/{workOrderId}/{allPaths=**} {
+
+      allow read: if isServiceStaff();
+
+      /*
+       * Uploads should eventually go through controlled
+       * application flow / Storage SDK with authenticated user.
+       */
+      allow write: if isAdmin()
+        || isManager()
+        || isTechnician();
+    }
+
+    // =========================================================
+    // CONTRACT FILES
+    // =========================================================
+
+    match /contracts/{contractId}/{allPaths=**} {
+
+      allow read: if isServiceStaff();
+
+      allow write: if isAdmin()
+        || isManager()
+        || isCSKH();
+    }
+
+    // =========================================================
+    // CUSTOMER CONFIRMATIONS
+    // =========================================================
+
+    match /confirmations/{confirmationId}/{allPaths=**} {
+
+      allow read: if isServiceStaff();
+
+      allow write: if isAdmin()
+        || isManager()
+        || isCSKH();
+    }
+
+    // =========================================================
+    // IMPORT FILES
+    // =========================================================
+
+    match /imports/{importJobId}/{allPaths=**} {
+
+      allow read: if isManagement();
+
+      allow write: if isAdmin()
+        || isManager();
+    }
+
+    // =========================================================
+    // TECHNICAL DOCUMENTS
+    // =========================================================
+
+    match /technical/{allPaths=**} {
+
+      allow read: if isServiceStaff();
+
+      allow write: if isAdmin()
+        || isManager();
+    }
+
+    // =========================================================
+    // DEFAULT DENY
+    // =========================================================
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
   }
 }
