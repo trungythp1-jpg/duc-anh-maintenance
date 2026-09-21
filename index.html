@@ -3,10 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#090909">
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#0b0b0b">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon-180.png">
+
   <title>Đăng nhập — Đức Anh Maintenance</title>
+
   <link rel="stylesheet" href="css/login.css">
 </head>
+
 <body>
   <main class="login-page">
     <div class="login-background" aria-hidden="true">
@@ -19,6 +26,7 @@
 
       <div class="brand">
         <div class="brand-mark">DA</div>
+
         <div class="brand-copy">
           <div class="brand-name">ĐỨC ANH</div>
           <div class="brand-sub">MAINTENANCE</div>
@@ -36,8 +44,10 @@
 
           <div class="field">
             <label for="email">Email</label>
+
             <div class="input-wrap">
               <span class="field-icon">@</span>
+
               <input
                 id="email"
                 name="email"
@@ -48,13 +58,16 @@
                 required
               >
             </div>
+
             <small class="field-error" id="emailError"></small>
           </div>
 
           <div class="field">
             <label for="password">Mật khẩu</label>
+
             <div class="input-wrap">
               <span class="field-icon">●</span>
+
               <input
                 id="password"
                 name="password"
@@ -63,31 +76,52 @@
                 placeholder="Nhập mật khẩu"
                 required
               >
-              <button type="button" class="password-toggle" id="passwordToggle">
+
+              <button
+                type="button"
+                class="password-toggle"
+                id="passwordToggle"
+              >
                 Hiện
               </button>
             </div>
+
             <small class="field-error" id="passwordError"></small>
           </div>
 
           <div class="login-options">
+
             <label class="remember">
               <input id="remember" type="checkbox">
               <span class="checkmark"></span>
               <span>Ghi nhớ đăng nhập</span>
             </label>
 
-            <button type="button" class="forgot-button" id="forgotButton">
+            <button
+              type="button"
+              class="forgot-button"
+              id="forgotButton"
+            >
               Quên mật khẩu?
             </button>
+
           </div>
 
-          <button class="login-button" type="submit" id="loginButton">
+          <button
+            class="login-button"
+            type="submit"
+            id="loginButton"
+          >
             <span>Đăng nhập</span>
             <span class="button-arrow">→</span>
           </button>
 
-          <div class="login-message" id="loginMessage" role="status"></div>
+          <div
+            class="login-message"
+            id="loginMessage"
+            role="status"
+          ></div>
+
         </form>
       </div>
 
@@ -100,6 +134,11 @@
     </section>
   </main>
 
+  <!-- PWA Service Worker -->
+  <script src="./js/pwa.js"></script>
+
+  <!-- Firebase Login -->
   <script type="module" src="js/login.js"></script>
+
 </body>
 </html>
