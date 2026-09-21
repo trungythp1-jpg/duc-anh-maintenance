@@ -1,8 +1,23 @@
-const { clean, normalizeText } = require('../lib/admin');
+const { clean, normalizeText } = require('../lib/utils');
 const { assertRequired, validateCoordinates } = require('./common');
+
 function validateBuilding(data) {
-  assertRequired(data, ['customerId','name','address']);
+  assertRequired(data, ['customerId', 'name', 'address']);
+
   validateCoordinates(data.latitude, data.longitude);
-  return {...data, customerId: clean(data.customerId), name: clean(data.name), nameNormalized: normalizeText(data.name), address: clean(data.address)};
+
+  const customerId = clean(data.customerId);
+  const name = clean(data.name);
+  const address = clean(data.address);
+
+  return {
+    ...data,
+    customerId,
+    name,
+    nameNormalized: normalizeText(name),
+    address,
+    addressNormalized: normalizeText(address)
+  };
 }
+
 module.exports = { validateBuilding };
