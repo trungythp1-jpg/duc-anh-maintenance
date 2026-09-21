@@ -68,6 +68,8 @@
     .modal-body{padding:20px}.form-section-title{margin:0 0 13px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}.form-field.full{grid-column:1/-1}.form-field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}
     .form-field input,.form-field select,.form-field textarea{width:100%;border:1px solid var(--da-border);border-radius:8px;outline:none;background:#0b0b0b;color:#eee;padding:11px 12px}.form-field textarea{min-height:85px;resize:vertical}.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--da-yellow)}
     .modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:15px 20px;border-top:1px solid var(--da-border)}.secondary-button{border:1px solid var(--da-border);border-radius:8px;padding:11px 15px;background:#171717;color:#ccc}
+    .firebase-message{margin-bottom:14px;padding:11px 13px;border:1px solid var(--da-border);border-radius:9px;background:#101010;color:#aaa;font-size:12px;display:none}
+    .firebase-message.show{display:block}.firebase-message.error{border-color:rgba(239,98,98,.4);color:#ef8989}.firebase-message.success{border-color:rgba(56,199,147,.4);color:#72d8b1}
     @media(max-width:900px){.customer-page{padding:20px 16px}.customer-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-header{align-items:stretch}}
     @media(max-width:640px){
       .customer-page{padding:16px 12px}.customer-header{flex-direction:column}.primary-button{width:100%}.customer-kpis{gap:9px}.kpi-card{min-height:95px;padding:13px}.kpi-value{font-size:24px}
@@ -90,10 +92,10 @@
     </header>
 
     <section class="customer-kpis">
-      <article class="kpi-card"><div class="kpi-label">Tổng khách hàng</div><div class="kpi-value">24</div><div class="kpi-note">Trong hệ thống</div></article>
-      <article class="kpi-card"><div class="kpi-label">Đang hoạt động</div><div class="kpi-value">19</div><div class="kpi-note">Đang có quan hệ dịch vụ</div></article>
-      <article class="kpi-card"><div class="kpi-label">Có hợp đồng</div><div class="kpi-value">17</div><div class="kpi-note">Hợp đồng đang theo dõi</div></article>
-      <article class="kpi-card"><div class="kpi-label">Cần chăm sóc</div><div class="kpi-value">3</div><div class="kpi-note">Cần liên hệ lại</div></article>
+      <article class="kpi-card"><div class="kpi-label">Tổng khách hàng</div><div class="kpi-value">0</div><div class="kpi-note">Trong hệ thống</div></article>
+      <article class="kpi-card"><div class="kpi-label">Đang hoạt động</div><div class="kpi-value">0</div><div class="kpi-note">Đang có quan hệ dịch vụ</div></article>
+      <article class="kpi-card"><div class="kpi-label">Có hợp đồng</div><div class="kpi-value">—</div><div class="kpi-note">Chưa kết nối module hợp đồng</div></article>
+      <article class="kpi-card"><div class="kpi-label">Cần chăm sóc</div><div class="kpi-value">0</div><div class="kpi-note">Trong dữ liệu Customer</div></article>
     </section>
 
     <section class="customer-toolbar">
@@ -107,7 +109,9 @@
     </section>
 
     <section class="customer-table-card">
-      <div class="table-header"><div class="table-title">Danh sách khách hàng</div><div class="table-count" id="tableCount">6 khách hàng</div></div>
+      <div class="table-header"><div class="table-title">Danh sách khách hàng</div><div class="table-count" id="tableCount">Đang tải...</div></div>
+
+      <div id="firebaseMessage" class="firebase-message"></div>
 
       <div class="table-scroll">
         <table>
@@ -118,7 +122,7 @@
 
       <div class="mobile-customer-list" id="mobileCustomerList"></div>
 
-      <div class="table-footer"><span>Dữ liệu hiện tại là MOCK DATA — chưa kết nối Firestore.</span><span>DEV V1.2</span></div>
+      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.2</span></div>
     </section>
   </div>
 </main>
@@ -137,15 +141,15 @@
         <div class="detail-item"><span>Số điện thoại</span><b id="detailPhone">—</b></div>
         <div class="detail-item"><span>Email</span><b id="detailEmail">—</b></div>
         <div class="detail-item"><span>Người phụ trách</span><b id="detailManager">—</b></div>
-        <div class="detail-item"><span>Loại khách hàng</span><b id="detailType">Doanh nghiệp</b></div>
+        <div class="detail-item"><span>Loại khách hàng</span><b id="detailType">—</b></div>
       </div>
 
       <p class="detail-section-title">Quan hệ dịch vụ</p>
       <div class="detail-grid">
         <div class="detail-item"><span>Tòa nhà</span><b id="detailBuildings">0</b></div>
         <div class="detail-item"><span>Thang máy</span><b id="detailElevators">0</b></div>
-        <div class="detail-item"><span>Hợp đồng</span><b id="detailContracts">2</b></div>
-        <div class="detail-item"><span>Work Order</span><b id="detailWorkOrders">3</b></div>
+        <div class="detail-item"><span>Hợp đồng</span><b id="detailContracts">—</b></div>
+        <div class="detail-item"><span>Work Order</span><b id="detailWorkOrders">—</b></div>
       </div>
 
       <div class="detail-tabs">
@@ -187,94 +191,518 @@
   </section>
 </div>
 
-<script>
-const customers = [
-  {id:"MOCK-001",name:"Công ty TNHH ABC",phone:"0901 234 567",email:"contact@abc.vn",buildings:2,elevators:8,manager:"Nguyễn Minh",status:"active",type:"Doanh nghiệp"},
-  {id:"MOCK-002",name:"Ban quản lý Waterfront City",phone:"0902 345 678",email:"bql@waterfront.vn",buildings:1,elevators:6,manager:"Trần Nam",status:"active",type:"Ban quản lý tòa nhà"},
-  {id:"MOCK-003",name:"Công ty CP Hòa Phát",phone:"0903 456 789",email:"admin@hoaphat.vn",buildings:3,elevators:14,manager:"Lê Hoàng",status:"active",type:"Doanh nghiệp"},
-  {id:"MOCK-004",name:"Nguyễn Văn A",phone:"0904 567 890",email:"nguyenvana@email.vn",buildings:1,elevators:1,manager:"Trung",status:"care",type:"Cá nhân"},
-  {id:"MOCK-005",name:"Công ty XYZ",phone:"0905 678 901",email:"info@xyz.vn",buildings:2,elevators:5,manager:"Phạm Hải",status:"active",type:"Doanh nghiệp"},
-  {id:"MOCK-006",name:"Khách hàng cũ — Hải Phòng",phone:"0906 789 012",email:"customer@email.vn",buildings:1,elevators:2,manager:"Chưa phân công",status:"inactive",type:"Doanh nghiệp"}
-];
+<script type="module">
+import {
+  createCustomer,
+  getCustomers,
+  getBuildings,
+  getElevators
+} from "./js/core/firestore-v1.js";
 
 const $ = id => document.getElementById(id);
-const tableBody=$("customerTableBody"), mobileList=$("mobileCustomerList"), searchInput=$("searchInput"), statusFilter=$("statusFilter"), tableCount=$("tableCount");
-const modal=$("customerModal"), detailBackdrop=$("detailBackdrop"), form=$("customerForm");
 
-function statusLabel(status){
-  const map={active:["Đang hoạt động","active"],care:["Cần chăm sóc","care"],inactive:["Ngừng hoạt động","inactive"]};
-  const [label,cls]=map[status]||map.inactive;
+const tableBody = $("customerTableBody");
+const mobileList = $("mobileCustomerList");
+const searchInput = $("searchInput");
+const statusFilter = $("statusFilter");
+const tableCount = $("tableCount");
+const firebaseMessage = $("firebaseMessage");
+
+const modal = $("customerModal");
+const detailBackdrop = $("detailBackdrop");
+const form = $("customerForm");
+
+let customers = [];
+let buildings = [];
+let elevators = [];
+let selectedCustomer = null;
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function showFirebaseMessage(message, type = "") {
+  firebaseMessage.textContent = message || "";
+  firebaseMessage.className = "firebase-message";
+  if (message) {
+    firebaseMessage.classList.add("show");
+    if (type) firebaseMessage.classList.add(type);
+  }
+}
+
+function statusLabel(status) {
+  const map = {
+    active: ["Đang hoạt động", "active"],
+    care: ["Cần chăm sóc", "care"],
+    inactive: ["Ngừng hoạt động", "inactive"]
+  };
+
+  const [label, cls] = map[status] || map.inactive;
+
   return `<span class="status ${cls}">${label}</span>`;
 }
 
-function filteredCustomers(){
-  const q=searchInput.value.trim().toLowerCase(), s=statusFilter.value;
-  return customers.filter(c=>{
-    const text=[c.name,c.phone,c.email,c.manager].join(" ").toLowerCase();
-    return (!q||text.includes(q))&&(s==="all"||c.status===s);
-  });
+function typeLabel(type) {
+  const map = {
+    individual: "Cá nhân",
+    business: "Doanh nghiệp",
+    building_management: "Ban quản lý tòa nhà",
+    investor: "Chủ đầu tư"
+  };
+
+  return map[type] || type || "—";
 }
 
-function renderCustomers(){
-  const list=filteredCustomers();
-  tableCount.textContent=`${list.length} khách hàng`;
+function normalizeCustomer(customer) {
+  const customerBuildings = buildings.filter(
+    building => building.customerId === customer.id
+  );
 
-  tableBody.innerHTML=list.map(c=>`
+  const customerElevators = elevators.filter(
+    elevator => elevator.customerId === customer.id
+  );
+
+  const contactPerson = customer.contactPerson || {};
+
+  return {
+    ...customer,
+    phone: customer.phone || "",
+    email: customer.email || "",
+    manager: contactPerson.name || "Chưa phân công",
+    buildings: customerBuildings.length,
+    elevators: customerElevators.length,
+    type: typeLabel(customer.type)
+  };
+}
+
+async function loadCustomers() {
+  tableCount.textContent = "Đang tải...";
+  showFirebaseMessage("Đang tải dữ liệu từ Firebase...", "info");
+
+  tableBody.innerHTML = `
     <tr>
-      <td><div class="customer-name">${c.name}</div><div class="customer-id">${c.id}</div></td>
-      <td><div>${c.phone}</div><div class="muted">${c.email}</div></td>
-      <td>${c.buildings}</td><td>${c.elevators}</td><td>${c.manager}</td><td>${statusLabel(c.status)}</td>
-      <td><button class="action-button" data-view="${c.id}" type="button">Xem</button></td>
-    </tr>`).join("");
+      <td colspan="7" style="text-align:center;padding:35px;color:#888">
+        Đang tải dữ liệu từ Firebase...
+      </td>
+    </tr>
+  `;
 
-  mobileList.innerHTML=list.map(c=>`
+  try {
+    const [customerData, buildingData, elevatorData] =
+      await Promise.all([
+        getCustomers(),
+        getBuildings(),
+        getElevators()
+      ]);
+
+    customers = customerData;
+    buildings = buildingData;
+    elevators = elevatorData;
+
+    renderCustomers();
+    updateKpis();
+
+    showFirebaseMessage(
+      `Đã kết nối Firestore. ${customers.length} khách hàng.`,
+      "success"
+    );
+
+    console.log("CUSTOMERS:", customers);
+    console.log("BUILDINGS:", buildings);
+    console.log("ELEVATORS:", elevators);
+  } catch (error) {
+    console.error("LOAD CUSTOMER ERROR:", error);
+
+    tableCount.textContent = "Lỗi";
+
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center;padding:35px;color:#ef6262">
+          Không thể tải dữ liệu từ Firebase.
+          <br>
+          <small>${escapeHtml(error.message)}</small>
+        </td>
+      </tr>
+    `;
+
+    mobileList.innerHTML = `
+      <div style="padding:25px;text-align:center;color:#ef6262">
+        Không thể tải dữ liệu từ Firebase.
+        <br>
+        <small>${escapeHtml(error.message)}</small>
+      </div>
+    `;
+
+    showFirebaseMessage(
+      `Lỗi Firebase: ${error.message}`,
+      "error"
+    );
+  }
+}
+
+function updateKpis() {
+  const total = customers.length;
+
+  const active = customers.filter(
+    customer => customer.status === "active"
+  ).length;
+
+  const care = customers.filter(
+    customer => customer.status === "care"
+  ).length;
+
+  document.querySelector(".kpi-card:nth-child(1) .kpi-value").textContent = total;
+  document.querySelector(".kpi-card:nth-child(2) .kpi-value").textContent = active;
+  document.querySelector(".kpi-card:nth-child(3) .kpi-value").textContent = "—";
+  document.querySelector(".kpi-card:nth-child(4) .kpi-value").textContent = care;
+}
+
+function filteredCustomers() {
+  const q = searchInput.value.trim().toLowerCase();
+  const status = statusFilter.value;
+
+  return customers
+    .map(normalizeCustomer)
+    .filter(customer => {
+      const text = [
+        customer.name,
+        customer.phone,
+        customer.email,
+        customer.manager
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return (
+        (!q || text.includes(q)) &&
+        (status === "all" || customer.status === status)
+      );
+    });
+}
+
+function renderCustomers() {
+  const list = filteredCustomers();
+
+  tableCount.textContent = `${list.length} khách hàng`;
+
+  if (!list.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center;padding:45px;color:#777">
+          Chưa có khách hàng
+        </td>
+      </tr>
+    `;
+
+    mobileList.innerHTML = `
+      <div style="padding:35px;text-align:center;color:#777">
+        Chưa có khách hàng
+      </div>
+    `;
+
+    return;
+  }
+
+  tableBody.innerHTML = list.map(customer => `
+    <tr>
+      <td>
+        <div class="customer-name">${escapeHtml(customer.name)}</div>
+        <div class="customer-id">${escapeHtml(customer.id)}</div>
+      </td>
+      <td>
+        <div>${escapeHtml(customer.phone || "—")}</div>
+        <div class="muted">${escapeHtml(customer.email || "—")}</div>
+      </td>
+      <td>${customer.buildings}</td>
+      <td>${customer.elevators}</td>
+      <td>${escapeHtml(customer.manager)}</td>
+      <td>${statusLabel(customer.status)}</td>
+      <td>
+        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">
+          Xem
+        </button>
+      </td>
+    </tr>
+  `).join("");
+
+  mobileList.innerHTML = list.map(customer => `
     <article class="customer-card">
       <div class="customer-card-top">
-        <div><div class="customer-name">${c.name}</div><div class="customer-id">${c.id}</div></div>
-        ${statusLabel(c.status)}
+        <div>
+          <div class="customer-name">${escapeHtml(customer.name)}</div>
+          <div class="customer-id">${escapeHtml(customer.id)}</div>
+        </div>
+        ${statusLabel(customer.status)}
       </div>
-      <div class="customer-card-contact">${c.phone}<br>${c.email}<br>Phụ trách: ${c.manager}</div>
+
+      <div class="customer-card-contact">
+        ${escapeHtml(customer.phone || "—")}<br>
+        ${escapeHtml(customer.email || "—")}<br>
+        Phụ trách: ${escapeHtml(customer.manager)}
+      </div>
+
       <div class="customer-card-stats">
-        <div class="mini-stat"><b>${c.buildings}</b><span>TÒA NHÀ</span></div>
-        <div class="mini-stat"><b>${c.elevators}</b><span>THANG MÁY</span></div>
-        <div class="mini-stat"><b>2</b><span>HỢP ĐỒNG</span></div>
+        <div class="mini-stat">
+          <b>${customer.buildings}</b>
+          <span>TÒA NHÀ</span>
+        </div>
+        <div class="mini-stat">
+          <b>${customer.elevators}</b>
+          <span>THANG MÁY</span>
+        </div>
+        <div class="mini-stat">
+          <b>—</b>
+          <span>HỢP ĐỒNG</span>
+        </div>
       </div>
-      <div class="customer-card-bottom"><span class="muted">${c.type}</span><button class="action-button" data-view="${c.id}" type="button">Xem hồ sơ</button></div>
-    </article>`).join("");
+
+      <div class="customer-card-bottom">
+        <span class="muted">${escapeHtml(customer.type)}</span>
+        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">
+          Xem hồ sơ
+        </button>
+      </div>
+    </article>
+  `).join("");
 }
 
-function openDetail(id){
-  const c=customers.find(x=>x.id===id); if(!c)return;
-  $("detailName").textContent=c.name;$("detailId").textContent=c.id;$("detailStatus").innerHTML=statusLabel(c.status);
-  $("detailPhone").textContent=c.phone;$("detailEmail").textContent=c.email;$("detailManager").textContent=c.manager;$("detailType").textContent=c.type;
-  $("detailBuildings").textContent=c.buildings;$("detailElevators").textContent=c.elevators;
-  $("detailContracts").textContent=2;$("detailWorkOrders").textContent=3;
-  setDetailTab("buildings");detailBackdrop.classList.add("show");document.body.style.overflow="hidden";
+function openDetail(id) {
+  const rawCustomer = customers.find(
+    customer => customer.id === id
+  );
+
+  if (!rawCustomer) return;
+
+  selectedCustomer = normalizeCustomer(rawCustomer);
+
+  $("detailName").textContent = selectedCustomer.name || "—";
+  $("detailId").textContent = selectedCustomer.id || "—";
+  $("detailStatus").innerHTML = statusLabel(selectedCustomer.status);
+  $("detailPhone").textContent = selectedCustomer.phone || "—";
+  $("detailEmail").textContent = selectedCustomer.email || "—";
+  $("detailManager").textContent = selectedCustomer.manager || "—";
+  $("detailType").textContent = selectedCustomer.type || "—";
+  $("detailBuildings").textContent = selectedCustomer.buildings;
+  $("detailElevators").textContent = selectedCustomer.elevators;
+  $("detailContracts").textContent = "—";
+  $("detailWorkOrders").textContent = "—";
+
+  setDetailTab("buildings");
+
+  detailBackdrop.classList.add("show");
+  document.body.style.overflow = "hidden";
 }
-function closeDetail(){detailBackdrop.classList.remove("show");document.body.style.overflow="";}
-function setDetailTab(tab){
-  document.querySelectorAll(".detail-tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  const data={
-    buildings:[["Tòa nhà 01","Đang quản lý"],["Tòa nhà 02","Đang quản lý"]],
-    elevators:[["Thang máy DA-001","Đang bảo trì"],["Thang máy DA-002","Đang hoạt động"],["Thang máy DA-003","Đang hoạt động"]],
-    contracts:[["Hợp đồng bảo trì","Đang hiệu lực"],["Hợp đồng nguyên tắc","Đang theo dõi"]],
-    maintenance:[["Kỳ bảo trì gần nhất","Đã hoàn thành"],["Kỳ tiếp theo","Theo lịch"]],
-    workorders:[["WO-2026-001","Đã hoàn thành"],["WO-2026-002","Đang xử lý"],["WO-2026-003","Chờ kỹ thuật viên"]]
+
+function closeDetail() {
+  detailBackdrop.classList.remove("show");
+  document.body.style.overflow = "";
+  selectedCustomer = null;
+}
+
+function setDetailTab(tab) {
+  document.querySelectorAll(".detail-tab").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.tab === tab
+    );
+  });
+
+  if (!selectedCustomer) return;
+
+  const customerId = selectedCustomer.id;
+
+  const customerBuildings = buildings.filter(
+    building => building.customerId === customerId
+  );
+
+  const customerElevators = elevators.filter(
+    elevator => elevator.customerId === customerId
+  );
+
+  let rows = [];
+
+  if (tab === "buildings") {
+    rows = customerBuildings.map(building => [
+      building.name || "Tòa nhà",
+      building.status === "active"
+        ? "Đang quản lý"
+        : building.status || "—"
+    ]);
+  } else if (tab === "elevators") {
+    rows = customerElevators.map(elevator => [
+      elevator.name || "Thang máy",
+      elevator.status === "active"
+        ? "Đang hoạt động"
+        : elevator.status || "—"
+    ]);
+  } else if (tab === "contracts") {
+    rows = [["Chưa có dữ liệu hợp đồng", "—"]];
+  } else if (tab === "maintenance") {
+    rows = [["Chưa có dữ liệu bảo trì", "—"]];
+  } else if (tab === "workorders") {
+    rows = [["Chưa có Work Order", "—"]];
+  }
+
+  if (!rows.length) {
+    $("detailList").innerHTML = `
+      <div class="detail-row">
+        <b>Chưa có dữ liệu</b>
+        <span>—</span>
+      </div>
+    `;
+    return;
+  }
+
+  $("detailList").innerHTML = rows.map(row => `
+    <div class="detail-row">
+      <b>${escapeHtml(row[0])}</b>
+      <span>${escapeHtml(row[1])}</span>
+    </div>
+  `).join("");
+}
+
+/* =========================
+   ADD CUSTOMER
+========================= */
+
+$("addCustomerButton").onclick = () => {
+  $("modalTitle").textContent = "Thêm khách hàng";
+  modal.classList.add("show");
+  document.body.style.overflow = "hidden";
+
+  setTimeout(() => {
+    $("customerName").focus();
+  }, 50);
+};
+
+function closeModal() {
+  modal.classList.remove("show");
+  document.body.style.overflow = "";
+  form.reset();
+}
+
+$("closeModalButton").onclick = closeModal;
+$("cancelModalButton").onclick = closeModal;
+
+modal.onclick = event => {
+  if (event.target === modal) closeModal();
+};
+
+detailBackdrop.onclick = event => {
+  if (event.target === detailBackdrop) closeDetail();
+};
+
+$("closeDetailButton").onclick = closeDetail;
+
+/* =========================
+   VIEW CUSTOMER
+========================= */
+
+document.addEventListener("click", event => {
+  const button = event.target.closest("[data-view]");
+  if (!button) return;
+
+  openDetail(button.dataset.view);
+});
+
+/* =========================
+   DETAIL TABS
+========================= */
+
+document.querySelectorAll(".detail-tab").forEach(button => {
+  button.onclick = () => {
+    setDetailTab(button.dataset.tab);
   };
-  $("detailList").innerHTML=(data[tab]||[]).map(x=>`<div class="detail-row"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("");
-}
+});
 
-$("addCustomerButton").onclick=()=>{modal.classList.add("show");document.body.style.overflow="hidden";setTimeout(()=>$("customerName").focus(),50)};
-function closeModal(){modal.classList.remove("show");document.body.style.overflow="";form.reset()}
-$("closeModalButton").onclick=closeModal;$("cancelModalButton").onclick=closeModal;
-modal.onclick=e=>{if(e.target===modal)closeModal()};detailBackdrop.onclick=e=>{if(e.target===detailBackdrop)closeDetail()};
-$("closeDetailButton").onclick=closeDetail;
-document.addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(b)openDetail(b.dataset.view)});
-document.querySelectorAll(".detail-tab").forEach(b=>b.onclick=()=>setDetailTab(b.dataset.tab));
-searchInput.oninput=renderCustomers;statusFilter.onchange=renderCustomers;
-form.onsubmit=e=>{e.preventDefault();alert("UI V1.1 đã nhận dữ liệu mẫu. Firestore chưa được kết nối.");closeModal()};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeDetail();closeModal()}});
-renderCustomers();
+/* =========================
+   SEARCH / FILTER
+========================= */
+
+searchInput.oninput = renderCustomers;
+statusFilter.onchange = renderCustomers;
+
+/* =========================
+   CREATE CUSTOMER
+========================= */
+
+form.onsubmit = async event => {
+  event.preventDefault();
+
+  const submitButton =
+    form.querySelector("button[type='submit']");
+
+  const originalText = submitButton.textContent;
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Đang lưu...";
+
+  const typeMap = {
+    "Cá nhân": "individual",
+    "Doanh nghiệp": "business",
+    "Ban quản lý tòa nhà": "building_management",
+    "Chủ đầu tư": "investor"
+  };
+
+  const data = {
+    name: $("customerName").value.trim(),
+    type: typeMap[$("customerType").value] || "business",
+    phone: $("customerPhone").value.trim(),
+    email: $("customerEmail").value.trim(),
+    taxCode: $("taxCode").value.trim(),
+    address: $("customerAddress").value.trim(),
+    contactPerson: {
+      name: $("contactName").value.trim(),
+      phone: $("contactPhone").value.trim()
+    },
+    status: "active"
+  };
+
+  try {
+    const created = await createCustomer(data);
+
+    console.log("CUSTOMER CREATED:", created);
+
+    closeModal();
+
+    await loadCustomers();
+
+    openDetail(created.id);
+
+  } catch (error) {
+    console.error("CREATE CUSTOMER ERROR:", error);
+
+    alert(
+      "Không thể lưu khách hàng.\n\n" +
+      error.message
+    );
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+  }
+};
+
+/* =========================
+   ESC
+========================= */
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeDetail();
+    closeModal();
+  }
+});
+
+/* =========================
+   START
+========================= */
+
+loadCustomers();
 </script>
 </body>
 </html>
