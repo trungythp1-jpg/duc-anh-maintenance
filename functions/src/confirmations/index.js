@@ -1,1 +1,4 @@
-module.exports={...require('./create'),...require('./finalize')};
+module.exports = {
+  ...require('./create'),
+  ...require('./finalize')
+};
