@@ -1,1 +1,1 @@
-// address-validation — validation/duplicate scaffold
+export function validateAddress(data){if(!data?.address?.trim())return {ok:false,reason:'ADDRESS_REQUIRED'};if(data.latitude!=null&&(data.latitude<-90||data.latitude>90))return {ok:false,reason:'LATITUDE'};if(data.longitude!=null&&(data.longitude<-180||data.longitude>180))return {ok:false,reason:'LONGITUDE'};return {ok:true};}

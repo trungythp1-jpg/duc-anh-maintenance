@@ -1,2 +1,1 @@
-export function required(v){return v!==null&&v!==undefined&&String(v).trim()!==''}
-export function normalizeText(v){return String(v??'').trim().replace(/\s+/g,' ').toLowerCase()}
+export function required(value){return String(value??'').trim().length>0;} export function normalizeText(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}

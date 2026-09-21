@@ -1,1 +1,1 @@
-// number-validation — validation/duplicate scaffold
+export function validateNumber(v,{min=null,max=null,integer=false}={}){const n=Number(v);if(!Number.isFinite(n))return false;if(integer&&!Number.isInteger(n))return false;if(min!=null&&n<min)return false;if(max!=null&&n>max)return false;return true;}
