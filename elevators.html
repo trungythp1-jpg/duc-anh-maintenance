@@ -1,1 +1,163 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Đức Anh Maintenance — elevators</title><link rel="stylesheet" href="css/main.css"><link rel="stylesheet" href="css/mobile.css"></head><body><header class="app-header"><div class="brand">Đức Anh Maintenance</div></header><main class="page"><h1>elevators</h1><div class="card">DEV V1.0 module scaffold.</div></main></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0b">
+<title>Thang máy — Đức Anh Maintenance</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/mobile.css">
+<style>
+:root{--y:#f5c400;--y2:#ffd83d;--bg:#090909;--panel:#121212;--border:#292929;--text:#f4f4f4;--muted:#949494;--green:#38c793;--red:#ef6262;--blue:#5da9ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.page{min-height:100vh;padding:28px}.container{width:min(1550px,100%);margin:auto}
+.head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}
+.eyebrow{margin:0 0 7px;color:var(--y);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+h1{margin:0;font-size:clamp(28px,3vw,38px);letter-spacing:-.03em}.sub{margin:9px 0 0;color:var(--muted);font-size:14px}
+.primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:9px;padding:12px 17px;background:var(--y);color:#080808;font-weight:800}.primary:hover{background:var(--y2)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{position:relative;overflow:hidden;min-height:112px;padding:18px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(145deg,#151515,#101010)}
+.kpi:after{content:"";position:absolute;right:-25px;bottom:-40px;width:110px;height:110px;border-radius:50%;background:rgba(245,196,0,.06)}
+.label{color:var(--muted);font-size:12px}.value{margin-top:9px;font-size:29px;font-weight:800}.note{margin-top:5px;color:var(--muted);font-size:11px}
+.toolbar{display:flex;gap:10px;padding:13px;margin-bottom:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+.search{position:relative;flex:1}.search span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#777}
+.search input,.filter{height:42px;width:100%;border:1px solid var(--border);border-radius:8px;background:#0d0d0d;color:var(--text);outline:none}.search input{padding:0 13px 0 37px}.filter{width:190px;padding:0 12px}
+.search input:focus,.filter:focus{border-color:var(--y)}
+.card{overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-size:14px;font-weight:800}.count{font-size:12px;color:var(--muted)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;min-width:1120px;border-collapse:collapse}
+th{padding:13px 16px;border-bottom:1px solid var(--border);color:#858585;font-size:10px;letter-spacing:.08em;text-align:left;white-space:nowrap}
+td{padding:15px 16px;border-bottom:1px solid #202020;color:#ddd;font-size:13px;vertical-align:middle}tbody tr:hover{background:#171717}tbody tr:last-child td{border-bottom:0}
+th:nth-last-child(2),td:nth-last-child(2){padding-right:110px}
+th:last-child,td:last-child{position:sticky;right:0;background:var(--panel);box-shadow:-10px 0 18px rgba(0,0,0,.3);z-index:1;min-width:82px}
+thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
+.name{font-weight:700;color:#fff}.id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}.muted{color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}.status:before{content:"";width:6px;height:6px;border-radius:50%}
+.active{background:rgba(56,199,147,.1);color:var(--green)}.active:before{background:var(--green)}
+.maint{background:rgba(93,169,255,.1);color:var(--blue)}.maint:before{background:var(--blue)}
+.care{background:rgba(245,196,0,.1);color:var(--y)}.care:before{background:var(--y)}
+.inactive{background:rgba(239,98,98,.1);color:var(--red)}.inactive:before{background:var(--red)}
+.action{border:1px solid var(--border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}.action:hover{border-color:var(--y);color:var(--y)}
+.mobile-list{display:none}.elevator-item{padding:15px;border-bottom:1px solid #202020}.elevator-item:last-child{border:0}
+.e-top{display:flex;justify-content:space-between;gap:10px}.e-meta{margin:8px 0;color:#aaa;font-size:12px;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{padding:9px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d}.stat b{display:block;font-size:15px}.stat span{color:#777;font-size:9px}
+.bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+.backdrop{position:fixed;inset:0;z-index:1000;display:none;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}.backdrop.show{display:block}
+.drawer{position:absolute;top:0;right:0;width:min(650px,100%);height:100%;overflow-y:auto;background:#111;border-left:1px solid var(--border);box-shadow:-25px 0 80px rgba(0,0,0,.55)}
+.drawer-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--border);background:rgba(17,17,17,.96);backdrop-filter:blur(10px)}
+.kicker{margin:0 0 5px;color:var(--y);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.drawer-head h2{margin:0;font-size:20px}.drawer-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}
+.close{width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:#171717;color:#aaa;font-size:18px}
+.drawer-body{padding:20px}.section-title{margin:0 0 10px;color:var(--y);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}.item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#151515}.item span{display:block;color:#777;font-size:10px;margin-bottom:5px}.item b{font-size:13px}
+.tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.tab{flex:0 0 auto;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.tab.active{border-color:var(--y);background:rgba(245,196,0,.09);color:var(--y)}
+.list{display:grid;gap:8px}.row{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d;font-size:12px}.row span{color:#999}
+.footer{display:flex;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--border);color:var(--muted);font-size:11px}
+@media(max-width:900px){.page{padding:20px 16px}.kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.page{padding:16px 12px}.head{flex-direction:column}.primary{width:100%}.toolbar{flex-direction:column}.filter{width:100%}.scroll{display:none}.mobile-list{display:block}.grid{grid-template-columns:1fr 1fr}.drawer{width:100%;border-left:0}.footer{flex-direction:column;gap:5px}}
+</style>
+</head>
+<body>
+<main class="page"><div class="container">
+<header class="head">
+<div><p class="eyebrow">Elevator Asset Management</p><h1>Thang máy</h1><p class="sub">Quản lý tài sản thang máy và toàn bộ vòng đời dịch vụ.</p></div>
+<button class="primary" id="addButton" type="button">＋ <span>Thêm thang máy</span></button>
+</header>
+
+<section class="kpis">
+<article class="kpi"><div class="label">Tổng thang máy</div><div class="value">42</div><div class="note">Tài sản đang quản lý</div></article>
+<article class="kpi"><div class="label">Đang hoạt động</div><div class="value">35</div><div class="note">Đang vận hành</div></article>
+<article class="kpi"><div class="label">Đang bảo trì</div><div class="value">5</div><div class="note">Có dịch vụ theo dõi</div></article>
+<article class="kpi"><div class="label">Cần xử lý</div><div class="value">2</div><div class="note">Cần kiểm tra / liên hệ</div></article>
+</section>
+
+<section class="toolbar">
+<div class="search"><span>⌕</span><input id="search" type="search" placeholder="Tìm mã thang, tên tòa nhà, khách hàng..." autocomplete="off"></div>
+<select class="filter" id="status"><option value="all">Tất cả trạng thái</option><option value="active">Đang hoạt động</option><option value="maint">Đang bảo trì</option><option value="care">Cần xử lý</option><option value="inactive">Ngừng hoạt động</option></select>
+</section>
+
+<section class="card">
+<div class="card-head"><div class="card-title">Danh sách thang máy</div><div class="count" id="count">8 thang máy</div></div>
+<div class="scroll"><table>
+<thead><tr><th>Thang máy</th><th>Tòa nhà</th><th>Khách hàng</th><th>Tải trọng</th><th>Số tầng</th><th>Máy kéo</th><th>Trạng thái</th><th></th></tr></thead>
+<tbody id="tbody"></tbody>
+</table></div>
+<div class="mobile-list" id="mobileList"></div>
+<div class="footer"><span>Dữ liệu hiện tại là MOCK DATA — chưa kết nối Firestore.</span><span>DEV V1.0</span></div>
+</section>
+</div></main>
+
+<div class="backdrop" id="backdrop">
+<aside class="drawer" role="dialog" aria-modal="true">
+<div class="drawer-head"><div><p class="kicker">Elevator Asset Profile</p><h2 id="dName">—</h2><div class="drawer-id" id="dId">—</div></div><button class="close" id="closeDetail" type="button">×</button></div>
+<div class="drawer-body">
+<div id="dStatus" style="margin-bottom:18px"></div>
+<p class="section-title">Định danh & quan hệ</p>
+<div class="grid">
+<div class="item"><span>Tòa nhà</span><b id="dBuilding">—</b></div><div class="item"><span>Khách hàng</span><b id="dCustomer">—</b></div>
+<div class="item"><span>Định danh Firebase</span><b>Auto ID</b></div><div class="item"><span>Trạng thái tài sản</span><b id="dAssetStatus">—</b></div>
+</div>
+<p class="section-title">Thông số kỹ thuật</p>
+<div class="grid">
+<div class="item"><span>Tải trọng</span><b id="dCapacity">—</b></div><div class="item"><span>Tốc độ</span><b id="dSpeed">—</b></div>
+<div class="item"><span>Số tầng / điểm dừng</span><b id="dStops">—</b></div><div class="item"><span>Máy kéo</span><b id="dMachine">—</b></div>
+<div class="item"><span>Tủ điều khiển</span><b id="dController">—</b></div><div class="item"><span>Năm lắp đặt</span><b id="dYear">—</b></div>
+</div>
+<p class="section-title">Dịch vụ</p>
+<div class="grid">
+<div class="item"><span>Bảo trì</span><b id="dMaintenance">—</b></div><div class="item"><span>Hợp đồng</span><b>Đang theo dõi</b></div>
+<div class="item"><span>Work Order</span><b>3</b></div><div class="item"><span>Kỳ bảo trì gần nhất</span><b>Đã hoàn thành</b></div>
+</div>
+<div class="tabs">
+<button class="tab active" data-tab="history" type="button">Lịch sử</button>
+<button class="tab" data-tab="maintenance" type="button">Bảo trì</button>
+<button class="tab" data-tab="workorders" type="button">Work Order</button>
+<button class="tab" data-tab="contracts" type="button">Hợp đồng</button>
+</div>
+<div class="list" id="dList"></div>
+</div>
+</aside>
+</div>
+
+<script>
+const elevators=[
+{id:"ELV-001",name:"Thang máy DA-001",building:"Waterfront City",customer:"Ban quản lý Waterfront City",capacity:"450 kg",stops:12,machine:"Ziehl-Abegg",speed:"1.0 m/s",controller:"Step AS380",year:2024,status:"active",maintenance:"Đang theo dõi"},
+{id:"ELV-002",name:"Thang máy DA-002",building:"Waterfront City",customer:"Ban quản lý Waterfront City",capacity:"450 kg",stops:12,machine:"Ziehl-Abegg",speed:"1.0 m/s",controller:"Step AS380",year:2024,status:"maint",maintenance:"Đang bảo trì"},
+{id:"ELV-003",name:"Thang máy DA-003",building:"Waterfront City",customer:"Ban quản lý Waterfront City",capacity:"630 kg",stops:15,machine:"Montanari",speed:"1.5 m/s",controller:"Step AS380",year:2023,status:"active",maintenance:"Đang theo dõi"},
+{id:"ELV-004",name:"Thang máy DA-004",building:"Hòa Phát Factory 01",customer:"Công ty CP Hòa Phát",capacity:"1000 kg",stops:6,machine:"Torin",speed:"1.0 m/s",controller:"Step",year:2025,status:"active",maintenance:"Đang theo dõi"},
+{id:"ELV-005",name:"Thang máy DA-005",building:"Hòa Phát Factory 01",customer:"Công ty CP Hòa Phát",capacity:"1000 kg",stops:6,machine:"Torin",speed:"1.0 m/s",controller:"Step",year:2025,status:"active",maintenance:"Đang theo dõi"},
+{id:"ELV-006",name:"Thang máy DA-006",building:"ABC Tower",customer:"Công ty TNHH ABC",capacity:"350 kg",stops:8,machine:"Torin",speed:"0.75 m/s",controller:"Step",year:2024,status:"care",maintenance:"Cần kiểm tra"},
+{id:"ELV-007",name:"Thang máy DA-007",building:"ABC Residence",customer:"Công ty TNHH ABC",capacity:"450 kg",stops:10,machine:"Sicor",speed:"1.0 m/s",controller:"Step",year:2022,status:"active",maintenance:"Đang theo dõi"},
+{id:"ELV-008",name:"Thang máy DA-008",building:"Công trình cũ — Hải Phòng",customer:"Khách hàng cũ — Hải Phòng",capacity:"350 kg",stops:5,machine:"Fuji",speed:"0.75 m/s",controller:"Fuji",year:2019,status:"inactive",maintenance:"Ngừng dịch vụ"}
+];
+const $=id=>document.getElementById(id);
+function statusLabel(s){const m={active:["Đang hoạt động","active"],maint:["Đang bảo trì","maint"],care:["Cần xử lý","care"],inactive:["Ngừng hoạt động","inactive"]};const x=m[s]||m.inactive;return `<span class="status ${x[1]}">${x[0]}</span>`}
+function filtered(){const q=$("search").value.trim().toLowerCase(),s=$("status").value;return elevators.filter(e=>{const t=[e.id,e.name,e.building,e.customer,e.machine].join(" ").toLowerCase();return(!q||t.includes(q))&&(s==="all"||e.status===s)})}
+function render(){const list=filtered();$("count").textContent=`${list.length} thang máy`;
+$("tbody").innerHTML=list.map(e=>`<tr><td><div class="name">${e.name}</div><div class="id">${e.id}</div></td><td>${e.building}</td><td>${e.customer}</td><td>${e.capacity}</td><td>${e.stops}</td><td>${e.machine}</td><td>${statusLabel(e.status)}</td><td><button class="action" data-view="${e.id}" type="button">Xem</button></td></tr>`).join("");
+$("mobileList").innerHTML=list.map(e=>`<article class="elevator-item"><div class="e-top"><div><div class="name">${e.name}</div><div class="id">${e.id}</div></div>${statusLabel(e.status)}</div><div class="e-meta">${e.building}<br>${e.customer}<br>${e.machine} · ${e.capacity} · ${e.stops} điểm dừng</div><div class="stats"><div class="stat"><b>${e.capacity}</b><span>TẢI TRỌNG</span></div><div class="stat"><b>${e.stops}</b><span>ĐIỂM DỪNG</span></div><div class="stat"><b>${e.year}</b><span>LẮP ĐẶT</span></div></div><div class="bottom"><span class="muted">${e.maintenance}</span><button class="action" data-view="${e.id}" type="button">Xem hồ sơ</button></div></article>`).join("")}
+function openDetail(id){const e=elevators.find(x=>x.id===id);if(!e)return;
+$("dName").textContent=e.name;$("dId").textContent=e.id;$("dStatus").innerHTML=statusLabel(e.status);
+$("dBuilding").textContent=e.building;$("dCustomer").textContent=e.customer;$("dAssetStatus").textContent=e.status==="inactive"?"Ngừng hoạt động":"Đang quản lý";
+$("dCapacity").textContent=e.capacity;$("dSpeed").textContent=e.speed;$("dStops").textContent=e.stops;$("dMachine").textContent=e.machine;$("dController").textContent=e.controller;$("dYear").textContent=e.year;$("dMaintenance").textContent=e.maintenance;
+setTab("history");$("backdrop").classList.add("show");document.body.style.overflow="hidden"}
+function closeDetail(){$("backdrop").classList.remove("show");document.body.style.overflow=""}
+function setTab(tab){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));
+const data={
+history:[["Lắp đặt","Hoàn thành"],["Nghiệm thu","Đã hoàn thành"],["Bàn giao","Đã bàn giao"]],
+maintenance:[["Kỳ bảo trì gần nhất","Đã hoàn thành"],["Kỳ tiếp theo","Theo lịch"],["Tình trạng","Đang theo dõi"]],
+workorders:[["WO-2026-001","Đã hoàn thành"],["WO-2026-002","Đang xử lý"],["WO-2026-003","Chờ kỹ thuật viên"]],
+contracts:[["Hợp đồng bảo trì","Đang hiệu lực"],["Hợp đồng nguyên tắc","Đang theo dõi"]]
+};$("dList").innerHTML=(data[tab]||[]).map(x=>`<div class="row"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("")}
+$("closeDetail").onclick=closeDetail;$("backdrop").onclick=e=>{if(e.target===$("backdrop"))closeDetail()};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(b)openDetail(b.dataset.view)});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$("search").oninput=render;$("status").onchange=render;
+$("addButton").onclick=()=>alert("Form Thêm thang máy sẽ được hoàn thiện ở bước UI tiếp theo. Firestore chưa được kết nối.");
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDetail()});
+render();
+</script>
+</body>
+</html>
