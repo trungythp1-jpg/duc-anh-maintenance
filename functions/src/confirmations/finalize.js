@@ -8,6 +8,10 @@ const {
   recordMaintenanceCompletion
 } = require('../maintenance/record-completion');
 
+const {
+  recordKpiActivity
+} = require('../kpi/calculate');
+
 const ALLOWED_ROLES = [
   'ADMIN',
   'MANAGER',
@@ -117,11 +121,16 @@ async function finalizeConfirmationHandler(request) {
     reason: 'NOT_MAINTENANCE'
   };
 
+  let kpiResult = {
+    recorded: false,
+    reason: 'NOT_MAINTENANCE'
+  };
+
   await db.runTransaction(async (tx) => {
     /*
-     * ============================
+     * ========================================
      * 1. READ CONFIRMATION
-     * ============================
+     * ========================================
      */
     const confirmationSnap =
       await tx.get(confirmationRef);
@@ -163,9 +172,9 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * ============================
+     * ========================================
      * 2. REFERENCES
-     * ============================
+     * ========================================
      */
     const workOrderRef = db.doc(
       `workOrders/${workOrderId}`
@@ -176,9 +185,9 @@ async function finalizeConfirmationHandler(request) {
     );
 
     /*
-     * ============================
+     * ========================================
      * 3. READ WORK ORDER + LOCK
-     * ============================
+     * ========================================
      */
     const workOrderSnap =
       await tx.get(workOrderRef);
@@ -211,9 +220,9 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * ============================
-     * 4. CHECK LOCK
-     * ============================
+     * ========================================
+     * 4. CHECK CONFIRMATION LOCK
+     * ========================================
      */
     if (!lockSnap.exists) {
       throw new HttpsError(
@@ -237,15 +246,11 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * ============================
-     * 5. METHOD CONTROL
-     * ============================
+     * ========================================
+     * 5. CONFIRMATION METHOD
+     * ========================================
      */
 
-    /*
-     * CUSTOMER_DIGITAL phải được xử lý
-     * bởi customer portal flow riêng.
-     */
     if (
       beforeConfirmation.confirmationMethod ===
       'CUSTOMER_DIGITAL'
@@ -256,10 +261,6 @@ async function finalizeConfirmationHandler(request) {
       );
     }
 
-    /*
-     * CSKH_VERIFIED chỉ dành cho
-     * Admin / Manager / CSKH.
-     */
     if (
       beforeConfirmation.confirmationMethod ===
         'CSKH_VERIFIED' &&
@@ -276,14 +277,9 @@ async function finalizeConfirmationHandler(request) {
     }
 
     /*
-     * ============================
+     * ========================================
      * 6. RECORD MAINTENANCE VISIT
-     * ============================
-     *
-     * Chỉ MAINTENANCE WO mới được ghi
-     * nhận completedVisits.
-     *
-     * Helper này cũng bảo vệ idempotency.
+     * ========================================
      */
     maintenanceResult =
       await recordMaintenanceCompletion(
@@ -293,9 +289,28 @@ async function finalizeConfirmationHandler(request) {
       );
 
     /*
-     * ============================
-     * 7. BUILD UPDATES
-     * ============================
+     * ========================================
+     * 7. RECORD KPI ACTIVITY
+     * ========================================
+     *
+     * KPI chỉ được tạo sau khi:
+     * - WO hợp lệ
+     * - đang chờ confirmation
+     * - confirmation đang PENDING
+     *
+     * Tất cả vẫn nằm trong transaction.
+     */
+    kpiResult =
+      await recordKpiActivity(
+        tx,
+        workOrderRef,
+        workOrderBefore
+      );
+
+    /*
+     * ========================================
+     * 8. BUILD CONFIRMATION UPDATE
+     * ========================================
      */
     afterConfirmation = {
       status: 'CONFIRMED',
@@ -325,8 +340,14 @@ async function finalizeConfirmationHandler(request) {
         now()
     };
 
+    /*
+     * ========================================
+     * 9. BUILD WORK ORDER UPDATE
+     * ========================================
+     */
     workOrderAfter = {
-      status: 'CUSTOMER_CONFIRMED',
+      status:
+        'CUSTOMER_CONFIRMED',
 
       customerConfirmedAt:
         now(),
@@ -338,8 +359,14 @@ async function finalizeConfirmationHandler(request) {
         now()
     };
 
+    /*
+     * ========================================
+     * 10. BUILD LOCK UPDATE
+     * ========================================
+     */
     lockAfter = {
-      status: 'CONFIRMED',
+      status:
+        'CONFIRMED',
 
       confirmedAt:
         now(),
@@ -352,9 +379,9 @@ async function finalizeConfirmationHandler(request) {
     };
 
     /*
-     * ============================
-     * 8. WRITE CONFIRMATION
-     * ============================
+     * ========================================
+     * 11. WRITE CONFIRMATION
+     * ========================================
      */
     tx.update(
       confirmationRef,
@@ -362,9 +389,9 @@ async function finalizeConfirmationHandler(request) {
     );
 
     /*
-     * ============================
-     * 9. WRITE WORK ORDER
-     * ============================
+     * ========================================
+     * 12. WRITE WORK ORDER
+     * ========================================
      */
     tx.update(
       workOrderRef,
@@ -372,9 +399,9 @@ async function finalizeConfirmationHandler(request) {
     );
 
     /*
-     * ============================
-     * 10. WRITE CONFIRMATION LOCK
-     * ============================
+     * ========================================
+     * 13. WRITE CONFIRMATION LOCK
+     * ========================================
      */
     tx.update(
       lockRef,
@@ -383,9 +410,9 @@ async function finalizeConfirmationHandler(request) {
   });
 
   /*
-   * ============================
-   * 11. AUDIT
-   * ============================
+   * ========================================
+   * 14. AUDIT
+   * ========================================
    */
   await writeAudit({
     auth,
@@ -424,7 +451,10 @@ async function finalizeConfirmationHandler(request) {
         lockAfter,
 
       maintenance:
-        maintenanceResult
+        maintenanceResult,
+
+      kpi:
+        kpiResult
     }
   });
 
@@ -445,7 +475,19 @@ async function finalizeConfirmationHandler(request) {
       maintenanceResult.recorded,
 
     completedVisits:
-      maintenanceResult.completedVisits || null
+      maintenanceResult.completedVisits ||
+      null,
+
+    kpiRecorded:
+      kpiResult.recorded,
+
+    kpiActivityId:
+      kpiResult.kpiActivityId ||
+      null,
+
+    kpiPeriod:
+      kpiResult.periodId ||
+      null
   };
 }
 
