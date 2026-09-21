@@ -55,6 +55,7 @@ service cloud.firestore {
         || isDirector();
     }
 
+
     // =========================================================
     // USER
     // =========================================================
@@ -85,6 +86,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // COMPANY SETTINGS
     // =========================================================
@@ -97,6 +99,7 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
 
     // =========================================================
     // CUSTOMERS
@@ -113,6 +116,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // BUILDINGS
     // =========================================================
@@ -128,6 +132,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // ELEVATORS
     // =========================================================
@@ -142,6 +147,38 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
+    // =========================================================
+    // ELEVATOR RELATIONSHIPS
+    // =========================================================
+    //
+    // Lưu lịch sử quan hệ của Elevator với:
+    // - Customer
+    // - Building
+    // - Loại quan hệ
+    //
+    // Ví dụ:
+    // Elevator → Building A → Customer A
+    // Sau này có thể chuyển:
+    // Elevator → Building B → Customer B
+    //
+    // Không xóa lịch sử quan hệ từ client.
+    // =========================================================
+
+    match /elevatorRelationships/{relationshipId} {
+
+      allow read: if isServiceStaff();
+
+      allow create: if isAdmin()
+        || isManager();
+
+      allow update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+
     // =========================================================
     // SERVICE AREAS
     // =========================================================
@@ -155,6 +192,7 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
 
     // =========================================================
     // SERVICE CONTRACTS
@@ -171,6 +209,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // MAINTENANCE AGREEMENTS
     // =========================================================
@@ -185,6 +224,7 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
 
     // =========================================================
     // MAINTENANCE SCHEDULES
@@ -202,6 +242,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // CHECKLIST TEMPLATES
     // =========================================================
@@ -216,6 +257,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // WORK ORDERS
     // =========================================================
@@ -226,8 +268,6 @@ service cloud.firestore {
 
       /*
        * Creation must go through Cloud Function.
-       * This prevents clients from manually generating
-       * workOrderCode and bypassing duplicate controls.
        */
       allow create: if false;
 
@@ -240,6 +280,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // WORK ORDER MAINTENANCE LOCKS
     // =========================================================
@@ -248,9 +289,9 @@ service cloud.firestore {
 
       allow read: if isManagement();
 
-      // Created only by Cloud Functions.
       allow create, update, delete: if false;
     }
+
 
     // =========================================================
     // INCIDENTS
@@ -267,6 +308,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // REPAIRS
     // =========================================================
@@ -281,6 +323,7 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
 
     // =========================================================
     // PARTS / INVENTORY
@@ -297,6 +340,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // TECHNICIAN ASSIGNMENTS
     // =========================================================
@@ -311,6 +355,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // ASSIGNMENT CHANGES
     // =========================================================
@@ -324,6 +369,7 @@ service cloud.firestore {
 
       allow update, delete: if false;
     }
+
 
     // =========================================================
     // KPI PERIODS
@@ -340,6 +386,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // KPI TARGETS
     // =========================================================
@@ -350,13 +397,13 @@ service cloud.firestore {
         || isTechnician();
 
       /*
-       * Target changes should go through controlled
-       * backend logic so reason + audit can be enforced.
+       * Target changes go through controlled backend logic.
        */
       allow create, update: if false;
 
       allow delete: if false;
     }
+
 
     // =========================================================
     // KPI ACTIVITIES
@@ -373,6 +420,7 @@ service cloud.firestore {
        */
       allow create, update, delete: if false;
     }
+
 
     // =========================================================
     // NOTIFICATIONS
@@ -391,6 +439,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // NOTIFICATION RULES
     // =========================================================
@@ -405,6 +454,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // NOTIFICATION LOGS
     // =========================================================
@@ -415,6 +465,7 @@ service cloud.firestore {
 
       allow create, update, delete: if false;
     }
+
 
     // =========================================================
     // CUSTOMER NOTIFICATION PREFERENCES
@@ -430,6 +481,7 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
 
     // =========================================================
     // CUSTOMER PORTAL SESSIONS
@@ -448,6 +500,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // CUSTOMER CONFIRMATIONS
     // =========================================================
@@ -465,6 +518,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // CONFIRMATION LOCKS
     // =========================================================
@@ -475,6 +529,7 @@ service cloud.firestore {
 
       allow create, update, delete: if false;
     }
+
 
     // =========================================================
     // IMPORT JOBS
@@ -490,6 +545,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // ACTIVITY / AUDIT LOGS
     // =========================================================
@@ -504,6 +560,7 @@ service cloud.firestore {
        */
       allow create, update, delete: if false;
     }
+
 
     // =========================================================
     // CODE ADJUSTMENT REQUESTS
@@ -522,6 +579,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
     // =========================================================
     // SYSTEM COUNTERS
     // =========================================================
@@ -536,6 +594,7 @@ service cloud.firestore {
        */
       allow create, update, delete: if false;
     }
+
 
     // =========================================================
     // DEFAULT DENY
