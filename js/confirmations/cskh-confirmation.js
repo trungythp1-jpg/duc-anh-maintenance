@@ -1,0 +1,1 @@
+export const CSKH_CONFIRMATION='CSKH_VERIFIED';
