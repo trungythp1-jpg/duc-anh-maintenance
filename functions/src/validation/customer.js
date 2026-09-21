@@ -1,4 +1,4 @@
-const { clean, normalizeText } = require('../lib/admin');
+const { clean, normalizeText } = require('../lib/utils');
 const { assertPhone, assertEmail, assertRequired } = require('./common');
 function validateCustomer(data) {
   assertRequired(data, ['name','phone']);
