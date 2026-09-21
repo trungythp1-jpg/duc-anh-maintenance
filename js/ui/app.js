@@ -1,1 +1,1 @@
-
+const menuButton=document.getElementById('menuButton');const sidebar=document.getElementById('sidebar');const overlay=document.getElementById('overlay');function toggleMenu(open){sidebar.classList.toggle('open',open);overlay.classList.toggle('show',open)}menuButton?.addEventListener('click',()=>toggleMenu(!sidebar.classList.contains('open')));overlay?.addEventListener('click',()=>toggleMenu(false));
