@@ -12,7 +12,7 @@ const ACTIVE_STATUSES = [
   'CUSTOMER_REJECTED'
 ];
 
-async function findWorkOrderDuplicates(data) {
+async function findWorkOrderDuplicates(data, transaction = null) {
   const elevatorId = String(data.elevatorId || '').trim();
 
   if (!elevatorId) {
@@ -23,26 +23,19 @@ async function findWorkOrderDuplicates(data) {
     };
   }
 
-  const snapshot = await db
+  const query = db
     .collection('workOrders')
     .where('elevatorId', '==', elevatorId)
-    .where('status', 'in', ACTIVE_STATUSES)
-    .limit(100)
-    .get();
+    .limit(100);
+
+  const snapshot = transaction
+    ? await transaction.get(query)
+    : await query.get();
 
   const nowMs = Date.now();
 
-  const periodYear =
-    Number(data.periodYear) ||
-    (data.plannedDate
-      ? new Date(data.plannedDate).getFullYear()
-      : null);
-
-  const periodMonth =
-    Number(data.periodMonth) ||
-    (data.plannedDate
-      ? new Date(data.plannedDate).getMonth() + 1
-      : null);
+  const periodYear = Number(data.periodYear) || null;
+  const periodMonth = Number(data.periodMonth) || null;
 
   const active = [];
   const maintenancePeriod = [];
@@ -51,13 +44,16 @@ async function findWorkOrderDuplicates(data) {
   for (const doc of snapshot.docs) {
     const x = doc.data();
 
-    active.push({
-      id: doc.id,
-      code: x.workOrderCode || '',
-      status: x.status || ''
-    });
+    if (ACTIVE_STATUSES.includes(x.status)) {
+      active.push({
+        id: doc.id,
+        code: x.workOrderCode || '',
+        status: x.status || ''
+      });
+    }
 
     if (
+      data.type === 'MAINTENANCE' &&
       x.type === 'MAINTENANCE' &&
       periodYear &&
       periodMonth &&
@@ -77,10 +73,14 @@ async function findWorkOrderDuplicates(data) {
 
     if (
       createdMs &&
-      nowMs - createdMs >= 0 &&
+      nowMs >= createdMs &&
       nowMs - createdMs < 20 * 60 * 1000
     ) {
-      cooldown.push(doc.id);
+      cooldown.push({
+        id: doc.id,
+        code: x.workOrderCode || '',
+        status: x.status || ''
+      });
     }
   }
 
