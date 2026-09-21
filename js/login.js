@@ -1,8 +1,8 @@
 import {
   signInWithEmailAndPassword,
   setPersistence,
-  browserLocalPersistence,
   browserSessionPersistence,
+  browserLocalPersistence,
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
@@ -21,19 +21,16 @@ const loginMessage = document.getElementById("loginMessage");
 const emailError = document.getElementById("emailError");
 const passwordError = document.getElementById("passwordError");
 
-
 function showMessage(message, type = "") {
   loginMessage.textContent = message;
   loginMessage.dataset.type = type;
 }
-
 
 function clearErrors() {
   emailError.textContent = "";
   passwordError.textContent = "";
   showMessage("");
 }
-
 
 function setLoading(loading) {
   loginButton.disabled = loading;
@@ -42,18 +39,17 @@ function setLoading(loading) {
 
   if (text) {
     text.textContent = loading
-      ? "Đang đăng nhập..."
+      ? "Đang kiểm tra..."
       : "Đăng nhập";
   }
 
   loginButton.style.opacity = loading ? "0.7" : "";
 }
 
-
 function friendlyAuthError(error) {
+  console.error("FIREBASE AUTH ERROR:", error);
 
   switch (error?.code) {
-
     case "auth/invalid-credential":
     case "auth/invalid-login-credentials":
       return "Email hoặc mật khẩu không đúng.";
@@ -62,10 +58,10 @@ function friendlyAuthError(error) {
       return "Tài khoản đã bị khóa.";
 
     case "auth/too-many-requests":
-      return "Có quá nhiều lần đăng nhập không thành công. Vui lòng thử lại sau.";
+      return "Có quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.";
 
     case "auth/network-request-failed":
-      return "Không thể kết nối máy chủ. Kiểm tra Internet và thử lại.";
+      return "Không thể kết nối Firebase. Kiểm tra Internet.";
 
     case "auth/invalid-email":
       return "Email chưa đúng định dạng.";
@@ -73,36 +69,55 @@ function friendlyAuthError(error) {
     case "auth/user-not-found":
       return "Không tìm thấy tài khoản.";
 
+    case "auth/wrong-password":
+      return "Mật khẩu không đúng.";
+
+    case "auth/api-key-not-valid":
+      return "Firebase API Key không hợp lệ.";
+
+    case "auth/operation-not-allowed":
+      return "Phương thức Email/Password chưa được bật.";
+
     default:
-      return "Đăng nhập không thành công. Vui lòng thử lại.";
+      return `Firebase lỗi: ${error?.code || "UNKNOWN_ERROR"}`;
   }
 }
 
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-/* ================================
-   HIỆN / ẨN MẬT KHẨU
-================================ */
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        const error = new Error(message);
+        error.code = "DEBUG_TIMEOUT";
+        reject(error);
+      }, ms);
+    })
+  ]);
+}
+
+
+/* =========================
+   PASSWORD SHOW / HIDE
+========================= */
 
 passwordToggle?.addEventListener("click", () => {
-
   const showing = password.type === "text";
 
-  password.type = showing
-    ? "password"
-    : "text";
-
-  passwordToggle.textContent = showing
-    ? "Hiện"
-    : "Ẩn";
+  password.type = showing ? "password" : "text";
+  passwordToggle.textContent = showing ? "Hiện" : "Ẩn";
 });
 
 
-/* ================================
-   QUÊN MẬT KHẨU
-================================ */
+/* =========================
+   FORGOT PASSWORD
+========================= */
 
 forgotButton?.addEventListener("click", async () => {
-
   clearErrors();
 
   const emailValue = email.value.trim();
@@ -110,25 +125,24 @@ forgotButton?.addEventListener("click", async () => {
   if (!emailValue) {
     emailError.textContent =
       "Nhập email trước khi khôi phục mật khẩu.";
-
     email.focus();
     return;
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-
     emailError.textContent =
       "Email chưa đúng định dạng.";
-
     email.focus();
     return;
   }
 
   try {
+    showMessage("Đang gửi email khôi phục...", "info");
 
-    await sendPasswordResetEmail(
-      auth,
-      emailValue
+    await withTimeout(
+      sendPasswordResetEmail(auth, emailValue),
+      15000,
+      "Gửi email khôi phục quá thời gian."
     );
 
     showMessage(
@@ -137,24 +151,18 @@ forgotButton?.addEventListener("click", async () => {
     );
 
   } catch (error) {
-
-    console.error(
-      "PASSWORD_RESET_ERROR:",
-      error
-    );
-
+    console.error("PASSWORD_RESET_ERROR:", error);
     showMessage(
       friendlyAuthError(error),
       "error"
     );
   }
-
 });
 
 
-/* ================================
-   ĐĂNG NHẬP FIREBASE
-================================ */
+/* =========================
+   LOGIN
+========================= */
 
 form?.addEventListener("submit", async (event) => {
 
@@ -162,120 +170,118 @@ form?.addEventListener("submit", async (event) => {
 
   clearErrors();
 
-  const emailValue =
-    email.value.trim();
-
-  const passwordValue =
-    password.value;
+  const emailValue = email.value.trim();
+  const passwordValue = password.value;
 
   let valid = true;
 
-
-  /* Validate Email */
-
   if (!emailValue) {
-
-    emailError.textContent =
-      "Vui lòng nhập email.";
-
+    emailError.textContent = "Vui lòng nhập email.";
     valid = false;
-
   } else if (
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
   ) {
-
     emailError.textContent =
       "Email chưa đúng định dạng.";
-
     valid = false;
   }
-
-
-  /* Validate Password */
 
   if (!passwordValue) {
-
     passwordError.textContent =
       "Vui lòng nhập mật khẩu.";
-
     valid = false;
   }
 
-
-  if (!valid) {
-    return;
-  }
-
+  if (!valid) return;
 
   setLoading(true);
 
-
   try {
 
-    /*
-     * Ghi nhớ đăng nhập:
-     * LOCAL = giữ phiên đăng nhập
-     * SESSION = chỉ giữ trong phiên hiện tại
-     */
-
-    const persistence =
-      remember?.checked
-        ? browserLocalPersistence
-        : browserSessionPersistence;
-
-
-    await setPersistence(
-      auth,
-      persistence
+    /* STEP 1 */
+    showMessage(
+      "BƯỚC 1/3 — Đang kết nối Firebase...",
+      "info"
     );
 
+    console.log("DEBUG 1: Firebase Auth", auth);
 
-    /*
-     * Đăng nhập Firebase
-     */
+    if (!auth) {
+      throw new Error("Firebase Auth chưa được khởi tạo.");
+    }
 
-    const credential =
-      await signInWithEmailAndPassword(
+
+    /* STEP 2 */
+    showMessage(
+      "BƯỚC 2/3 — Đang thiết lập phiên đăng nhập...",
+      "info"
+    );
+
+    const persistence = remember?.checked
+      ? browserLocalPersistence
+      : browserSessionPersistence;
+
+    await withTimeout(
+      setPersistence(auth, persistence),
+      15000,
+      "Thiết lập phiên đăng nhập quá thời gian."
+    );
+
+    console.log("DEBUG 2: Persistence OK");
+
+
+    /* STEP 3 */
+    showMessage(
+      "BƯỚC 3/3 — Đang xác thực tài khoản...",
+      "info"
+    );
+
+    console.log("DEBUG 3: Signing in...");
+
+    const credential = await withTimeout(
+      signInWithEmailAndPassword(
         auth,
         emailValue,
         passwordValue
-      );
+      ),
+      15000,
+      "Firebase Authentication không phản hồi sau 15 giây."
+    );
 
-
-    /*
-     * Làm mới ID Token để lấy
-     * custom claims mới nhất.
-     */
-
-    await credential.user.getIdToken(true);
-
+    console.log(
+      "DEBUG 4: LOGIN SUCCESS",
+      credential.user.uid
+    );
 
     showMessage(
       "Đăng nhập thành công. Đang mở hệ thống...",
       "success"
     );
 
+    await wait(500);
 
-    /*
-     * Chuyển sang Dashboard
-     */
-
-    window.location.replace(
-      "dashboard.html"
-    );
-
+    window.location.replace("dashboard.html");
 
   } catch (error) {
 
-    console.error(
-      "LOGIN_ERROR:",
-      error
-    );
+    console.error("LOGIN DEBUG ERROR:", error);
 
-    showMessage(
-      friendlyAuthError(error),
-      "error"
-    );
+    if (error?.code === "DEBUG_TIMEOUT") {
+
+      showMessage(
+        "Firebase không phản hồi sau 15 giây. " +
+        "Mở console để xem chi tiết lỗi.",
+        "error"
+      );
+
+    } else {
+
+      showMessage(
+        friendlyAuthError(error),
+        "error"
+      );
+
+    }
 
   } finally {
 
