@@ -1,10 +1,97 @@
-const { db, normalizeText, normalizePhone } = require('../lib/admin');
+const { db } = require('../lib/admin');
+const { normalizeText, normalizePhone } = require('../lib/utils');
+
 async function findCustomerDuplicates(data) {
+  const phone = normalizePhone(data.phone);
+  const nameNormalized = normalizeText(data.name);
+  const addressNormalized = normalizeText(data.address);
+
   const [byPhone, byName] = await Promise.all([
-    db.collection('customers').where('phone','==',normalizePhone(data.phone)).limit(5).get(),
-    db.collection('customers').where('nameNormalized','==',normalizeText(data.name)).limit(5).get()
+    phone
+      ? db.collection('customers')
+          .where('phone', '==', phone)
+          .limit(10)
+          .get()
+      : { docs: [] },
+
+    nameNormalized
+      ? db.collection('customers')
+          .where('nameNormalized', '==', nameNormalized)
+          .limit(10)
+          .get()
+      : { docs: [] }
   ]);
-  const ids = new Set([...byPhone.docs, ...byName.docs].map(d=>d.id));
-  return [...ids].map(id=>({id, reason:'CUSTOMER_MATCH'}));
+
+  const candidates = new Map();
+
+  for (const doc of [...byPhone.docs, ...byName.docs]) {
+    candidates.set(doc.id, {
+      id: doc.id,
+      ...doc.data()
+    });
+  }
+
+  const results = [];
+
+  for (const customer of candidates.values()) {
+    const samePhone =
+      phone &&
+      normalizePhone(customer.phone) === phone;
+
+    const sameName =
+      nameNormalized &&
+      normalizeText(customer.name) === nameNormalized;
+
+    const sameAddress =
+      addressNormalized &&
+      normalizeText(customer.address) === addressNormalized;
+
+    if (samePhone && sameName && sameAddress) {
+      results.push({
+        id: customer.id,
+        reason: 'CUSTOMER_MATCH',
+        severity: 'BLOCK'
+      });
+      continue;
+    }
+
+    if (samePhone && sameName) {
+      results.push({
+        id: customer.id,
+        reason: 'PHONE_AND_NAME_MATCH',
+        severity: 'BLOCK'
+      });
+      continue;
+    }
+
+    if (samePhone) {
+      results.push({
+        id: customer.id,
+        reason: 'PHONE_MATCH',
+        severity: 'WARN'
+      });
+      continue;
+    }
+
+    if (sameName && sameAddress) {
+      results.push({
+        id: customer.id,
+        reason: 'NAME_AND_ADDRESS_MATCH',
+        severity: 'WARN'
+      });
+      continue;
+    }
+
+    if (sameName) {
+      results.push({
+        id: customer.id,
+        reason: 'NAME_MATCH',
+        severity: 'WARN'
+      });
+    }
+  }
+
+  return results;
 }
+
 module.exports = { findCustomerDuplicates };
