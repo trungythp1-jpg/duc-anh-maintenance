@@ -15,6 +15,24 @@ const PRIORITIES = [
   'URGENT'
 ];
 
+function validateMaintenancePeriod(data) {
+  const year = Number(data.periodYear);
+  const month = Number(data.periodMonth);
+
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) {
+    throw new Error('INVALID_MAINTENANCE_PERIOD_YEAR');
+  }
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error('INVALID_MAINTENANCE_PERIOD_MONTH');
+  }
+
+  return {
+    periodYear: year,
+    periodMonth: month
+  };
+}
+
 function validateWorkOrder(data) {
   assertRequired(data, [
     'type',
@@ -35,6 +53,15 @@ function validateWorkOrder(data) {
     throw new Error('INVALID_WORK_ORDER_PRIORITY');
   }
 
+  let periodYear = null;
+  let periodMonth = null;
+
+  if (type === 'MAINTENANCE') {
+    const period = validateMaintenancePeriod(data);
+    periodYear = period.periodYear;
+    periodMonth = period.periodMonth;
+  }
+
   return {
     ...data,
 
@@ -47,9 +74,12 @@ function validateWorkOrder(data) {
     agreementId: clean(data.agreementId),
     scheduleId: clean(data.scheduleId),
 
+    periodYear,
+    periodMonth,
+
     priority,
 
-    // Status khi tạo mới phải do server kiểm soát.
+    // Status khi tạo mới luôn do server kiểm soát.
     status: 'SCHEDULED',
 
     description: clean(data.description),
