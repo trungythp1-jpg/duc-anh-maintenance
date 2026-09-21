@@ -1,0 +1,1 @@
+import { db } from '../core/firebase.js'; import { collection,query,orderBy,limit,getDocs } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js'; export async function getRecentAuditLogs(max=50){if(!db)return [];const s=await getDocs(query(collection(db,'activityLogs'),orderBy('timestamp','desc'),limit(max)));return s.docs.map(d=>({id:d.id,...d.data()}));}

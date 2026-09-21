@@ -1,1 +1,1 @@
-// audit module scaffold — Đức Anh Maintenance V1.0
+export * from './audit-logs.js';
