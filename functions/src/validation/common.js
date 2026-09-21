@@ -1,4 +1,4 @@
-const { clean, normalizePhone } = require('../lib/admin');
+const { clean, normalizePhone } = require('../lib/utils');
 
 const VN_PHONE = /^(?:\+84|84|0)(?:3|5|7|8|9)\d{8}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
