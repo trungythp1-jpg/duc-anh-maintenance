@@ -602,6 +602,127 @@
       border-color:#555
     }
 
+    .location-box{
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#0d0d0d
+    }
+
+    .location-status{
+      display:flex;
+      align-items:flex-start;
+      gap:10px
+    }
+
+    .location-dot{
+      width:9px;
+      height:9px;
+      margin-top:5px;
+      flex:0 0 auto;
+      border-radius:50%;
+      background:#666;
+      box-shadow:0 0 0 4px rgba(255,255,255,.03)
+    }
+
+    .location-status.ready .location-dot{
+      background:var(--y);
+      box-shadow:0 0 0 4px rgba(245,196,0,.10)
+    }
+
+    .location-status b{
+      display:block;
+      color:#eee;
+      font-size:12px
+    }
+
+    .location-status small{
+      display:block;
+      margin-top:4px;
+      color:#777;
+      font-size:10px;
+      line-height:1.4
+    }
+
+    .location-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-top:12px
+    }
+
+    .location-button{
+      min-height:40px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#151515;
+      color:#ddd;
+      font-size:11px;
+      font-weight:700
+    }
+
+    .location-button:hover{
+      border-color:var(--y);
+      color:var(--y)
+    }
+
+    .location-button.secondary-location{
+      background:#111
+    }
+
+    .location-coordinates{
+      display:none;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid var(--border);
+      color:#999;
+      font-size:10px;
+      line-height:1.5
+    }
+
+    .location-coordinates.show{
+      display:block
+    }
+
+    .location-profile{
+      margin-bottom:24px
+    }
+
+    .location-profile-card{
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#0d0d0d
+    }
+
+    .location-profile-title{
+      color:#eee;
+      font-size:12px;
+      font-weight:700
+    }
+
+    .location-profile-meta{
+      margin-top:5px;
+      color:#777;
+      font-size:10px;
+      line-height:1.5
+    }
+
+    .location-profile-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:11px
+    }
+
+    .location-profile-empty{
+      padding:14px;
+      border:1px dashed var(--border);
+      border-radius:10px;
+      color:#777;
+      font-size:11px
+    }
+
     .footer{
       display:flex;
       justify-content:space-between;
@@ -823,6 +944,15 @@
       </div>
 
 
+      <p class="section-title">Vị trí công trình</p>
+
+      <div class="location-profile" id="dLocation">
+        <div class="location-profile-empty">
+          Chưa có vị trí được ghim.
+        </div>
+      </div>
+
+
       <p class="section-title">Tài sản & dịch vụ</p>
 
       <div class="grid">
@@ -987,6 +1117,34 @@
           </div>
 
 
+          <div class="field full">
+
+            <label>📍 Vị trí công trình</label>
+
+            <div class="location-box">
+              <div class="location-status" id="locationStatus">
+                <span class="location-dot"></span>
+                <div>
+                  <b>Chưa ghim vị trí</b>
+                  <small>Hãy lấy GPS hiện tại hoặc chọn trên bản đồ.</small>
+                </div>
+              </div>
+
+              <div class="location-actions">
+                <button class="location-button" id="useCurrentLocation" type="button">
+                  📍 Lấy vị trí hiện tại
+                </button>
+                <button class="location-button secondary-location" id="chooseMapLocation" type="button">
+                  🗺 Chọn trên bản đồ
+                </button>
+              </div>
+
+              <div class="location-coordinates" id="locationCoordinates"></div>
+            </div>
+
+          </div>
+
+
           <div class="field">
 
             <label for="manager">Người phụ trách</label>
@@ -1065,6 +1223,7 @@ let buildings = [];
 let elevators = [];
 let customers = [];
 let currentBuilding = null;
+let selectedLocation = null;
 
 
 /* --------------------------------
@@ -1174,6 +1333,153 @@ function managerPhone(building){
   }
 
   return "";
+}
+
+
+function normalizeLocation(location){
+  if (!location) return null;
+
+  const lat = Number(location.lat);
+  const lng = Number(location.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+    accuracy: Number.isFinite(Number(location.accuracy))
+      ? Number(location.accuracy)
+      : null,
+    source: location.source || "map"
+  };
+}
+
+
+function formatCoordinates(location){
+  const item = normalizeLocation(location);
+  if (!item) return "";
+
+  const accuracy = item.accuracy
+    ? ` · ±${Math.round(item.accuracy)} m`
+    : "";
+
+  return `${item.lat.toFixed(6)}, ${item.lng.toFixed(6)}${accuracy}`;
+}
+
+
+function googleMapsUrl(location){
+  const item = normalizeLocation(location);
+  if (!item) return "#";
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.lat},${item.lng}`)}`;
+}
+
+
+function updateLocationUI(){
+  const status = $("locationStatus");
+  const coordinates = $("locationCoordinates");
+
+  if (!status || !coordinates) return;
+
+  const item = normalizeLocation(selectedLocation);
+
+  if (!item){
+    status.classList.remove("ready");
+    status.innerHTML = `
+      <span class="location-dot"></span>
+      <div>
+        <b>Chưa ghim vị trí</b>
+        <small>Hãy lấy GPS hiện tại hoặc chọn trên bản đồ.</small>
+      </div>
+    `;
+    coordinates.className = "location-coordinates";
+    coordinates.textContent = "";
+    return;
+  }
+
+  status.classList.add("ready");
+  status.innerHTML = `
+    <span class="location-dot"></span>
+    <div>
+      <b>Đã ghim vị trí</b>
+      <small>Nguồn: ${item.source === "gps" ? "GPS thiết bị" : "Chọn trên bản đồ"}</small>
+    </div>
+  `;
+
+  coordinates.className = "location-coordinates show";
+  coordinates.textContent = formatCoordinates(item);
+}
+
+
+function resetLocation(){
+  selectedLocation = null;
+  updateLocationUI();
+}
+
+
+function setLocationFromPosition(position){
+  selectedLocation = {
+    lat: position.coords.latitude,
+    lng: position.coords.longitude,
+    accuracy: position.coords.accuracy,
+    source: "gps"
+  };
+
+  updateLocationUI();
+}
+
+
+function requestCurrentLocation(){
+  if (!navigator.geolocation){
+    showNotice("Thiết bị/trình duyệt không hỗ trợ GPS.", "error");
+    return;
+  }
+
+  showNotice("Đang lấy vị trí hiện tại...", "info");
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      setLocationFromPosition(position);
+      showNotice("Đã lấy vị trí hiện tại.", "success");
+    },
+    error => {
+      console.error("GEOLOCATION ERROR:", error);
+
+      const messages = {
+        1: "Bạn chưa cấp quyền vị trí cho trình duyệt.",
+        2: "Không xác định được vị trí hiện tại.",
+        3: "Lấy vị trí quá lâu. Vui lòng thử lại."
+      };
+
+      showNotice(
+        messages[error.code] || "Không thể lấy vị trí hiện tại.",
+        "error"
+      );
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+  );
+}
+
+
+function chooseMapLocation(){
+  if (!selectedLocation){
+    showNotice(
+      "Bản đồ chọn điểm sẽ được mở ở bước tiếp theo. Hiện tại hãy dùng 'Lấy vị trí hiện tại' để ghim GPS.",
+      "info"
+    );
+    return;
+  }
+
+  showNotice(
+    "Đã có vị trí. Bản đồ chọn điểm thủ công sẽ được hoàn thiện ở bước Map UI.",
+    "info"
+  );
 }
 
 
@@ -1639,6 +1945,8 @@ async function openDetail(id){
   $("dElevators").textContent =
     buildingElevators.length;
 
+  renderLocationProfile(building.location);
+
 
   setTab("elevators");
 
@@ -1646,6 +1954,57 @@ async function openDetail(id){
 
   document.body.style.overflow = "hidden";
 
+}
+
+
+/* --------------------------------
+   LOCATION PROFILE
+-------------------------------- */
+
+function renderLocationProfile(location){
+  const container = $("dLocation");
+  const item = normalizeLocation(location);
+
+  if (!container) return;
+
+  if (!item){
+    container.innerHTML = `
+      <div class="location-profile-empty">
+        Chưa có vị trí được ghim.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="location-profile-card">
+      <div class="location-profile-title">
+        📍 ${escapeHtml(formatCoordinates(item))}
+      </div>
+
+      <div class="location-profile-meta">
+        Nguồn: ${item.source === "gps" ? "GPS thiết bị" : "Chọn trên bản đồ"}
+      </div>
+
+      <div class="location-profile-actions">
+        <a
+          class="action"
+          href="${escapeHtml(googleMapsUrl(item))}"
+          target="_blank"
+          rel="noopener">
+          Mở bản đồ
+        </a>
+
+        <a
+          class="action"
+          href="${escapeHtml(googleMapsUrl(item))}"
+          target="_blank"
+          rel="noopener">
+          Chỉ đường
+        </a>
+      </div>
+    </div>
+  `;
 }
 
 
@@ -1816,6 +2175,8 @@ function openModal(){
   }
 
 
+  resetLocation();
+
   $("modal").classList.add("show");
 
   document.body.style.overflow = "hidden";
@@ -1836,6 +2197,7 @@ function closeModal(){
   document.body.style.overflow = "";
 
   $("buildingForm").reset();
+  resetLocation();
 
 }
 
@@ -1910,6 +2272,8 @@ async function handleCreateBuilding(event){
             safe($("address").value)
 
         },
+
+        location: normalizeLocation(selectedLocation),
 
         manager: {
 
@@ -2057,6 +2421,18 @@ $("search").addEventListener(
 $("status").addEventListener(
   "change",
   render
+);
+
+
+$("useCurrentLocation").addEventListener(
+  "click",
+  requestCurrentLocation
+);
+
+
+$("chooseMapLocation").addEventListener(
+  "click",
+  chooseMapLocation
 );
 
 
