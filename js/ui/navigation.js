@@ -41,11 +41,11 @@
 
   function buildSidebar() {
     const sidebar = document.createElement("aside");
-    sidebar.className = "da-sidebar";
+    sidebar.className = "da-shared-sidebar";
     sidebar.id = "daSidebar";
 
     sidebar.innerHTML = `
-      <div class="da-sidebar-brand">
+      <div class="da-brand">
         <div class="da-brand-mark">DA</div>
         <div>
           <div class="da-brand-name">ĐỨC ANH</div>
@@ -53,17 +53,23 @@
         </div>
       </div>
 
-      <nav class="da-nav" aria-label="Điều hướng chính">
+      <nav class="da-nav-scroll" aria-label="Điều hướng chính">
         ${NAV_ITEMS.map(section => `
           <div class="da-nav-section">
-            <div class="da-nav-title">${section.section}</div>
+            <div class="da-nav-label">${section.section}</div>
+
             ${section.items.map(item => {
-              const unavailable = item.module ? " data-module=\"" + item.module + "\"" : "";
+              const unavailable = item.module
+                ? ` data-module="${item.module}"`
+                : "";
+
               const href = item.href || "#";
+
               return `
-                <a class="da-nav-item"
-                   href="${href}"${unavailable}
-                   data-label="${item.label}">
+                <a
+                  class="da-nav-item"
+                  href="${href}"${unavailable}
+                  data-label="${item.label}">
                   <span class="da-nav-icon">${item.icon}</span>
                   <span>${item.label}</span>
                 </a>
@@ -73,9 +79,9 @@
         `).join("")}
       </nav>
 
-      <div class="da-sidebar-footer">
-        <div class="da-footer-line">ĐỨC ANH MAINTENANCE</div>
-        <div class="da-footer-version">DEV V1.5</div>
+      <div class="da-nav-footer">
+        <strong>ĐỨC ANH MAINTENANCE</strong>
+        <span>DEV V1.5</span>
       </div>
     `;
 
@@ -84,7 +90,7 @@
 
   function buildMobileControls() {
     const button = document.createElement("button");
-    button.className = "da-menu-button";
+    button.className = "da-mobile-menu";
     button.id = "daMenuButton";
     button.type = "button";
     button.setAttribute("aria-label", "Mở menu");
@@ -103,6 +109,7 @@
 
     sidebar.querySelectorAll(".da-nav-item").forEach(link => {
       const href = link.getAttribute("href");
+
       if (href && href !== "#" && href === page) {
         link.classList.add("active");
         link.setAttribute("aria-current", "page");
@@ -127,7 +134,7 @@
   }
 
   function init() {
-    if (document.querySelector(".da-sidebar")) return;
+    if (document.querySelector(".da-shared-sidebar")) return;
 
     document.body.classList.add("da-nav-page");
 
@@ -161,7 +168,12 @@
       if (module) {
         event.preventDefault();
         closeSidebar(sidebar, overlay, button);
-        alert("Module này đang trong quá trình xây dựng.\n\nĐức Anh Maintenance DEV V1.5");
+
+        alert(
+          "Module này đang trong quá trình xây dựng.\n\n" +
+          "Đức Anh Maintenance DEV V1.5"
+        );
+
         return;
       }
 
