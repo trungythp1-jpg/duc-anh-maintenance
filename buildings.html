@@ -129,94 +129,271 @@
   .footer{flex-direction:column;gap:5px}
 }
   
-/* V1.6 INPUT / MODAL FIX
-   Shared navigation must stay behind page dialogs.
-*/
-.da-shared-sidebar{
-  z-index:900 !important;
-}
-.da-nav-overlay{
-  z-index:850 !important;
-}
-.da-mobile-menu{
-  z-index:950 !important;
-}
+    /* Shared Navigation V1.11 — embedded to avoid navigation.css load/path/cache issues */
+    .da-shared-sidebar{
+      position:fixed;
+      inset:0 auto 0 0;
+      width:236px;
+      height:100dvh;
+      z-index:900;
+      display:flex;
+      flex-direction:column;
+      background:#0b0b0b;
+      border-right:1px solid #242424;
+      color:#aaa;
+    }
 
-/* Customer / Building / Elevator dialogs */
-.modal-backdrop,
-.backdrop,
-.detail-backdrop{
-  z-index:3000 !important;
-}
+    .da-brand{
+      flex:0 0 auto;
+      min-height:96px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:18px 20px;
+      border-bottom:1px solid #242424;
+    }
 
-.modal,
-.drawer{
-  position:relative;
-  z-index:3001;
-}
+    .da-brand-mark{
+      width:48px;
+      height:48px;
+      flex:0 0 48px;
+      display:grid;
+      place-items:center;
+      border-radius:12px;
+      background:#f5c400;
+      color:#080808;
+      font-weight:900;
+      font-size:17px;
+    }
+
+    .da-brand-name{
+      color:#f4f4f4;
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:.08em;
+    }
+
+    .da-brand-sub{
+      margin-top:4px;
+      color:#777;
+      font-size:10px;
+      letter-spacing:.18em;
+    }
+
+    .da-nav-scroll{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      padding:20px 12px;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .da-nav-section{margin-bottom:18px}
+
+    .da-nav-label{
+      padding:0 14px 9px;
+      color:#666;
+      font-size:10px;
+      font-weight:700;
+      letter-spacing:.18em;
+    }
+
+    .da-nav-item{
+      min-height:46px;
+      display:flex;
+      align-items:center;
+      gap:13px;
+      padding:0 14px;
+      margin:3px 0;
+      border:1px solid transparent;
+      border-radius:10px;
+      color:#aaa;
+      text-decoration:none;
+      font-size:14px;
+      font-weight:600;
+    }
+
+    .da-nav-item:hover{
+      color:#fff;
+      background:#151515;
+    }
+
+    .da-nav-item.active{
+      color:#f5c400;
+      background:rgba(245,196,0,.09);
+      border-color:rgba(245,196,0,.35);
+    }
+
+    .da-nav-icon{
+      width:22px;
+      flex:0 0 22px;
+      text-align:center;
+      font-size:16px;
+      line-height:1;
+    }
+
+    .da-nav-footer{
+      flex:0 0 auto;
+      padding:16px 20px calc(20px + env(safe-area-inset-bottom));
+      border-top:1px solid #242424;
+      color:#aaa;
+      background:#0b0b0b;
+    }
+
+    .da-nav-footer strong{
+      display:block;
+      color:#aaa;
+      font-size:10px;
+      letter-spacing:.06em;
+    }
+
+    .da-nav-footer span{
+      display:block;
+      margin-top:4px;
+      color:#666;
+      font-size:10px;
+    }
+
+    /* Desktop */
+    body.da-nav-page{
+      padding-left:236px !important;
+    }
+
+    .da-mobile-menu{
+      position:fixed;
+      top:18px;
+      left:18px;
+      z-index:950;
+      display:none;
+      width:54px;
+      height:54px;
+      padding:0;
+      border:1px solid #303030;
+      border-radius:14px;
+      background:#151515;
+      color:#f4f4f4;
+      font-size:24px;
+      line-height:1;
+      box-shadow:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    .da-mobile-menu.open{
+      background:#151515;
+      color:#f4f4f4;
+    }
+
+    .da-nav-overlay{
+      position:fixed;
+      inset:0;
+      z-index:850;
+      display:none;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(3px);
+    }
+
+    .da-nav-overlay.show{display:block}
+
+    html.da-sidebar-open,
+    html.da-sidebar-open body{
+      overflow:hidden;
+    }
+
+    /* Dialogs always above navigation */
+    .modal-backdrop,
+    .backdrop,
+    .detail-backdrop{
+      z-index:3000 !important;
+    }
+
+    .modal,
+    .drawer{
+      position:relative;
+      z-index:3001;
+    }
+
+    /* iPad / iPhone */
+    @media(max-width:820px){
+
+      body.da-nav-page{
+        padding-left:0 !important;
+        overflow-x:hidden;
+      }
+
+      .da-shared-sidebar{
+        width:min(315px,88vw);
+        transform:translateX(-105%);
+        transition:transform .22s ease;
+        box-shadow:18px 0 60px rgba(0,0,0,.55);
+      }
+
+      .da-shared-sidebar.open{
+        transform:translateX(0);
+      }
+
+      .da-mobile-menu{
+        display:grid;
+        place-items:center;
+      }
+
+      /*
+       * IMPORTANT:
+       * The Dashboard has a header zone above its content.
+       * Customer / Building / Elevator now reserve the same zone,
+       * so the menu never sits on top of the page title.
+       */
+      body.da-nav-page > main{
+        max-width:100%;
+      }
+    }
+
+    /* iPhone portrait */
+    @media(max-width:640px){
+
+      .da-mobile-menu{
+        top:16px;
+        left:16px;
+        width:54px;
+        height:54px;
+        border-radius:14px;
+      }
+
+      .da-brand{
+        min-height:86px;
+        padding:15px 18px;
+      }
+
+      .da-brand-mark{
+        width:46px;
+        height:46px;
+        flex-basis:46px;
+      }
+
+      .da-nav-scroll{
+        padding:18px 10px;
+      }
+
+      .da-nav-item{
+        min-height:48px;
+        padding:0 14px;
+      }
+
+      .da-nav-footer{
+        padding:13px 18px calc(15px + env(safe-area-inset-bottom));
+      }
+    }
+
+    html,
+    body{
+      max-width:100%;
+      overflow-x:hidden;
+    }
 
 
-/* V1.9: Add Building robust click + iPhone modal fix */
-#addButton{position:relative !important;z-index:20 !important;pointer-events:auto !important;touch-action:manipulation !important;}
-#addButton *{pointer-events:none;}
-.modal,.modal-backdrop,.backdrop{z-index:3000 !important;}
-@media(max-width:1100px){
-  .page{
-    padding:20px 16px;
-  }
-
-  .head{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .head .primary{
-    width:100%;
-    min-height:54px;
-  }
-
-  .kpis{
-    grid-template-columns:1fr 1fr;
-  }
-}
-
-/* iPad / tablet: giữ Sidebar cố định, không để nội dung chạy phía dưới. */
-@media(min-width:821px){
-  body.da-nav-page{
-    padding-left:236px !important;
-    padding-top:0 !important;
-  }
-
-  .page{
-    max-width:none;
-  }
-}
-
-@media(max-width:820px){
-  body.da-nav-page{
-    padding-left:0 !important;
-    padding-top:74px !important;
-  }
-
-  .page{
-    padding:14px 12px !important;
-  }
-
-  .head{
-    flex-direction:column !important;
-    align-items:stretch !important;
-  }
-
-  .head .primary{
-    width:100% !important;
-    min-height:54px;
-  }
-
-  .kpis{
-    grid-template-columns:1fr !important;
-  }
-}
-
+    /* V1.11 CUSTOMER HARD FIX — self-contained navigation */
+    @media(max-width:820px){    }
+    @media(max-width:640px){    }
+  
 
 /* =========================================================
    DASHBOARD TOPBAR — V1.12
@@ -817,7 +994,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.18</span>
+        <span>DEV V1.20</span>
       </div>
     </section>
 
@@ -1339,7 +1516,7 @@ function setTab(tab){
   `).join("");
 }
 
-async window.__openBuildingModal = async function(event){
+window.__openBuildingModal = async function(event){
   if (event){
     event.preventDefault();
     event.stopPropagation();
@@ -1455,7 +1632,10 @@ async function handleOpenBuildingModal(event){
   }
 }
 
-$("addButton").onclick = handleOpenBuildingModal;
+const addBuildingButton = $("addButton");
+if (addBuildingButton){
+  addBuildingButton.addEventListener("click", handleOpenBuildingModal);
+}
 
 $("closeDetail").addEventListener("click",closeDetail);
 
@@ -1564,7 +1744,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.18</span>
+        <span>DEV V1.20</span>
       </div>
     `;
 
@@ -1628,7 +1808,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.18"
+          "Đức Anh Maintenance DEV V1.20"
         );
         return;
       }
@@ -1651,7 +1831,7 @@ loadData();
     init();
   }
 })();
-</script>
+\nconsole.log("BUILDINGS V1.20 READY — Add Building handler loaded.");\n</script>
 
 </body>
 </html>
