@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b0b0b">
   <title>Khách hàng — Đức Anh Maintenance</title>
+
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
+  <link rel="stylesheet" href="css/navigation.css">
 
   <style>
     :root{
@@ -17,8 +19,9 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--da-black);color:var(--da-text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    button,input,select,textarea{font:inherit} button{cursor:pointer}
-    .customer-page{min-height:100vh;padding:28px}.customer-container{width:min(1500px,100%);margin:0 auto}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}
+    .customer-page{min-height:100vh;padding:28px}
+    .customer-container{width:min(1500px,100%);margin:0 auto}
     .customer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px}
     .customer-eyebrow{margin:0 0 7px;color:var(--da-yellow);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
     .customer-title{margin:0;font-size:clamp(28px,3vw,38px);line-height:1.1;letter-spacing:-.03em}
@@ -37,20 +40,21 @@
     .table-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--da-border)}
     .table-title{font-size:14px;font-weight:800}.table-count{color:var(--da-muted);font-size:12px}
     .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:900px;border-collapse:collapse}th{padding:13px 16px;border-bottom:1px solid var(--da-border);color:#858585;font-size:10px;font-weight:700;letter-spacing:.08em;text-align:left;text-transform:uppercase;white-space:nowrap}
-    td{padding:15px 16px;border-bottom:1px solid #202020;color:#ddd;font-size:13px;vertical-align:middle}tbody tr:hover{background:#171717}tbody tr:last-child td{border-bottom:0}
+    table{width:100%;min-width:900px;border-collapse:collapse}
+    th{padding:13px 16px;border-bottom:1px solid var(--da-border);color:#858585;font-size:10px;font-weight:700;letter-spacing:.08em;text-align:left;text-transform:uppercase;white-space:nowrap}
+    td{padding:15px 16px;border-bottom:1px solid #202020;color:#ddd;font-size:13px;vertical-align:middle}
+    tbody tr:hover{background:#171717}tbody tr:last-child td{border-bottom:0}
     th:last-child,td:last-child{position:sticky;right:0;background:#121212;box-shadow:-10px 0 18px rgba(0,0,0,.32);z-index:1}
-    thead th:last-child{z-index:3;background:#121212}
-    tbody tr:hover td:last-child{background:#171717}
+    thead th:last-child{z-index:3;background:#121212}tbody tr:hover td:last-child{background:#171717}
     .customer-name{color:#fff;font-weight:700}.customer-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}.muted{color:var(--da-muted)}
     .status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}.status:before{content:"";width:6px;height:6px;border-radius:50%}
     .status.active{background:rgba(56,199,147,.1);color:var(--da-green)}.status.active:before{background:var(--da-green)}
     .status.care{background:rgba(245,196,0,.1);color:var(--da-yellow)}.status.care:before{background:var(--da-yellow)}
     .status.inactive{background:rgba(239,98,98,.1);color:var(--da-red)}.status.inactive:before{background:var(--da-red)}
-    .action-button,.icon-button{border:1px solid var(--da-border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}.action-button:hover,.icon-button:hover{border-color:var(--da-yellow);color:var(--da-yellow)}
+    .action-button,.icon-button{border:1px solid var(--da-border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}
+    .action-button:hover,.icon-button:hover{border-color:var(--da-yellow);color:var(--da-yellow)}
     .table-footer{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--da-border);color:var(--da-muted);font-size:11px}
-    .mobile-customer-list{display:none}
-    .customer-card{padding:15px;border-bottom:1px solid #202020}.customer-card:last-child{border-bottom:0}
+    .mobile-customer-list{display:none}.customer-card{padding:15px;border-bottom:1px solid #202020}.customer-card:last-child{border-bottom:0}
     .customer-card-top{display:flex;justify-content:space-between;gap:10px}.customer-card-contact{margin:9px 0;color:#bbb;font-size:12px;line-height:1.55}
     .customer-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}.mini-stat{padding:9px;border:1px solid var(--da-border);border-radius:8px;background:#0d0d0d}.mini-stat b{display:block;font-size:15px}.mini-stat span{color:#777;font-size:9px}
     .customer-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
@@ -110,7 +114,6 @@
 
     <section class="customer-table-card">
       <div class="table-header"><div class="table-title">Danh sách khách hàng</div><div class="table-count" id="tableCount">Đang tải...</div></div>
-
       <div id="firebaseMessage" class="firebase-message"></div>
 
       <div class="table-scroll">
@@ -121,13 +124,11 @@
       </div>
 
       <div class="mobile-customer-list" id="mobileCustomerList"></div>
-
-      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.2</span></div>
+      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.5</span></div>
     </section>
   </div>
 </main>
 
-<!-- CUSTOMER DETAIL -->
 <div class="detail-backdrop" id="detailBackdrop">
   <aside class="detail-drawer" role="dialog" aria-modal="true">
     <div class="detail-head">
@@ -164,7 +165,6 @@
   </aside>
 </div>
 
-<!-- ADD CUSTOMER -->
 <div class="modal-backdrop" id="customerModal">
   <section class="customer-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head"><h2 id="modalTitle">Thêm khách hàng</h2><button class="close-button" id="closeModalButton" type="button">×</button></div>
@@ -179,6 +179,7 @@
           <div class="form-field"><label for="taxCode">Mã số thuế</label><input id="taxCode" placeholder="Nếu có"></div>
           <div class="form-field full"><label for="customerAddress">Địa chỉ</label><input id="customerAddress" placeholder="Địa chỉ khách hàng"></div>
         </div>
+
         <p class="form-section-title">Người liên hệ</p>
         <div class="form-grid">
           <div class="form-field"><label for="contactName">Họ tên</label><input id="contactName" placeholder="Người liên hệ"></div>
@@ -190,6 +191,9 @@
     </form>
   </section>
 </div>
+
+<!-- Shared navigation V1.5 -->
+<script src="js/ui/navigation.js"></script>
 
 <script type="module">
 import {
@@ -242,8 +246,7 @@ function statusLabel(status) {
     inactive: ["Ngừng hoạt động", "inactive"]
   };
 
-  const [label, cls] = map[status] || map.inactive;
-
+  const [label, cls] = map[status] || ["Chưa xác định", "inactive"];
   return `<span class="status ${cls}">${label}</span>`;
 }
 
@@ -254,7 +257,6 @@ function typeLabel(type) {
     building_management: "Ban quản lý tòa nhà",
     investor: "Chủ đầu tư"
   };
-
   return map[type] || type || "—";
 }
 
@@ -293,12 +295,11 @@ async function loadCustomers() {
   `;
 
   try {
-    const [customerData, buildingData, elevatorData] =
-      await Promise.all([
-        getCustomers(),
-        getBuildings(),
-        getElevators()
-      ]);
+    const [customerData, buildingData, elevatorData] = await Promise.all([
+      getCustomers(),
+      getBuildings(),
+      getElevators()
+    ]);
 
     customers = customerData;
     buildings = buildingData;
@@ -338,23 +339,14 @@ async function loadCustomers() {
       </div>
     `;
 
-    showFirebaseMessage(
-      `Lỗi Firebase: ${error.message}`,
-      "error"
-    );
+    showFirebaseMessage(`Lỗi Firebase: ${error.message}`, "error");
   }
 }
 
 function updateKpis() {
   const total = customers.length;
-
-  const active = customers.filter(
-    customer => customer.status === "active"
-  ).length;
-
-  const care = customers.filter(
-    customer => customer.status === "care"
-  ).length;
+  const active = customers.filter(customer => customer.status === "active").length;
+  const care = customers.filter(customer => customer.status === "care").length;
 
   document.querySelector(".kpi-card:nth-child(1) .kpi-value").textContent = total;
   document.querySelector(".kpi-card:nth-child(2) .kpi-value").textContent = active;
@@ -374,20 +366,15 @@ function filteredCustomers() {
         customer.phone,
         customer.email,
         customer.manager
-      ]
-        .join(" ")
-        .toLowerCase();
+      ].join(" ").toLowerCase();
 
-      return (
-        (!q || text.includes(q)) &&
-        (status === "all" || customer.status === status)
-      );
+      return (!q || text.includes(q)) &&
+             (status === "all" || customer.status === status);
     });
 }
 
 function renderCustomers() {
   const list = filteredCustomers();
-
   tableCount.textContent = `${list.length} khách hàng`;
 
   if (!list.length) {
@@ -404,7 +391,6 @@ function renderCustomers() {
         Chưa có khách hàng
       </div>
     `;
-
     return;
   }
 
@@ -423,9 +409,7 @@ function renderCustomers() {
       <td>${escapeHtml(customer.manager)}</td>
       <td>${statusLabel(customer.status)}</td>
       <td>
-        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">
-          Xem
-        </button>
+        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">Xem</button>
       </td>
     </tr>
   `).join("");
@@ -447,35 +431,21 @@ function renderCustomers() {
       </div>
 
       <div class="customer-card-stats">
-        <div class="mini-stat">
-          <b>${customer.buildings}</b>
-          <span>TÒA NHÀ</span>
-        </div>
-        <div class="mini-stat">
-          <b>${customer.elevators}</b>
-          <span>THANG MÁY</span>
-        </div>
-        <div class="mini-stat">
-          <b>—</b>
-          <span>HỢP ĐỒNG</span>
-        </div>
+        <div class="mini-stat"><b>${customer.buildings}</b><span>TÒA NHÀ</span></div>
+        <div class="mini-stat"><b>${customer.elevators}</b><span>THANG MÁY</span></div>
+        <div class="mini-stat"><b>—</b><span>HỢP ĐỒNG</span></div>
       </div>
 
       <div class="customer-card-bottom">
         <span class="muted">${escapeHtml(customer.type)}</span>
-        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">
-          Xem hồ sơ
-        </button>
+        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">Xem hồ sơ</button>
       </div>
     </article>
   `).join("");
 }
 
 function openDetail(id) {
-  const rawCustomer = customers.find(
-    customer => customer.id === id
-  );
-
+  const rawCustomer = customers.find(customer => customer.id === id);
   if (!rawCustomer) return;
 
   selectedCustomer = normalizeCustomer(rawCustomer);
@@ -506,39 +476,26 @@ function closeDetail() {
 
 function setDetailTab(tab) {
   document.querySelectorAll(".detail-tab").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.tab === tab
-    );
+    button.classList.toggle("active", button.dataset.tab === tab);
   });
 
   if (!selectedCustomer) return;
 
   const customerId = selectedCustomer.id;
-
-  const customerBuildings = buildings.filter(
-    building => building.customerId === customerId
-  );
-
-  const customerElevators = elevators.filter(
-    elevator => elevator.customerId === customerId
-  );
+  const customerBuildings = buildings.filter(building => building.customerId === customerId);
+  const customerElevators = elevators.filter(elevator => elevator.customerId === customerId);
 
   let rows = [];
 
   if (tab === "buildings") {
     rows = customerBuildings.map(building => [
       building.name || "Tòa nhà",
-      building.status === "active"
-        ? "Đang quản lý"
-        : building.status || "—"
+      building.status === "active" ? "Đang quản lý" : building.status || "—"
     ]);
   } else if (tab === "elevators") {
     rows = customerElevators.map(elevator => [
       elevator.name || "Thang máy",
-      elevator.status === "active"
-        ? "Đang hoạt động"
-        : elevator.status || "—"
+      elevator.status === "active" ? "Đang hoạt động" : elevator.status || "—"
     ]);
   } else if (tab === "contracts") {
     rows = [["Chưa có dữ liệu hợp đồng", "—"]];
@@ -550,10 +507,7 @@ function setDetailTab(tab) {
 
   if (!rows.length) {
     $("detailList").innerHTML = `
-      <div class="detail-row">
-        <b>Chưa có dữ liệu</b>
-        <span>—</span>
-      </div>
+      <div class="detail-row"><b>Chưa có dữ liệu</b><span>—</span></div>
     `;
     return;
   }
@@ -566,18 +520,12 @@ function setDetailTab(tab) {
   `).join("");
 }
 
-/* =========================
-   ADD CUSTOMER
-========================= */
-
 $("addCustomerButton").onclick = () => {
   $("modalTitle").textContent = "Thêm khách hàng";
   modal.classList.add("show");
   document.body.style.overflow = "hidden";
 
-  setTimeout(() => {
-    $("customerName").focus();
-  }, 50);
+  setTimeout(() => $("customerName").focus(), 50);
 };
 
 function closeModal() {
@@ -599,44 +547,23 @@ detailBackdrop.onclick = event => {
 
 $("closeDetailButton").onclick = closeDetail;
 
-/* =========================
-   VIEW CUSTOMER
-========================= */
-
 document.addEventListener("click", event => {
   const button = event.target.closest("[data-view]");
   if (!button) return;
-
   openDetail(button.dataset.view);
 });
 
-/* =========================
-   DETAIL TABS
-========================= */
-
 document.querySelectorAll(".detail-tab").forEach(button => {
-  button.onclick = () => {
-    setDetailTab(button.dataset.tab);
-  };
+  button.onclick = () => setDetailTab(button.dataset.tab);
 });
-
-/* =========================
-   SEARCH / FILTER
-========================= */
 
 searchInput.oninput = renderCustomers;
 statusFilter.onchange = renderCustomers;
 
-/* =========================
-   CREATE CUSTOMER
-========================= */
-
 form.onsubmit = async event => {
   event.preventDefault();
 
-  const submitButton =
-    form.querySelector("button[type='submit']");
-
+  const submitButton = form.querySelector("button[type='submit']");
   const originalText = submitButton.textContent;
 
   submitButton.disabled = true;
@@ -665,31 +592,19 @@ form.onsubmit = async event => {
 
   try {
     const created = await createCustomer(data);
-
     console.log("CUSTOMER CREATED:", created);
 
     closeModal();
-
     await loadCustomers();
-
     openDetail(created.id);
-
   } catch (error) {
     console.error("CREATE CUSTOMER ERROR:", error);
-
-    alert(
-      "Không thể lưu khách hàng.\n\n" +
-      error.message
-    );
+    alert("Không thể lưu khách hàng.\n\n" + error.message);
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = originalText;
   }
 };
-
-/* =========================
-   ESC
-========================= */
 
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
@@ -697,10 +612,6 @@ document.addEventListener("keydown", event => {
     closeModal();
   }
 });
-
-/* =========================
-   START
-========================= */
 
 loadCustomers();
 </script>
