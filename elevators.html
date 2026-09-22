@@ -49,6 +49,16 @@
     .drawer{position:absolute;top:0;right:0;width:min(650px,100%);height:100%;overflow-y:auto;background:#111;border-left:1px solid var(--border);box-shadow:-25px 0 80px rgba(0,0,0,.55)}
     .drawer-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--border);background:rgba(17,17,17,.96);backdrop-filter:blur(10px)}
     .kicker{margin:0 0 5px;color:var(--y);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.drawer-head h2{margin:0;font-size:20px}.drawer-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}
+    .drawer-head-actions{
+      display:flex;
+      align-items:center;
+      gap:8px
+    }
+
+    .drawer-head-actions .action{
+      min-height:34px
+    }
+
     .close{width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:#171717;color:#aaa;font-size:18px}
     .drawer-body{padding:20px}.section-title{margin:0 0 10px;color:var(--y);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}.item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#151515}.item span{display:block;color:#777;font-size:10px;margin-bottom:5px}.item b{font-size:13px}
@@ -143,13 +153,16 @@
     <tbody id="tbody"></tbody>
     </table></div>
     <div class="mobile-list" id="mobileList"></div>
-    <div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.3.1</span></div>
+    <div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.4</span></div>
     </section>
     </div></main>
 
     <div class="backdrop" id="backdrop">
     <aside class="drawer" role="dialog" aria-modal="true">
-    <div class="drawer-head"><div><p class="kicker">Elevator Asset Profile</p><h2 id="dName">—</h2><div class="drawer-id" id="dId">—</div></div><button class="close" id="closeDetail" type="button">×</button></div>
+    <div class="drawer-head"><div><p class="kicker">Elevator Asset Profile</p><h2 id="dName">—</h2><div class="drawer-id" id="dId">—</div></div><div class="drawer-head-actions">
+        <button class="action" id="editDetail" type="button">Sửa</button>
+        <button class="close" id="closeDetail" type="button">×</button>
+      </div></div>
     <div class="drawer-body">
     <div id="dStatus" style="margin-bottom:18px"></div>
     <p class="section-title">Định danh & quan hệ</p>
@@ -183,7 +196,7 @@
     <div class="modal-backdrop" id="modalBackdrop">
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head"><div><h3 id="modalTitle">Thêm thang máy</h3><p>Thang máy phải thuộc một tòa nhà và khách hàng đã có trong Firebase.</p></div><button class="close" id="closeModal" type="button">×</button></div>
-    <form id="elevatorForm"><div class="modal-body"><div class="form-error" id="formError"></div><div class="form-grid">
+    <form id="elevatorForm"><input id="editingElevatorId" type="hidden"><div class="modal-body"><div class="form-error" id="formError"></div><div class="form-grid">
     <div class="field full"><label for="eName">Tên thang máy *</label><input id="eName" required placeholder="Ví dụ: Thang máy nhà anh Trung"></div>
     <div class="field"><label for="customerSelect">Khách hàng *</label><select id="customerSelect" required><option value="">Đang tải...</option></select></div>
     <div class="field"><label for="buildingSelect">Tòa nhà *</label><select id="buildingSelect" required disabled><option value="">Chọn khách hàng trước</option></select></div>
@@ -200,6 +213,7 @@
     <script type="module">
     import {
       createElevator,
+      updateElevator,
       getElevators,
       getBuildings,
       getCustomers
@@ -544,6 +558,9 @@
 
     function resetForm() {
       $("elevatorForm").reset();
+      $("editingElevatorId").value = "";
+
+      $("modalTitle").textContent = "Thêm thang máy";
 
       $("formError").textContent = "";
       $("formError").classList.remove("show");
@@ -556,6 +573,52 @@
 
     function openModal() {
       resetForm();
+      $("modalBackdrop").classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+
+    function openEditModal(id) {
+      const elevator = elevators.find(item => item.id === id);
+
+      if (!elevator) return;
+
+      resetForm();
+
+      $("editingElevatorId").value = elevator.id;
+      $("modalTitle").textContent = "Sửa thang máy";
+
+      $("eName").value = elevator.name || "";
+
+      renderCustomerOptions();
+
+      $("customerSelect").value = elevator.customerId || "";
+      renderBuildingOptions(elevator.customerId || "");
+
+      $("buildingSelect").value = elevator.buildingId || "";
+
+      $("capacity").value =
+        elevator.technical?.capacityKg ?? "";
+
+      $("speed").value =
+        elevator.technical?.speed ?? "";
+
+      $("stops").value =
+        elevator.technical?.stops ?? "";
+
+      $("year").value =
+        elevator.technical?.installationYear ?? "";
+
+      $("machine").value =
+        elevator.technical?.machine?.brand ?? "";
+
+      $("controller").value =
+        elevator.technical?.controller?.brand ?? "";
+
+      $("assetCode").value =
+        elevator.assetCode ?? "";
+
+      $("saveButton").textContent = "Lưu thay đổi";
+
       $("modalBackdrop").classList.add("show");
       document.body.style.overflow = "hidden";
     }
@@ -594,6 +657,11 @@
         elevator.service?.maintenanceStatus === "active"
           ? "Đang theo dõi"
           : elevator.service?.maintenanceStatus || "—";
+
+      $("editDetail").onclick = () => {
+        closeDetail();
+        openEditModal(elevator.id);
+      };
 
       setTab("history");
 
@@ -655,28 +723,26 @@
       const name = $("eName").value.trim();
       const customerId = $("customerSelect").value;
       const buildingId = $("buildingSelect").value;
+      const editingId = $("editingElevatorId").value;
       const errorBox = $("formError");
 
       errorBox.classList.remove("show");
       errorBox.textContent = "";
 
       if (!name) {
-        errorBox.textContent =
-          "Tên thang máy là bắt buộc.";
+        errorBox.textContent = "Tên thang máy là bắt buộc.";
         errorBox.classList.add("show");
         return;
       }
 
       if (!customerId) {
-        errorBox.textContent =
-          "Vui lòng chọn khách hàng.";
+        errorBox.textContent = "Vui lòng chọn khách hàng.";
         errorBox.classList.add("show");
         return;
       }
 
       if (!buildingId) {
-        errorBox.textContent =
-          "Vui lòng chọn tòa nhà.";
+        errorBox.textContent = "Vui lòng chọn tòa nhà.";
         errorBox.classList.add("show");
         return;
       }
@@ -695,75 +761,102 @@
       }
 
       $("saveButton").disabled = true;
-      $("saveButton").textContent = "Đang lưu...";
+      $("saveButton").textContent =
+        editingId ? "Đang lưu..." : "Đang lưu...";
 
-      try {
-        const created = await createElevator({
-          name,
-          customerId,
-          buildingId,
-          assetCode: $("assetCode").value.trim(),
-          status: "active",
+      const payload = {
+        name,
+        customerId,
+        buildingId,
+        assetCode: $("assetCode").value.trim(),
+        technical: {
+          capacityKg:
+            $("capacity").value.trim()
+              ? Number($("capacity").value)
+              : null,
 
-          technical: {
-            capacityKg:
-              $("capacity").value.trim()
-                ? Number($("capacity").value)
-                : null,
+          speed:
+            $("speed").value.trim() || null,
 
-            speed:
-              $("speed").value.trim() || null,
+          stops:
+            $("stops").value.trim()
+              ? Number($("stops").value)
+              : null,
 
-            stops:
-              $("stops").value.trim()
-                ? Number($("stops").value)
-                : null,
-
-            machine: {
-              brand: $("machine").value.trim(),
-              model: ""
-            },
-
-            controller: {
-              brand: $("controller").value.trim(),
-              model: ""
-            },
-
-            installationYear:
-              $("year").value.trim()
-                ? Number($("year").value)
-                : null
+          machine: {
+            brand: $("machine").value.trim(),
+            model: ""
           },
 
-          service: {
-            maintenanceStatus: "active"
-          }
-        });
+          controller: {
+            brand: $("controller").value.trim(),
+            model: ""
+          },
 
-        closeModal();
+          installationYear:
+            $("year").value.trim()
+              ? Number($("year").value)
+              : null
+        }
+      };
 
-        await loadData();
+      try {
+        let saved;
 
-        setMessage(
-          `Đã tạo thang máy "${created.name}" thành công. Firebase Auto ID: ${created.id}`,
-          "success"
-        );
+        if (editingId) {
+          saved = await updateElevator(
+            editingId,
+            payload
+          );
+
+          closeModal();
+          await loadData();
+
+          setMessage(
+            `Đã cập nhật thang máy "${saved?.name || name}" thành công.`,
+            "success"
+          );
+        } else {
+          saved = await createElevator({
+            ...payload,
+            status: "active",
+            service: {
+              maintenanceStatus: "active"
+            }
+          });
+
+          closeModal();
+          await loadData();
+
+          setMessage(
+            `Đã tạo thang máy "${saved.name}" thành công. Firebase Auto ID: ${saved.id}`,
+            "success"
+          );
+        }
 
       } catch (error) {
         console.error(
-          "CREATE ELEVATOR ERROR:",
+          editingId
+            ? "UPDATE ELEVATOR ERROR:"
+            : "CREATE ELEVATOR ERROR:",
           error
         );
 
         errorBox.textContent =
           error?.message ||
-          "Không thể tạo thang máy.";
+          (
+            editingId
+              ? "Không thể cập nhật thang máy."
+              : "Không thể tạo thang máy."
+          );
 
         errorBox.classList.add("show");
 
         $("saveButton").disabled = false;
         $("saveButton").textContent =
-          "Lưu thang máy";
+          editingId
+            ? "Lưu thay đổi"
+            : "Lưu thang máy";
       }
     }
 
