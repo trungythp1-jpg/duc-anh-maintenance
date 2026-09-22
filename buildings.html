@@ -81,7 +81,54 @@
     .location-profile{margin-bottom:24px}.location-profile-card{padding:12px;border:1px solid var(--border);border-radius:10px;background:#0d0d0d}.location-profile-title{color:#eee;font-size:12px;font-weight:700}.location-profile-meta{margin-top:5px;color:#777;font-size:10px;line-height:1.5}.location-profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.location-profile-empty{padding:14px;border:1px dashed var(--border);border-radius:10px;color:#777;font-size:11px}
     .footer{display:flex;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--border);color:var(--muted);font-size:11px}.loading-row{padding:30px 18px;color:#777;text-align:center;font-size:12px}
     @media(max-width:900px){.page{padding:20px 16px}.kpis{grid-template-columns:1fr 1fr}}
-    @media(max-width:640px){.page{padding:16px 12px}.head{flex-direction:column}.primary{width:100%}.toolbar{flex-direction:column}.filter{width:100%}.scroll{display:none}.mobile-list{display:block}.grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal{align-items:flex-end;padding:0}.modal-box{max-height:94vh;border-radius:16px 16px 0 0}.drawer{width:100%;border-left:0}.footer{flex-direction:column;gap:5px}}
+    @media(max-width:640px){
+  .page{padding:16px 12px}
+  .head{flex-direction:column}
+  .primary{width:100%;min-height:54px}
+  .toolbar{flex-direction:column}
+  .filter{width:100%}
+  .scroll{display:none}
+  .mobile-list{display:block}
+  .grid{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .field.full{grid-column:auto}
+
+  .modal{
+    align-items:flex-start;
+    padding:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .modal-box{
+    width:100%;
+    min-height:100dvh;
+    max-height:none;
+    overflow:visible;
+    border:0;
+    border-radius:0;
+  }
+
+  .modal-head{
+    position:sticky;
+    top:0;
+    z-index:5;
+    background:#111;
+  }
+
+  .modal-body{overflow:visible}
+
+  .modal-foot{
+    position:relative;
+    padding-bottom:calc(15px + env(safe-area-inset-bottom));
+    background:#111;
+  }
+
+  .modal-foot .primary{flex:1}
+
+  .drawer{width:100%;border-left:0}
+  .footer{flex-direction:column;gap:5px}
+}
   
 /* V1.6 INPUT / MODAL FIX
    Shared navigation must stay behind page dialogs.
@@ -110,7 +157,7 @@
 }
 
 
-/* V1.8: mobile + button hit-area fix */
+/* V1.9: Add Building robust click + iPhone modal fix */
 #addButton{position:relative !important;z-index:20 !important;pointer-events:auto !important;touch-action:manipulation !important;}
 #addButton *{pointer-events:none;}
 .modal,.modal-backdrop,.backdrop{z-index:3000 !important;}
@@ -173,7 +220,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.5</span>
+        <span>DEV V1.9</span>
       </div>
     </section>
 
@@ -708,16 +755,15 @@ async function openModal(){
     }
   }
 
-  if (!customers.length){
-    showNotice("Chưa có khách hàng trong Firebase. Hãy tạo Customer trước.","error");
-    return;
-  }
-
   resetLocation();
   renderCustomerOptions();
+
   $("modal").classList.add("show");
   document.body.style.overflow = "hidden";
-  setTimeout(() => $("buildingName").focus(),40);
+
+  if (window.innerWidth > 820){
+    setTimeout(() => $("buildingName").focus(),40);
+  }
 }
 
 function closeModal(){
@@ -777,7 +823,35 @@ async function handleCreateBuilding(event){
   }
 }
 
-$("addButton").addEventListener("pointerup", event => { event.preventDefault(); event.stopPropagation(); openModal().catch(error => { console.error("OPEN BUILDING MODAL ERROR:",error); showNotice(error?.message || "Không thể mở form tạo tòa nhà.","error"); }); });
+let addBuildingBusy = false;
+
+async function handleOpenBuildingModal(event){
+  if (event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  if (addBuildingBusy) return;
+  addBuildingBusy = true;
+
+  try{
+    await openModal();
+  }catch(error){
+    console.error("OPEN BUILDING MODAL ERROR:", error);
+    showNotice(
+      error?.message || "Không thể mở form tạo tòa nhà.",
+      "error"
+    );
+  }finally{
+    addBuildingBusy = false;
+  }
+}
+
+$("addButton").addEventListener(
+  "click",
+  handleOpenBuildingModal,
+  { passive:false }
+);
 $("closeDetail").addEventListener("click",closeDetail);
 
 $("backdrop").addEventListener("click",event => {
