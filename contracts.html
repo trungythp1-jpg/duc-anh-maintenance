@@ -636,7 +636,10 @@ async function loadReferences(){
 
   if(errors.length){
     console.error("CONTRACT REFERENCE ERRORS:", errors);
-    setReferenceStatus(`Một phần dữ liệu chưa tải được: ${errors.join(" | ")}`, "error");
+    setReferenceStatus(
+      `Một phần dữ liệu chưa tải được: ${errors.join(" | ")}`,
+      "error"
+    );
   }else{
     setReferenceStatus(
       `Đã tải ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy.`,
@@ -865,6 +868,24 @@ form.addEventListener("submit", async e => {
 
   if(!payload.code || !payload.name){
     setFormError("Vui lòng nhập Mã hợp đồng và Tên hợp đồng.");
+    return;
+  }
+
+  /*
+   * Chống trùng mã hợp đồng ở phía giao diện trước khi ghi.
+   *
+   * Khi sửa, cho phép giữ nguyên mã của chính hợp đồng đang sửa.
+   */
+  const duplicate = contracts.find(c =>
+    String(c.code || "").trim().toLowerCase() ===
+      payload.code.trim().toLowerCase()
+    && String(c.id) !== String(editingId || "")
+  );
+
+  if(duplicate){
+    setFormError(
+      `Mã hợp đồng "${payload.code}" đã tồn tại. Vui lòng nhập mã khác.`
+    );
     return;
   }
 
