@@ -165,3 +165,21 @@ body.da-nav-page{
     place-items:center;
   }
 }
+/* Đức Anh Maintenance — Shared Navigation V1.6
+   Modal layering fix: page dialogs must appear above the persistent sidebar.
+*/
+
+.da-shared-sidebar{
+  z-index:900 !important;
+}
+
+.da-nav-overlay{
+  z-index:850 !important;
+}
+
+.da-mobile-menu{
+  z-index:950 !important;
+}
+
+/* Keep all existing navigation styling from navigation.css.
+   This file is an override to be appended/loaded after it. */
