@@ -682,13 +682,26 @@ function setTab(tab){
   `).join("");
 }
 
-function openModal(){
+async function openModal(){
+  /* Refresh references first so a Customer created on another page is available
+     without requiring the user to manually reload this page. */
+  if (!customers.length){
+    try{
+      const freshCustomers = await getCustomers();
+      customers = freshCustomers || [];
+      renderCustomerOptions();
+    }catch(error){
+      console.error("REFRESH CUSTOMER ERROR:", error);
+    }
+  }
+
   if (!customers.length){
     showNotice("Chưa có khách hàng trong Firebase. Hãy tạo Customer trước.","error");
     return;
   }
 
   resetLocation();
+  renderCustomerOptions();
   $("modal").classList.add("show");
   document.body.style.overflow = "hidden";
   setTimeout(() => $("buildingName").focus(),40);
@@ -751,7 +764,7 @@ async function handleCreateBuilding(event){
   }
 }
 
-$("addButton").addEventListener("click",openModal);
+$("addButton").addEventListener("click",() => { openModal().catch(error => { console.error("OPEN BUILDING MODAL ERROR:",error); showNotice(error?.message || "Không thể mở form tạo tòa nhà.","error"); }); });
 $("closeDetail").addEventListener("click",closeDetail);
 
 $("backdrop").addEventListener("click",event => {
