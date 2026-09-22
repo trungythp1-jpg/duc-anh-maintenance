@@ -89,6 +89,8 @@
     <select class="filter" id="status"><option value="all">Tất cả trạng thái</option><option value="active">Đang hoạt động</option><option value="maint">Đang bảo trì</option><option value="care">Cần xử lý</option><option value="inactive">Ngừng hoạt động</option></select>
     </section>
 
+    <div id="messageArea"></div>
+
     <section class="card">
     <div class="card-head"><div class="card-title">Danh sách thang máy</div><div class="count" id="count">8 thang máy</div></div>
     <div class="scroll"><table>
@@ -96,7 +98,7 @@
     <tbody id="tbody"></tbody>
     </table></div>
     <div class="mobile-list" id="mobileList"></div>
-    <div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.2</span></div>
+    <div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.3</span></div>
     </section>
     </div></main>
 
@@ -151,32 +153,680 @@
     </section></div>
 
     <script type="module">
-    import { createElevator, getElevators, getBuildings, getCustomers } from "./js/core/firestore-v1.js";
-    const $=id=>document.getElementById(id);let elevators=[],buildings=[],customers=[];
-    const statusMap={active:["Đang hoạt động","active"],maint:["Đang bảo trì","maint"],care:["Cần xử lý","care"],inactive:["Ngừng hoạt động","inactive"]};
-    function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-    function statusLabel(s){const x=statusMap[s]||statusMap.inactive;return `<span class="status ${x[1]}">${x[0]}</span>`}
-    function customerName(id){return customers.find(x=>x.id===id)?.name||"Không xác định"}
-    function buildingName(id){return buildings.find(x=>x.id===id)?.name||"Không xác định"}
-    function capacityLabel(v){return v===null||v===undefined||v===""?"—":`${v} kg`}
-    function speedLabel(v){return v===null||v===undefined||v===""?"—":`${v} m/s`}
-    function machineLabel(e){return e?.technical?.machine?.brand||"—"}
-    function controllerLabel(e){return e?.technical?.controller?.brand||"—"}
-    function filtered(){const q=$("search").value.trim().toLowerCase(),s=$("status").value;return elevators.filter(e=>{const t=[e.id,e.name,buildingName(e.buildingId),customerName(e.customerId),machineLabel(e),controllerLabel(e)].join(" ").toLowerCase();return(!q||t.includes(q))&&(s==="all"||e.status===s)})}
-    function renderKpis(){$("kpiTotal").textContent=elevators.length;$("kpiActive").textContent=elevators.filter(x=>x.status==="active").length;$('kpiMaint').textContent=elevators.filter(x=>x.status==="maint").length;$('kpiCare').textContent=elevators.filter(x=>x.status==="care").length}
-    function render(){const list=filtered();$("count").textContent=`${list.length} thang máy`;$('tbody').innerHTML=list.map(e=>`<tr><td><div class="name">${escapeHtml(e.name)}</div><div class="id">${escapeHtml(e.id)}</div></td><td>${escapeHtml(buildingName(e.buildingId))}</td><td>${escapeHtml(customerName(e.customerId))}</td><td>${escapeHtml(capacityLabel(e.technical?.capacityKg))}</td><td>${escapeHtml(e.technical?.stops??"—")}</td><td>${escapeHtml(machineLabel(e))}</td><td>${escapeHtml(controllerLabel(e))}</td><td>${statusLabel(e.status)}</td><td><button class="action" data-view="${escapeHtml(e.id)}" type="button">Xem</button></td></tr>`).join("");$('mobileList').innerHTML=list.map(e=>`<article class="elevator-item"><div class="e-top"><div><div class="name">${escapeHtml(e.name)}</div><div class="id">${escapeHtml(e.id)}</div></div>${statusLabel(e.status)}</div><div class="e-meta">${escapeHtml(buildingName(e.buildingId))}<br>${escapeHtml(customerName(e.customerId))}<br>${escapeHtml(machineLabel(e))} · ${escapeHtml(controllerLabel(e))} · ${escapeHtml(capacityLabel(e.technical?.capacityKg))} · ${escapeHtml(e.technical?.stops??"—")} điểm dừng</div><div class="stats"><div class="stat"><b>${escapeHtml(capacityLabel(e.technical?.capacityKg))}</b><span>TẢI TRỌNG</span></div><div class="stat"><b>${escapeHtml(e.technical?.stops??"—")}</b><span>ĐIỂM DỪNG</span></div><div class="stat"><b>${escapeHtml(e.technical?.installationYear??"—")}</b><span>LẮP ĐẶT</span></div></div><div class="bottom"><span class="muted">${escapeHtml(e.service?.maintenanceStatus==="active"?"Đang theo dõi":e.service?.maintenanceStatus||"—")}</span><button class="action" data-view="${escapeHtml(e.id)}" type="button">Xem hồ sơ</button></div></article>`).join("");if(!list.length){$("tbody").innerHTML="";$('mobileList').innerHTML='<div class="empty">Chưa có thang máy phù hợp với bộ lọc hiện tại.</div>'}}
-    function setMessage(message="",type=""){const a=$("messageArea");if(!message){a.innerHTML="";return}a.innerHTML=type==="error"?`<div class="error">${escapeHtml(message)}</div>`:`<div class="notice">${escapeHtml(message)}</div>`}
-    async function loadData(){setMessage("");$('tbody').innerHTML='<tr><td colspan="9"><div class="loading">Đang tải dữ liệu Firebase...</div></td></tr>';$('mobileList').innerHTML="";try{const[c,b,e]=await Promise.all([getCustomers(),getBuildings(),getElevators()]);customers=c;buildings=b;elevators=e;renderKpis();render();renderCustomerOptions()}catch(error){console.error(error);renderKpis();$('count').textContent="0 thang máy";$('tbody').innerHTML='<tr><td colspan="9"><div class="loading">Không thể tải dữ liệu.</div></td></tr>';$('mobileList').innerHTML="";setMessage(error?.message||"Không thể kết nối Firebase.","error")}}
-    function renderCustomerOptions(){const s=$("customerSelect");if(!customers.length){s.innerHTML='<option value="">Chưa có khách hàng</option>';s.disabled=true;$("buildingSelect").innerHTML='<option value="">Chưa có tòa nhà</option>';$("buildingSelect").disabled=true;return}s.disabled=false;s.innerHTML='<option value="">Chọn khách hàng</option>'+customers.slice().sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi")).map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");renderBuildingOptions("")}
-    function renderBuildingOptions(customerId){const s=$("buildingSelect");if(!customerId){s.innerHTML='<option value="">Chọn khách hàng trước</option>';s.disabled=true;return}const related=buildings.filter(b=>b.customerId===customerId).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));if(!related.length){s.innerHTML='<option value="">Khách hàng chưa có tòa nhà</option>';s.disabled=true;return}s.disabled=false;s.innerHTML='<option value="">Chọn tòa nhà</option>'+related.map(b=>`<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join("")}
-    function resetForm(){$("elevatorForm").reset();$("formError").textContent="";$("formError").classList.remove("show");renderCustomerOptions();$("saveButton").disabled=false;$("saveButton").textContent="Lưu thang máy"}
-    function openModal(){resetForm();$("modalBackdrop").classList.add("show");document.body.style.overflow="hidden"}
-    function closeModal(){$("modalBackdrop").classList.remove("show");document.body.style.overflow=""}
-    function openDetail(id){const e=elevators.find(x=>x.id===id);if(!e)return;$("dName").textContent=e.name||"—";$("dId").textContent=e.id;$("dStatus").innerHTML=statusLabel(e.status);$("dBuilding").textContent=buildingName(e.buildingId);$("dCustomer").textContent=customerName(e.customerId);$("dAssetStatus").textContent=e.status==="inactive"?"Ngừng hoạt động":"Đang quản lý";$("dCapacity").textContent=capacityLabel(e.technical?.capacityKg);$("dSpeed").textContent=speedLabel(e.technical?.speed);$("dStops").textContent=e.technical?.stops??"—";$("dMachine").textContent=machineLabel(e);$("dController").textContent=controllerLabel(e);$("dYear").textContent=e.technical?.installationYear??"—";$("dMaintenance").textContent=e.service?.maintenanceStatus==="active"?"Đang theo dõi":e.service?.maintenanceStatus||"—";setTab("history");$("backdrop").classList.add("show");document.body.style.overflow="hidden"}
-    function closeDetail(){$("backdrop").classList.remove("show");document.body.style.overflow=""}
-    function setTab(tab){document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));const data={history:[["Thông tin tài sản","Đang quản lý"],["Quan hệ tòa nhà","Đang theo dõi"],["Quan hệ khách hàng","Đang theo dõi"]],maintenance:[["Module bảo trì","Chưa kết nối"],["Lịch bảo trì","Chưa kết nối"],["Checklist","Chưa kết nối"]],workorders:[["Module Work Order","Chưa kết nối"],["Lệnh sửa chữa","Chưa kết nối"],["Xử lý sự cố","Chưa kết nối"]],contracts:[["Module hợp đồng","Chưa kết nối"],["Hợp đồng bảo trì","Chưa kết nối"]]};$("dList").innerHTML=(data[tab]||[]).map(x=>`<div class="row"><b>${escapeHtml(x[0])}</b><span>${escapeHtml(x[1])}</span></div>`).join("")}
-    async function handleCreate(event){event.preventDefault();const name=$("eName").value.trim(),customerId=$("customerSelect").value,buildingId=$("buildingSelect").value,errorBox=$("formError");errorBox.classList.remove("show");errorBox.textContent="";if(!name){errorBox.textContent="Tên thang máy là bắt buộc.";errorBox.classList.add("show");return}if(!customerId){errorBox.textContent="Vui lòng chọn khách hàng.";errorBox.classList.add("show");return}if(!buildingId){errorBox.textContent="Vui lòng chọn tòa nhà.";errorBox.classList.add("show");return}const selectedBuilding=buildings.find(x=>x.id===buildingId);if(!selectedBuilding||selectedBuilding.customerId!==customerId){errorBox.textContent="Tòa nhà không thuộc khách hàng đã chọn.";errorBox.classList.add("show");return}$("saveButton").disabled=true;$("saveButton").textContent="Đang lưu...";try{const created=await createElevator({name,customerId,buildingId,assetCode:$("assetCode").value.trim(),status:"active",technical:{capacityKg:$("capacity").value.trim()?Number($("capacity").value):null,speed:$("speed").value.trim()||null,stops:$("stops").value.trim()?Number($("stops").value):null,machine:{brand:$("machine").value.trim(),model:""},controller:{brand:$("controller").value.trim(),model:""},installationYear:$("year").value.trim()?Number($("year").value):null},service:{maintenanceStatus:"active"}});closeModal();await loadData();setMessage(`Đã tạo thang máy "${created.name}" thành công. Firebase Auto ID: ${created.id}`)}catch(error){console.error(error);errorBox.textContent=error?.message||"Không thể tạo thang máy.";errorBox.classList.add("show");$("saveButton").disabled=false;$("saveButton").textContent="Lưu thang máy"}}
-    $("addButton").addEventListener("click",openModal);$("closeModal").addEventListener("click",closeModal);$("cancelModal").addEventListener("click",closeModal);$("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))closeModal()});$("customerSelect").addEventListener("change",e=>renderBuildingOptions(e.target.value));$("elevatorForm").addEventListener("submit",handleCreate);$("search").addEventListener("input",render);$("status").addEventListener("change",render);$("closeDetail").addEventListener("click",closeDetail);$("backdrop").addEventListener("click",e=>{if(e.target===$("backdrop"))closeDetail()});document.addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(b)openDetail(b.dataset.view)});document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeDetail();closeModal()}});loadData();
+    import {
+      createElevator,
+      getElevators,
+      getBuildings,
+      getCustomers
+    } from "./js/core/firestore-v1.js";
+
+    const $ = id => document.getElementById(id);
+
+    let elevators = [];
+    let buildings = [];
+    let customers = [];
+
+    const statusMap = {
+      active: ["Đang hoạt động", "active"],
+      maint: ["Đang bảo trì", "maint"],
+      care: ["Cần xử lý", "care"],
+      inactive: ["Ngừng hoạt động", "inactive"]
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function statusLabel(status) {
+      const item = statusMap[status] || statusMap.inactive;
+      return `<span class="status ${item[1]}">${item[0]}</span>`;
+    }
+
+    function customerName(id) {
+      return customers.find(item => item.id === id)?.name || "Không xác định";
+    }
+
+    function buildingName(id) {
+      return buildings.find(item => item.id === id)?.name || "Không xác định";
+    }
+
+    function capacityLabel(value) {
+      return value === null || value === undefined || value === ""
+        ? "—"
+        : `${value} kg`;
+    }
+
+    function speedLabel(value) {
+      return value === null || value === undefined || value === ""
+        ? "—"
+        : `${value} m/s`;
+    }
+
+    function machineLabel(elevator) {
+      return elevator?.technical?.machine?.brand || "—";
+    }
+
+    function controllerLabel(elevator) {
+      return elevator?.technical?.controller?.brand || "—";
+    }
+
+    function filtered() {
+      const query = $("search").value.trim().toLowerCase();
+      const status = $("status").value;
+
+      return elevators.filter(elevator => {
+        const haystack = [
+          elevator.id,
+          elevator.name,
+          buildingName(elevator.buildingId),
+          customerName(elevator.customerId),
+          machineLabel(elevator),
+          controllerLabel(elevator)
+        ].join(" ").toLowerCase();
+
+        return (
+          (!query || haystack.includes(query)) &&
+          (status === "all" || elevator.status === status)
+        );
+      });
+    }
+
+    function renderKpis() {
+      $("kpiTotal").textContent = elevators.length;
+      $("kpiActive").textContent =
+        elevators.filter(item => item.status === "active").length;
+      $("kpiMaint").textContent =
+        elevators.filter(item => item.status === "maint").length;
+      $("kpiCare").textContent =
+        elevators.filter(item => item.status === "care").length;
+    }
+
+    function render() {
+      const list = filtered();
+
+      $("count").textContent = `${list.length} thang máy`;
+
+      $("tbody").innerHTML = list.map(elevator => `
+        <tr>
+          <td>
+            <div class="name">${escapeHtml(elevator.name)}</div>
+            <div class="id">${escapeHtml(elevator.id)}</div>
+          </td>
+          <td>${escapeHtml(buildingName(elevator.buildingId))}</td>
+          <td>${escapeHtml(customerName(elevator.customerId))}</td>
+          <td>${escapeHtml(capacityLabel(elevator.technical?.capacityKg))}</td>
+          <td>${escapeHtml(elevator.technical?.stops ?? "—")}</td>
+          <td>${escapeHtml(machineLabel(elevator))}</td>
+          <td>${escapeHtml(controllerLabel(elevator))}</td>
+          <td>${statusLabel(elevator.status)}</td>
+          <td>
+            <button
+              class="action"
+              data-view="${escapeHtml(elevator.id)}"
+              type="button">
+              Xem
+            </button>
+          </td>
+        </tr>
+      `).join("");
+
+      $("mobileList").innerHTML = list.map(elevator => `
+        <article class="elevator-item">
+          <div class="e-top">
+            <div>
+              <div class="name">${escapeHtml(elevator.name)}</div>
+              <div class="id">${escapeHtml(elevator.id)}</div>
+            </div>
+            ${statusLabel(elevator.status)}
+          </div>
+
+          <div class="e-meta">
+            ${escapeHtml(buildingName(elevator.buildingId))}<br>
+            ${escapeHtml(customerName(elevator.customerId))}<br>
+            ${escapeHtml(machineLabel(elevator))}
+            · ${escapeHtml(controllerLabel(elevator))}
+            · ${escapeHtml(capacityLabel(elevator.technical?.capacityKg))}
+            · ${escapeHtml(elevator.technical?.stops ?? "—")} điểm dừng
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <b>${escapeHtml(capacityLabel(elevator.technical?.capacityKg))}</b>
+              <span>TẢI TRỌNG</span>
+            </div>
+            <div class="stat">
+              <b>${escapeHtml(elevator.technical?.stops ?? "—")}</b>
+              <span>ĐIỂM DỪNG</span>
+            </div>
+            <div class="stat">
+              <b>${escapeHtml(elevator.technical?.installationYear ?? "—")}</b>
+              <span>LẮP ĐẶT</span>
+            </div>
+          </div>
+
+          <div class="bottom">
+            <span class="muted">
+              ${escapeHtml(
+                elevator.service?.maintenanceStatus === "active"
+                  ? "Đang theo dõi"
+                  : elevator.service?.maintenanceStatus || "—"
+              )}
+            </span>
+            <button
+              class="action"
+              data-view="${escapeHtml(elevator.id)}"
+              type="button">
+              Xem hồ sơ
+            </button>
+          </div>
+        </article>
+      `).join("");
+
+      if (!list.length) {
+        $("tbody").innerHTML = "";
+        $("mobileList").innerHTML =
+          '<div class="empty">Chưa có thang máy phù hợp với bộ lọc hiện tại.</div>';
+      }
+    }
+
+    function setMessage(message = "", type = "") {
+      const area = $("messageArea");
+      if (!area) return;
+
+      if (!message) {
+        area.innerHTML = "";
+        return;
+      }
+
+      if (type === "error") {
+        area.innerHTML =
+          `<div class="error">${escapeHtml(message)}</div>`;
+      } else {
+        area.innerHTML =
+          `<div class="notice">${escapeHtml(message)}</div>`;
+      }
+    }
+
+    function renderCustomerOptions() {
+      const customerSelect = $("customerSelect");
+
+      if (!customers.length) {
+        customerSelect.innerHTML =
+          '<option value="">Chưa có khách hàng</option>';
+        customerSelect.disabled = true;
+
+        $("buildingSelect").innerHTML =
+          '<option value="">Chưa có tòa nhà</option>';
+        $("buildingSelect").disabled = true;
+
+        return;
+      }
+
+      customerSelect.disabled = false;
+
+      customerSelect.innerHTML =
+        '<option value="">Chọn khách hàng</option>' +
+        customers
+          .slice()
+          .sort((a, b) =>
+            String(a.name || "").localeCompare(
+              String(b.name || ""),
+              "vi"
+            )
+          )
+          .map(customer => `
+            <option value="${escapeHtml(customer.id)}">
+              ${escapeHtml(customer.name)}
+            </option>
+          `)
+          .join("");
+
+      renderBuildingOptions("");
+    }
+
+    function renderBuildingOptions(customerId) {
+      const buildingSelect = $("buildingSelect");
+
+      if (!customerId) {
+        buildingSelect.innerHTML =
+          '<option value="">Chọn khách hàng trước</option>';
+        buildingSelect.disabled = true;
+        return;
+      }
+
+      const relatedBuildings = buildings
+        .filter(building => building.customerId === customerId)
+        .sort((a, b) =>
+          String(a.name || "").localeCompare(
+            String(b.name || ""),
+            "vi"
+          )
+        );
+
+      if (!relatedBuildings.length) {
+        buildingSelect.innerHTML =
+          '<option value="">Khách hàng chưa có tòa nhà</option>';
+        buildingSelect.disabled = true;
+        return;
+      }
+
+      buildingSelect.disabled = false;
+
+      buildingSelect.innerHTML =
+        '<option value="">Chọn tòa nhà</option>' +
+        relatedBuildings
+          .map(building => `
+            <option value="${escapeHtml(building.id)}">
+              ${escapeHtml(building.name)}
+            </option>
+          `)
+          .join("");
+    }
+
+    async function loadData() {
+      setMessage("");
+
+      $("tbody").innerHTML = `
+        <tr>
+          <td colspan="9">
+            <div class="loading">
+              Đang tải dữ liệu Firebase...
+            </div>
+          </td>
+        </tr>
+      `;
+
+      $("mobileList").innerHTML = "";
+
+      /*
+       * V1.3: tải từng collection độc lập.
+       * Một collection lỗi sẽ không làm dropdown khách hàng/tòa nhà bị trắng.
+       */
+      const results = await Promise.allSettled([
+        getCustomers(),
+        getBuildings(),
+        getElevators()
+      ]);
+
+      const customerResult = results[0];
+      const buildingResult = results[1];
+      const elevatorResult = results[2];
+
+      customers =
+        customerResult.status === "fulfilled"
+          ? customerResult.value || []
+          : [];
+
+      buildings =
+        buildingResult.status === "fulfilled"
+          ? buildingResult.value || []
+          : [];
+
+      elevators =
+        elevatorResult.status === "fulfilled"
+          ? elevatorResult.value || []
+          : [];
+
+      renderCustomerOptions();
+      renderKpis();
+      render();
+
+      $("count").textContent = `${elevators.length} thang máy`;
+
+      const errors = results
+        .filter(result => result.status === "rejected")
+        .map(result => result.reason?.message || "Lỗi Firebase");
+
+      if (errors.length) {
+        console.error("ELEVATOR FIRESTORE ERRORS:", errors);
+
+        setMessage(
+          `Một phần dữ liệu Firebase chưa tải được: ${errors.join(" | ")}`,
+          "error"
+        );
+      } else {
+        setMessage(
+          `Đã kết nối Firestore. ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy.`,
+          "success"
+        );
+      }
+    }
+
+    function resetForm() {
+      $("elevatorForm").reset();
+
+      $("formError").textContent = "";
+      $("formError").classList.remove("show");
+
+      renderCustomerOptions();
+
+      $("saveButton").disabled = false;
+      $("saveButton").textContent = "Lưu thang máy";
+    }
+
+    function openModal() {
+      resetForm();
+      $("modalBackdrop").classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal() {
+      $("modalBackdrop").classList.remove("show");
+      document.body.style.overflow = "";
+    }
+
+    function openDetail(id) {
+      const elevator = elevators.find(item => item.id === id);
+      if (!elevator) return;
+
+      $("dName").textContent = elevator.name || "—";
+      $("dId").textContent = elevator.id;
+      $("dStatus").innerHTML = statusLabel(elevator.status);
+      $("dBuilding").textContent = buildingName(elevator.buildingId);
+      $("dCustomer").textContent = customerName(elevator.customerId);
+      $("dAssetStatus").textContent =
+        elevator.status === "inactive"
+          ? "Ngừng hoạt động"
+          : "Đang quản lý";
+      $("dCapacity").textContent =
+        capacityLabel(elevator.technical?.capacityKg);
+      $("dSpeed").textContent =
+        speedLabel(elevator.technical?.speed);
+      $("dStops").textContent =
+        elevator.technical?.stops ?? "—";
+      $("dMachine").textContent =
+        machineLabel(elevator);
+      $("dController").textContent =
+        controllerLabel(elevator);
+      $("dYear").textContent =
+        elevator.technical?.installationYear ?? "—";
+      $("dMaintenance").textContent =
+        elevator.service?.maintenanceStatus === "active"
+          ? "Đang theo dõi"
+          : elevator.service?.maintenanceStatus || "—";
+
+      setTab("history");
+
+      $("backdrop").classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeDetail() {
+      $("backdrop").classList.remove("show");
+      document.body.style.overflow = "";
+    }
+
+    function setTab(tab) {
+      document
+        .querySelectorAll(".tab")
+        .forEach(button => {
+          button.classList.toggle(
+            "active",
+            button.dataset.tab === tab
+          );
+        });
+
+      const data = {
+        history: [
+          ["Thông tin tài sản", "Đang quản lý"],
+          ["Quan hệ tòa nhà", "Đang theo dõi"],
+          ["Quan hệ khách hàng", "Đang theo dõi"]
+        ],
+        maintenance: [
+          ["Module bảo trì", "Chưa kết nối"],
+          ["Lịch bảo trì", "Chưa kết nối"],
+          ["Checklist", "Chưa kết nối"]
+        ],
+        workorders: [
+          ["Module Work Order", "Chưa kết nối"],
+          ["Lệnh sửa chữa", "Chưa kết nối"],
+          ["Xử lý sự cố", "Chưa kết nối"]
+        ],
+        contracts: [
+          ["Module hợp đồng", "Chưa kết nối"],
+          ["Hợp đồng bảo trì", "Chưa kết nối"]
+        ]
+      };
+
+      $("dList").innerHTML =
+        (data[tab] || [])
+          .map(item => `
+            <div class="row">
+              <b>${escapeHtml(item[0])}</b>
+              <span>${escapeHtml(item[1])}</span>
+            </div>
+          `)
+          .join("");
+    }
+
+    async function handleCreate(event) {
+      event.preventDefault();
+
+      const name = $("eName").value.trim();
+      const customerId = $("customerSelect").value;
+      const buildingId = $("buildingSelect").value;
+      const errorBox = $("formError");
+
+      errorBox.classList.remove("show");
+      errorBox.textContent = "";
+
+      if (!name) {
+        errorBox.textContent =
+          "Tên thang máy là bắt buộc.";
+        errorBox.classList.add("show");
+        return;
+      }
+
+      if (!customerId) {
+        errorBox.textContent =
+          "Vui lòng chọn khách hàng.";
+        errorBox.classList.add("show");
+        return;
+      }
+
+      if (!buildingId) {
+        errorBox.textContent =
+          "Vui lòng chọn tòa nhà.";
+        errorBox.classList.add("show");
+        return;
+      }
+
+      const selectedBuilding =
+        buildings.find(item => item.id === buildingId);
+
+      if (
+        !selectedBuilding ||
+        selectedBuilding.customerId !== customerId
+      ) {
+        errorBox.textContent =
+          "Tòa nhà không thuộc khách hàng đã chọn.";
+        errorBox.classList.add("show");
+        return;
+      }
+
+      $("saveButton").disabled = true;
+      $("saveButton").textContent = "Đang lưu...";
+
+      try {
+        const created = await createElevator({
+          name,
+          customerId,
+          buildingId,
+          assetCode: $("assetCode").value.trim(),
+          status: "active",
+
+          technical: {
+            capacityKg:
+              $("capacity").value.trim()
+                ? Number($("capacity").value)
+                : null,
+
+            speed:
+              $("speed").value.trim() || null,
+
+            stops:
+              $("stops").value.trim()
+                ? Number($("stops").value)
+                : null,
+
+            machine: {
+              brand: $("machine").value.trim(),
+              model: ""
+            },
+
+            controller: {
+              brand: $("controller").value.trim(),
+              model: ""
+            },
+
+            installationYear:
+              $("year").value.trim()
+                ? Number($("year").value)
+                : null
+          },
+
+          service: {
+            maintenanceStatus: "active"
+          }
+        });
+
+        closeModal();
+
+        await loadData();
+
+        setMessage(
+          `Đã tạo thang máy "${created.name}" thành công. Firebase Auto ID: ${created.id}`,
+          "success"
+        );
+
+      } catch (error) {
+        console.error(
+          "CREATE ELEVATOR ERROR:",
+          error
+        );
+
+        errorBox.textContent =
+          error?.message ||
+          "Không thể tạo thang máy.";
+
+        errorBox.classList.add("show");
+
+        $("saveButton").disabled = false;
+        $("saveButton").textContent =
+          "Lưu thang máy";
+      }
+    }
+
+    $("addButton").addEventListener(
+      "click",
+      openModal
+    );
+
+    $("closeModal").addEventListener(
+      "click",
+      closeModal
+    );
+
+    $("cancelModal").addEventListener(
+      "click",
+      closeModal
+    );
+
+    $("modalBackdrop").addEventListener(
+      "click",
+      event => {
+        if (event.target === $("modalBackdrop")) {
+          closeModal();
+        }
+      }
+    );
+
+    $("customerSelect").addEventListener(
+      "change",
+      event => {
+        renderBuildingOptions(
+          event.target.value
+        );
+      }
+    );
+
+    $("elevatorForm").addEventListener(
+      "submit",
+      handleCreate
+    );
+
+    $("search").addEventListener(
+      "input",
+      render
+    );
+
+    $("status").addEventListener(
+      "change",
+      render
+    );
+
+    $("closeDetail").addEventListener(
+      "click",
+      closeDetail
+    );
+
+    $("backdrop").addEventListener(
+      "click",
+      event => {
+        if (event.target === $("backdrop")) {
+          closeDetail();
+        }
+      }
+    );
+
+    document.addEventListener(
+      "click",
+      event => {
+        const button =
+          event.target.closest("[data-view]");
+
+        if (button) {
+          openDetail(button.dataset.view);
+        }
+      }
+    );
+
+    document
+      .querySelectorAll(".tab")
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => setTab(button.dataset.tab)
+        );
+      });
+
+    document.addEventListener(
+      "keydown",
+      event => {
+        if (event.key === "Escape") {
+          closeDetail();
+          closeModal();
+        }
+      }
+    );
+
+    loadData().catch(error => {
+      console.error(
+        "ELEVATOR PAGE ERROR:",
+        error
+      );
+
+      setMessage(
+        error?.message ||
+        "Không thể khởi tạo module Thang máy.",
+        "error"
+      );
+    });
     </script>
     </body>
     </html>
