@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b0b0b">
-  <title>Tòa nhà — Đức Anh Maintenance DEV V1.25</title>
+  <title>Tòa nhà — Đức Anh Maintenance DEV V1.27</title>
 
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
@@ -51,7 +51,7 @@
     .active{background:rgba(56,199,147,.1);color:var(--green)}.active:before{background:var(--green)}
     .care{background:rgba(245,196,0,.1);color:var(--y)}.care:before{background:var(--y)}
     .inactive{background:rgba(239,98,98,.1);color:var(--red)}.inactive:before{background:var(--red)}
-    .action{border:1px solid var(--border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}.action:hover{border-color:var(--y);color:var(--y)}
+    .action{border:1px solid var(--border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}.action:hover{border-color:var(--y);color:var(--y)}.action.danger{color:#e95f5f;border-color:rgba(239,98,98,.28)}.action.danger:hover{border-color:#ef6262;background:rgba(239,98,98,.08);color:#ff7777}.action-group{display:flex;align-items:center;gap:6px;white-space:nowrap}
     .mobile-list{display:none}.building-item{padding:15px;border-bottom:1px solid #202020}.building-item:last-child{border:0}
     .building-top{display:flex;justify-content:space-between;gap:10px}.building-contact{margin:8px 0;color:#aaa;font-size:12px;line-height:1.5}
     .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{padding:9px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d}.stat b{display:block;font-size:15px}.stat span{color:#777;font-size:9px}
@@ -1129,6 +1129,41 @@
 
 </style>
 
+<style>
+/* V1.27 — BUILDING ADD BUTTON TEXT VISIBILITY LOCK
+   Safari/iPhone: keep the label visible after opening/closing the shared menu. */
+#addButton,
+#addButton span{
+  visibility:visible !important;
+  opacity:1 !important;
+}
+
+#addButton{
+  color:#080808 !important;
+  text-indent:0 !important;
+  overflow:visible !important;
+  white-space:nowrap !important;
+}
+
+#addButton > span{
+  display:inline-block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  color:inherit !important;
+  width:auto !important;
+  max-width:none !important;
+  overflow:visible !important;
+  text-indent:0 !important;
+}
+
+/* Never let the navigation state hide the building CTA label. */
+html.da-sidebar-open #addButton,
+html.da-sidebar-open #addButton > span{
+  visibility:visible !important;
+  opacity:1 !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -1215,7 +1250,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.25</span>
+        <span>DEV V1.27</span>
       </div>
     </section>
 
@@ -1369,6 +1404,9 @@ import {
   getElevators,
   getCustomers
 } from "./js/core/firestore-v1.js";
+
+import { deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { db } from "./js/core/firebase.js";
 
 const $ = id => document.getElementById(id);
 
@@ -1575,7 +1613,10 @@ function render(){
       <td>${buildingElevators.length}</td>
       <td>${escapeHtml(managerName(building))}</td>
       <td>${statusLabel(building.status)}</td>
-      <td><button class="action" data-view="${escapeHtml(building.id)}" type="button">Xem</button></td>
+      <td><div class="action-group">
+        <button class="action" data-view="${escapeHtml(building.id)}" type="button">Xem</button>
+        <button class="action danger" data-delete-building="${escapeHtml(building.id)}" type="button">Xóa</button>
+      </div></td>
     </tr>`;
   }).join("");
 
@@ -1595,7 +1636,10 @@ function render(){
       </div>
       <div class="bottom">
         <span class="muted">${escapeHtml(buildingTypeLabel(building.type))}</span>
-        <button class="action" data-view="${escapeHtml(building.id)}" type="button">Xem hồ sơ</button>
+        <div class="action-group">
+          <button class="action" data-view="${escapeHtml(building.id)}" type="button">Xem hồ sơ</button>
+          <button class="action danger" data-delete-building="${escapeHtml(building.id)}" type="button">Xóa</button>
+        </div>
       </div>
     </article>`;
   }).join("");
@@ -1693,6 +1737,30 @@ function closeDetail(){
   $("backdrop").classList.remove("show");
   document.body.style.overflow = "";
   currentBuilding = null;
+}
+
+async function handleDeleteBuilding(id){
+  const building = buildings.find(item => item.id === id);
+  if (!building) return;
+
+  const linkedElevators = elevatorsForBuilding(id);
+  if (linkedElevators.length){
+    showNotice(`Không thể xóa \"${building.name}\" vì đang có ${linkedElevators.length} thang máy liên kết. Hãy xử lý thang máy trước.`,"error");
+    return;
+  }
+
+  const confirmed = window.confirm(`Xóa tòa nhà \"${building.name}\"?\n\nThao tác này sẽ xóa dữ liệu tòa nhà khỏi Firebase và không thể hoàn tác.`);
+  if (!confirmed) return;
+
+  try{
+    await deleteDoc(doc(db,"buildings",id));
+    if (currentBuilding?.id === id) closeDetail();
+    showNotice(`Đã xóa tòa nhà \"${building.name}\".` ,"success");
+    await loadData();
+  }catch(error){
+    console.error("DELETE BUILDING ERROR:",error);
+    showNotice(`Không thể xóa tòa nhà: ${error?.message || "UNKNOWN_ERROR"}`,"error");
+  }
 }
 
 function setTab(tab){
@@ -1864,6 +1932,14 @@ $("modal").addEventListener("click",event => {
 });
 
 document.addEventListener("click",event => {
+  const deleteButton = event.target.closest("[data-delete-building]");
+  if (deleteButton){
+    event.preventDefault();
+    event.stopPropagation();
+    handleDeleteBuilding(deleteButton.dataset.deleteBuilding);
+    return;
+  }
+
   const button = event.target.closest("[data-view]");
   if (button) openDetail(button.dataset.view);
 });
@@ -1957,7 +2033,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.25</span>
+        <span>DEV V1.27</span>
       </div>
     `;
 
@@ -2021,7 +2097,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.25"
+          "Đức Anh Maintenance DEV V1.27"
         );
         return;
       }
