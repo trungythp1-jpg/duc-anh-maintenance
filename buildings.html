@@ -106,6 +106,16 @@
       background:#111;
     }
     .modal-head h2{margin:0;font-size:18px}
+
+    /* CRITICAL: the form owns the modal's scrollable body + fixed footer */
+    .modal-box > form{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
     .modal-body{
       flex:1 1 auto;
       min-height:0;
@@ -159,6 +169,12 @@
     overflow:visible;
     border:0;
     border-radius:0;
+  }
+
+  .modal-box > form{
+    display:block;
+    min-height:auto;
+    overflow:visible;
   }
 
   .modal-head{
@@ -1067,7 +1083,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.22</span>
+        <span>DEV V1.23</span>
       </div>
     </section>
 
@@ -1740,7 +1756,7 @@ loadData();
 </script>
 
 <script>
-/* Shared Navigation V1.22 — same topbar behavior as Dashboard */
+/* Shared Navigation V1.23 — same topbar behavior as Dashboard */
 (() => {
   const NAV_ITEMS = [
     { section:"TỔNG QUAN", items:[
@@ -1808,7 +1824,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.22</span>
+        <span>DEV V1.23</span>
       </div>
     `;
 
@@ -1872,7 +1888,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.22"
+          "Đức Anh Maintenance DEV V1.23"
         );
         return;
       }
