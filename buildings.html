@@ -511,6 +511,17 @@
   }
 }
 
+
+/* V1.17 — Add Building direct-open fallback */
+#addButton{
+  position:relative !important;
+  z-index:4000 !important;
+  pointer-events:auto !important;
+  touch-action:manipulation !important;
+  -webkit-tap-highlight-color:transparent;
+}
+#addButton *{pointer-events:none;}
+
 </style>
 </head>
 
@@ -561,7 +572,7 @@
         <h1>Tòa nhà</h1>
         <p class="sub">Quản lý tòa nhà, khách hàng, thang máy và trạng thái dịch vụ.</p>
       </div>
-      <button class="primary" id="addButton" type="button">＋ <span>Thêm tòa nhà</span></button>
+      <button class="primary" id="addButton" type="button" onclick="window.__openBuildingModal && window.__openBuildingModal(event)">＋ <span>Thêm tòa nhà</span></button>
     </header>
 
     <section class="kpis">
@@ -598,7 +609,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.16</span>
+        <span>DEV V1.17</span>
       </div>
     </section>
 
@@ -1120,6 +1131,28 @@ function setTab(tab){
   `).join("");
 }
 
+async window.__openBuildingModal = async function(event){
+  if (event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  const button = document.getElementById("addButton");
+  if (button && button.disabled) return;
+
+  try{
+    await openModal();
+  }catch(error){
+    console.error("OPEN BUILDING MODAL ERROR:", error);
+    const notice = document.getElementById("notice");
+    if (notice){
+      notice.textContent =
+        error?.message || "Không thể mở form tạo tòa nhà.";
+      notice.className = "notice show error";
+    }
+  }
+};
+
 async async function openModal(){
   /* Refresh references first so a Customer created on another page is available
      without requiring the user to manually reload this page. */
@@ -1204,22 +1237,11 @@ async function handleCreateBuilding(event){
 let addBuildingBusy = false;
 
 async function handleOpenBuildingModal(event){
-  if (event){
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
   if (addBuildingBusy) return;
   addBuildingBusy = true;
 
   try{
-    await openModal();
-  }catch(error){
-    console.error("OPEN BUILDING MODAL ERROR:", error);
-    showNotice(
-      error?.message || "Không thể mở form tạo tòa nhà.",
-      "error"
-    );
+    await window.__openBuildingModal(event);
   }finally{
     addBuildingBusy = false;
   }
@@ -1230,6 +1252,7 @@ $("addButton").addEventListener(
   handleOpenBuildingModal,
   { passive:false }
 );
+
 $("closeDetail").addEventListener("click",closeDetail);
 
 $("backdrop").addEventListener("click",event => {
@@ -1337,7 +1360,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.16</span>
+        <span>DEV V1.17</span>
       </div>
     `;
 
@@ -1401,7 +1424,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.16"
+          "Đức Anh Maintenance DEV V1.17"
         );
         return;
       }
