@@ -662,7 +662,9 @@ async function loadContracts(){
     $("contractRows").innerHTML = "";
     $("emptyState").style.display = "block";
     $("emptyState").textContent =
-      "Không tải được hợp đồng từ Firestore. Kiểm tra Console và Firestore Rules.";
+      "Không tải được hợp đồng từ Firestore: " +
+      (error?.message || "Lỗi không xác định.") +
+      " Kiểm tra Console và Firestore Rules.";
     $("pageStatus").textContent = "Lỗi tải dữ liệu";
   }
 }
