@@ -1,4 +1,4 @@
-/* Đức Anh Maintenance — Navigation V1.10
+/* Đức Anh Maintenance — Navigation V1.11
    iPhone / iPad menu aligned with Dashboard header.
    This file is self-contained and replaces the previous navigation.css.
 */
@@ -215,11 +215,8 @@ html.da-sidebar-open body{
    * Customer / Building / Elevator now reserve the same zone,
    * so the menu never sits on top of the page title.
    */
-  body.da-nav-page > main.page{
-    padding-top:120px !important;
-  }
-
   body.da-nav-page > main{
+    padding-top:120px !important;
     max-width:100%;
   }
 }
@@ -235,7 +232,7 @@ html.da-sidebar-open body{
     border-radius:14px;
   }
 
-  body.da-nav-page > main.page{
+  body.da-nav-page > main{
     padding-top:120px !important;
   }
 
