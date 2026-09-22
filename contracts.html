@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0b">
-<title>Hợp đồng · Đức Anh Maintenance · TEST</title>
+<title>Hợp đồng · Đức Anh Maintenance · AUTH TEST</title>
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/mobile.css">
 
@@ -15,36 +15,27 @@
   --da-border:#2b2b2b;
   --da-gold:#d9ad32;
   --da-text:#f4f4f4;
-  --da-muted:#929292;
-  --da-green:#69c58b;
-  --da-red:#ef7777;
 }
 body{background:var(--da-bg)!important;color:var(--da-text)!important}
 .contract-page{padding:28px;max-width:1500px;margin:auto}
-.contract-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
-.contract-toolbar h1{margin:0;color:var(--da-text)}
-.contract-toolbar p{margin:6px 0 0}
 .panel{background:linear-gradient(145deg,#141414,#101010)!important;border:1px solid var(--da-border)!important;border-radius:16px;padding:22px}
 .panel-heading{display:flex;justify-content:space-between;gap:15px;align-items:center}
-.contract-table{width:100%;border-collapse:collapse}
-.contract-table th,.contract-table td{text-align:left;padding:14px;border-bottom:1px solid #252525;vertical-align:middle}
-.contract-table th{font-size:12px;text-transform:uppercase;color:#858585}
-.contract-table td{color:#e9e9e9}
-.empty-state{text-align:center;padding:60px 20px;color:#777}
-.status-box{margin-top:18px;padding:14px 16px;border-radius:10px;background:#181818;border:1px solid #333;white-space:pre-wrap;word-break:break-word}
+.status-box{margin-top:18px;padding:16px;border-radius:10px;background:#181818;border:1px solid #333;white-space:pre-wrap;word-break:break-word;line-height:1.6}
 .status-box.ok{background:#102719;border-color:#275f3b;color:#73cf91}
 .status-box.error{background:#2b1515;border-color:#673333;color:#ef8585}
 .status-box.info{color:#ccc}
 .test-note{margin-top:18px;color:#999;line-height:1.6}
 .test-note code{color:#f0c53d}
-.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#292929;color:#ddd}
-.badge.active{background:#123b23;color:#78d394}
-.badge.other{background:#3a2e10;color:#e5bf48}
+.contract-table{width:100%;border-collapse:collapse;margin-top:20px}
+.contract-table th,.contract-table td{text-align:left;padding:14px;border-bottom:1px solid #252525}
+.contract-table th{font-size:12px;text-transform:uppercase;color:#858585}
+.contract-table td{color:#e9e9e9}
+.empty-state{text-align:center;padding:50px 20px;color:#777}
 @media(max-width:700px){
   .contract-page{padding:18px}
   .panel-heading{align-items:flex-start;flex-direction:column}
   .table-wrap{overflow:auto}
-  .contract-table{min-width:900px}
+  .contract-table{min-width:850px}
 }
 </style>
 </head>
@@ -90,7 +81,7 @@ body{background:var(--da-bg)!important;color:var(--da-text)!important}
   <div class="breadcrumb">
     <span>Đức Anh Maintenance</span>
     <b>/</b>
-    <span>Hợp đồng TEST</span>
+    <span>Hợp đồng AUTH TEST</span>
   </div>
   <div class="top-actions">
     <div class="user-chip">
@@ -104,41 +95,31 @@ body{background:var(--da-bg)!important;color:var(--da-text)!important}
 </header>
 
 <main class="content contract-page">
-
-<section class="contract-toolbar">
-  <div>
-    <p class="eyebrow">KIỂM TRA FIRESTORE</p>
-    <h1>Hợp đồng</h1>
-    <p class="muted">
-      Bản TEST này bỏ qua firestore-v1.js và đọc trực tiếp collection
-      <strong>contracts</strong>.
-    </p>
-  </div>
-</section>
-
 <section class="panel">
 
   <div class="panel-heading">
     <div>
-      <p class="eyebrow">DIRECT FIRESTORE TEST</p>
-      <h2>Kiểm tra quyền đọc contracts</h2>
+      <p class="eyebrow">AUTH + FIRESTORE TEST</p>
+      <h1>Hợp đồng</h1>
+      <p class="muted">
+        Bản test này chờ Firebase Authentication khôi phục phiên đăng nhập
+        trước khi đọc collection <strong>contracts</strong>.
+      </p>
     </div>
-    <div id="pageStatus" class="muted">Đang kiểm tra...</div>
+    <div id="pageStatus" class="muted">Đang chờ Firebase Auth...</div>
   </div>
 
   <div id="diagnostic" class="status-box info">
-Đang khởi tạo Firebase...
+Đang khởi tạo...
   </div>
 
   <div class="test-note">
-    <strong>Mục đích:</strong>
-    bản này không gọi <code>getContracts()</code> trong
-    <code>firestore-v1.js</code>.
-    Nó gọi trực tiếp:
+    <strong>Test:</strong>
+    <code>onAuthStateChanged()</code> → xác nhận user → đọc trực tiếp
     <code>getDocs(collection(db, "contracts"))</code>.
   </div>
 
-  <div class="table-wrap" style="margin-top:20px">
+  <div class="table-wrap">
     <table class="contract-table">
       <thead>
         <tr>
@@ -155,11 +136,10 @@ body{background:var(--da-bg)!important;color:var(--da-text)!important}
   </div>
 
   <div class="empty-state" id="emptyState" style="display:none">
-    Collection contracts đọc được nhưng hiện chưa có dữ liệu.
+    Firebase cho phép đọc collection contracts nhưng hiện chưa có dữ liệu.
   </div>
 
 </section>
-
 </main>
 </div>
 </div>
@@ -167,6 +147,9 @@ body{background:var(--da-bg)!important;color:var(--da-text)!important}
 <script src="js/ui/app.js"></script>
 
 <script type="module">
+import { onAuthStateChanged } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
 import { collection, getDocs } from
   "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
@@ -210,40 +193,37 @@ function renderContracts(contracts){
       <td>${esc(c.customerName || c.customerId || "—")}</td>
       <td>${esc(c.buildingName || c.buildingId || "—")}</td>
       <td>${esc(c.elevatorName || c.elevatorId || "—")}</td>
-      <td>
-        <span class="badge ${c.status === "active" ? "active" : "other"}">
-          ${esc(c.status || "—")}
-        </span>
-      </td>
+      <td>${esc(c.status || "—")}</td>
     </tr>
   `).join("");
 }
 
-async function runDirectFirestoreTest(){
-  try{
-    showStatus("Đang kiểm tra trạng thái đăng nhập Firebase...");
+let handled = false;
 
-    if(!auth.currentUser){
-      showStatus(
-        "LỖI: Firebase Auth chưa có currentUser.\n\n" +
-        "Nếu bạn đang đăng nhập website nhưng ở đây currentUser = null, " +
-        "hãy đăng xuất rồi đăng nhập lại.",
-        "error"
-      );
-      $("pageStatus").textContent = "Chưa đăng nhập";
-      return;
-    }
+const unsubscribe = onAuthStateChanged(auth, async user => {
+  if(handled) return;
 
-    const user = auth.currentUser;
-
+  if(!user){
     showStatus(
-      "Đã đăng nhập Firebase.\n\n" +
-      "UID:\n" + user.uid + "\n\n" +
-      "Email:\n" + (user.email || "(không có)") + "\n\n" +
-      "Project:\n" + "duc-anh-maintenance-dev" + "\n\n" +
-      "Đang đọc trực tiếp /contracts ..."
+      "Firebase Auth đã hoàn tất nhưng KHÔNG có người dùng đăng nhập.\n\n" +
+      "currentUser = null\n\n" +
+      "Hãy đăng nhập lại trên website rồi mở trang này.",
+      "error"
     );
+    $("pageStatus").textContent = "Chưa đăng nhập";
+    return;
+  }
 
+  handled = true;
+
+  showStatus(
+    "ĐÃ XÁC NHẬN ĐĂNG NHẬP.\n\n" +
+    "UID:\n" + user.uid + "\n\n" +
+    "Email:\n" + (user.email || "(không có)") + "\n\n" +
+    "Bây giờ mới đọc trực tiếp /contracts ..."
+  );
+
+  try{
     const snapshot = await getDocs(
       collection(db, "contracts")
     );
@@ -255,33 +235,35 @@ async function runDirectFirestoreTest(){
 
     showStatus(
       "THÀNH CÔNG.\n\n" +
-      "Đọc trực tiếp collection /contracts thành công.\n" +
-      "Số hợp đồng: " + contracts.length + "\n\n" +
-      "Điều này chứng minh Firebase Rules + Auth + Firestore " +
-      "đang cho phép tài khoản hiện tại đọc contracts.",
+      "Firebase Auth đã xác nhận user trước.\n" +
+      "Đọc trực tiếp /contracts thành công.\n\n" +
+      "Số hợp đồng: " + contracts.length,
       "ok"
     );
 
     renderContracts(contracts);
 
   }catch(error){
-    console.error("DIRECT CONTRACTS TEST ERROR:", error);
+    console.error("AUTH TEST CONTRACTS ERROR:", error);
 
     showStatus(
-      "ĐỌC /contracts THẤT BẠI.\n\n" +
+      "AUTH ĐÃ OK NHƯNG ĐỌC /contracts THẤT BẠI.\n\n" +
       "Tên lỗi:\n" + (error?.name || "UnknownError") + "\n\n" +
       "Thông báo:\n" + (error?.message || "Không có message") + "\n\n" +
       "Code:\n" + (error?.code || "Không có error code") + "\n\n" +
-      "Nếu lỗi là 'permission-denied' / 'Missing or insufficient permissions', " +
-      "thì request trực tiếp tới /contracts vẫn đang bị Firestore Rules từ chối.",
+      "Nếu là permission-denied, hãy kiểm tra Rules /contracts.",
       "error"
     );
 
-    $("pageStatus").textContent = "Lỗi tải dữ liệu";
-    $("contractRows").innerHTML = "";
-    $("emptyState").style.display = "none";
+    $("pageStatus").textContent = "Lỗi Firestore";
   }
-}
+});
+
+window.addEventListener("beforeunload", () => {
+  try{
+    unsubscribe();
+  }catch(_){}
+});
 
 document.querySelectorAll("[data-module]").forEach(a => {
   a.addEventListener("click", e => {
@@ -289,8 +271,6 @@ document.querySelectorAll("[data-module]").forEach(a => {
     alert("Module này đang trong quá trình xây dựng.");
   });
 });
-
-runDirectFirestoreTest();
 </script>
 </body>
 </html>
