@@ -14,9 +14,7 @@ service cloud.firestore {
     /*
      * DEV AUTHORIZATION
      *
-     * Trong giai đoạn UI + Firestore DEV:
      * Role được đọc trực tiếp từ:
-     *
      * users/{request.auth.uid}.role
      *
      * Sau khi Cloud Functions + Custom Claims hoàn thiện,
@@ -169,10 +167,7 @@ service cloud.firestore {
 
       allow read: if isServiceStaff();
 
-      allow create: if isAdmin()
-        || isManager();
-
-      allow update: if isAdmin()
+      allow create, update: if isAdmin()
         || isManager();
 
       allow delete: if false;
@@ -215,6 +210,29 @@ service cloud.firestore {
     // =========================================================
 
     match /maintenanceAgreements/{agreementId} {
+
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // CONTRACTS
+    //
+    // ĐÂY LÀ COLLECTION ĐƯỢC MODULE contracts.html SỬ DỤNG.
+    //
+    // Firestore Data Layer:
+    //   collection(db, "contracts")
+    //
+    // Không dùng localStorage.
+    // =========================================================
+
+    match /contracts/{contractId} {
 
       allow read: if isServiceStaff();
 
