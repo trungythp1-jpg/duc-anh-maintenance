@@ -8,7 +8,6 @@
 
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
-  <link rel="stylesheet" href="css/navigation.css">
 
   <style>
     :root{
@@ -522,6 +521,215 @@
 }
 #addButton *{pointer-events:none;}
 
+
+/* =========================================================
+   BUILDING V1.18 — DISPLAY LOCKED TO CUSTOMER V1.14
+   ========================================================= */
+
+/* Same page rhythm as Customer */
+@media(min-width:821px){
+  body.da-nav-page{
+    padding-left:236px !important;
+    padding-top:0 !important;
+  }
+
+  .page{
+    min-height:100vh !important;
+    padding:28px !important;
+  }
+
+  .container{
+    width:min(1500px,100%) !important;
+    margin:0 auto !important;
+  }
+
+  .head{
+    display:flex !important;
+    align-items:flex-start !important;
+    justify-content:space-between !important;
+    gap:20px !important;
+    margin-bottom:26px !important;
+  }
+
+  .head > div{
+    min-width:0;
+  }
+
+  .head .primary{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:9px !important;
+    width:223px !important;
+    min-width:223px !important;
+    height:96px !important;
+    min-height:96px !important;
+    flex:0 0 223px !important;
+    padding:12px 17px !important;
+    border-radius:9px !important;
+    font-size:16px !important;
+  }
+
+  .kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:14px !important;
+    margin-bottom:18px !important;
+  }
+}
+
+/* iPad / iPhone: exactly the same stacked rhythm as Customer */
+@media(max-width:820px){
+  body.da-nav-page{
+    padding-left:0 !important;
+    padding-top:0 !important;
+    overflow-x:hidden !important;
+  }
+
+  .page{
+    min-height:100vh !important;
+    padding:16px 12px 30px !important;
+  }
+
+  .head{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:18px !important;
+    margin-bottom:18px !important;
+  }
+
+  .head .primary{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:54px !important;
+    height:54px !important;
+    flex:0 0 auto !important;
+    border-radius:9px !important;
+  }
+
+  .kpis{
+    grid-template-columns:1fr !important;
+    gap:9px !important;
+  }
+
+  .kpi{
+    min-height:95px !important;
+    padding:13px !important;
+  }
+
+  .value{
+    font-size:24px !important;
+  }
+
+  .toolbar{
+    flex-direction:column !important;
+    align-items:stretch !important;
+  }
+
+  .filter{
+    width:100% !important;
+  }
+}
+
+/* iPhone modal: same single-scroll surface as locked Customer */
+@media(max-width:640px){
+  .modal{
+    align-items:flex-start !important;
+    justify-content:center !important;
+    padding:0 !important;
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior:contain !important;
+  }
+
+  .modal-box{
+    width:100% !important;
+    min-height:100dvh !important;
+    height:auto !important;
+    max-height:none !important;
+    display:block !important;
+    overflow:visible !important;
+    border:0 !important;
+    border-radius:0 !important;
+  }
+
+  .modal-head{
+    position:sticky !important;
+    top:0 !important;
+    z-index:10 !important;
+    min-height:68px !important;
+    background:#111 !important;
+  }
+
+  .modal-body{
+    min-height:auto !important;
+    overflow:visible !important;
+    padding:18px 16px 30px !important;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr !important;
+    gap:15px !important;
+  }
+
+  .field.full{
+    grid-column:auto !important;
+  }
+
+  .field label{
+    margin-bottom:7px !important;
+    font-size:13px !important;
+  }
+
+  .field input,
+  .field select,
+  .field textarea{
+    min-height:50px !important;
+    padding:13px 14px !important;
+    font-size:16px !important;
+  }
+
+  .modal-foot{
+    position:relative !important;
+    display:flex !important;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
+    background:#111 !important;
+    border-top:1px solid var(--border) !important;
+  }
+
+  .modal-foot .primary{
+    flex:1 !important;
+    min-height:48px !important;
+    width:auto !important;
+  }
+
+  .modal-foot .secondary{
+    min-width:84px !important;
+    min-height:48px !important;
+  }
+
+  .footer{
+    flex-direction:column !important;
+    gap:5px !important;
+  }
+}
+
+/* Button must always receive touch/click events */
+#addButton{
+  position:relative !important;
+  z-index:4000 !important;
+  pointer-events:auto !important;
+  touch-action:manipulation !important;
+  -webkit-tap-highlight-color:transparent !important;
+}
+#addButton *{pointer-events:none !important;}
+
+/* Dialogs remain above navigation */
+.modal,
+.backdrop{
+  z-index:3000 !important;
+}
+
 </style>
 </head>
 
@@ -572,7 +780,7 @@
         <h1>Tòa nhà</h1>
         <p class="sub">Quản lý tòa nhà, khách hàng, thang máy và trạng thái dịch vụ.</p>
       </div>
-      <button class="primary" id="addButton" type="button" onclick="window.__openBuildingModal && window.__openBuildingModal(event)">＋ <span>Thêm tòa nhà</span></button>
+      <button class="primary" id="addButton" type="button" >＋ <span>Thêm tòa nhà</span></button>
     </header>
 
     <section class="kpis">
@@ -609,7 +817,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.17</span>
+        <span>DEV V1.18</span>
       </div>
     </section>
 
@@ -1153,7 +1361,7 @@ async window.__openBuildingModal = async function(event){
   }
 };
 
-async async function openModal(){
+async function openModal(){
   /* Refresh references first so a Customer created on another page is available
      without requiring the user to manually reload this page. */
   if (!customers.length){
@@ -1247,11 +1455,7 @@ async function handleOpenBuildingModal(event){
   }
 }
 
-$("addButton").addEventListener(
-  "click",
-  handleOpenBuildingModal,
-  { passive:false }
-);
+$("addButton").onclick = handleOpenBuildingModal;
 
 $("closeDetail").addEventListener("click",closeDetail);
 
@@ -1360,7 +1564,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.17</span>
+        <span>DEV V1.18</span>
       </div>
     `;
 
@@ -1424,7 +1628,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.17"
+          "Đức Anh Maintenance DEV V1.18"
         );
         return;
       }
