@@ -161,30 +161,48 @@
       .detail-drawer{width:100%;border-left:0}
       .detail-grid{grid-template-columns:1fr 1fr}
 
+      /*
+       * iPhone FIX:
+       * Do not make .modal-body a nested scroll container.
+       * Safari can trap the scroll inside the body and leave the
+       * bottom action bar unreachable. The entire modal backdrop
+       * becomes the single scroll surface instead.
+       */
       .modal-backdrop{
         align-items:flex-start;
         justify-content:center;
-        padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+        padding:0;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        overscroll-behavior:contain;
       }
 
       .customer-modal{
         width:100%;
-        height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        min-height:100dvh;
+        height:auto;
         max-height:none;
+        display:block;
+        overflow:visible;
         border-radius:0;
-        border-left:0;
-        border-right:0;
-        border-bottom:0;
+        border:0;
       }
 
       .modal-head{
+        position:sticky;
+        top:0;
+        z-index:10;
         padding:
-          14px 16px
-          calc(14px + env(safe-area-inset-top));
+          calc(14px + env(safe-area-inset-top))
+          16px
+          14px;
+        background:#111;
       }
 
       .modal-body{
-        padding:18px 16px 24px;
+        min-height:auto;
+        overflow:visible;
+        padding:18px 16px 30px;
       }
 
       .form-grid{
@@ -208,12 +226,27 @@
       }
 
       .modal-foot{
-        padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+        position:relative;
+        display:flex;
+        padding:
+          12px
+          16px
+          calc(12px + env(safe-area-inset-bottom));
+        background:#111;
+        border-top:1px solid var(--da-border);
       }
 
       .modal-foot .primary-button,
       .modal-foot .secondary-button{
         min-height:48px;
+      }
+
+      .modal-foot .primary-button{
+        flex:1;
+      }
+
+      .modal-foot .secondary-button{
+        min-width:84px;
       }
     }
 
@@ -769,7 +802,7 @@
       </div>
 
       <div class="mobile-customer-list" id="mobileCustomerList"></div>
-      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.13</span></div>
+      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.14</span></div>
     </section>
   </div>
 </main>
@@ -1334,7 +1367,7 @@ loadCustomers();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.13</span>
+        <span>DEV V1.14</span>
       </div>
     `;
 
@@ -1398,7 +1431,7 @@ loadCustomers();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.13"
+          "Đức Anh Maintenance DEV V1.14"
         );
         return;
       }
