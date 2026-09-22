@@ -12,201 +12,105 @@
 :root{
   --da-bg:#090909;
   --da-panel:#121212;
-  --da-panel-2:#171717;
   --da-border:#2b2b2b;
   --da-gold:#d9ad32;
-  --da-gold-2:#f0c53d;
   --da-text:#f4f4f4;
   --da-muted:#929292;
-  --da-green:#69c58b;
-  --da-red:#ef7777;
 }
 
-body{
-  background:var(--da-bg)!important;
-  color:var(--da-text)!important;
-}
-
+body{background:var(--da-bg)!important;color:var(--da-text)!important}
 .contract-page{padding:28px;max-width:1500px;margin:auto}
 .contract-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
-.contract-toolbar h1{margin:0;color:var(--da-text)}
+.contract-toolbar h1{margin:0;color:#fff}
 .contract-toolbar p{margin:6px 0 0}
 .contract-actions{display:flex;gap:10px;flex-wrap:wrap}
 
 .primary-button,.secondary-button{
   border:1px solid var(--da-border);
-  border-radius:12px;
-  padding:12px 17px;
-  cursor:pointer;
-  font:inherit;
+  border-radius:12px;padding:12px 17px;cursor:pointer;font:inherit
 }
 .primary-button{background:var(--da-gold);color:#090909;border-color:var(--da-gold);font-weight:800}
-.secondary-button{background:#181818;color:var(--da-text)}
+.secondary-button{background:#181818;color:#eee}
 
 .panel{
   background:linear-gradient(145deg,#141414,#101010)!important;
-  border:1px solid var(--da-border)!important;
+  border:1px solid var(--da-border)!important
 }
-
 .contract-table{width:100%;border-collapse:collapse}
 .contract-table th,.contract-table td{
-  text-align:left;padding:14px;border-bottom:1px solid #252525;vertical-align:middle;
+  text-align:left;padding:14px;border-bottom:1px solid #252525;vertical-align:middle
 }
 .contract-table th{font-size:12px;text-transform:uppercase;color:#858585}
 .contract-table td{color:#e9e9e9}
-
 .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#292929;color:#ddd}
 .badge.active{background:#123b23;color:#78d394}
 .badge.expired{background:#3b1717;color:#ef8585}
 .badge.pending{background:#3a2e10;color:#e5bf48}
-
 .edit-button{
-  border:1px solid #3a3a3a;
-  background:#191919;
-  color:#eee;
-  border-radius:8px;
-  padding:7px 11px;
-  cursor:pointer;
+  border:1px solid #3a3a3a;background:#191919;color:#eee;
+  border-radius:8px;padding:7px 11px;cursor:pointer
 }
 .empty-state{text-align:center;padding:60px 20px;color:#777}
+.table-wrap{overflow:auto}
 
 .modal-backdrop{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.72);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-  z-index:1000;
+  position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;
+  align-items:center;justify-content:center;padding:18px;z-index:1000
 }
 .modal-backdrop.show{display:flex}
-
 .contract-modal{
-  background:#111!important;
-  color:var(--da-text)!important;
-  width:min(940px,100%);
-  max-height:92vh;
-  overflow:auto;
-  border-radius:18px;
-  padding:24px;
-  border:1px solid #303030;
-  box-shadow:0 24px 80px rgba(0,0,0,.65);
+  background:#111!important;color:#f4f4f4!important;width:min(940px,100%);
+  max-height:92vh;overflow:auto;border-radius:18px;padding:24px;
+  border:1px solid #303030;box-shadow:0 24px 80px rgba(0,0,0,.65)
 }
-
 .modal-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px;
-  position:sticky;
-  top:-24px;
-  padding:4px 0 16px;
-  background:#111;
-  z-index:2;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;
+  position:sticky;top:-24px;padding:4px 0 16px;background:#111;z-index:2
 }
 .modal-head h2{margin:0;color:#fff}
 .close-button{
-  border:1px solid #333;
-  background:#1b1b1b;
-  color:#f5c637;
-  border-radius:50%;
-  width:38px;
-  height:38px;
-  cursor:pointer;
-  font-size:22px;
-  line-height:1;
+  border:1px solid #333;background:#1b1b1b;color:#f5c637;border-radius:50%;
+  width:38px;height:38px;cursor:pointer;font-size:22px;line-height:1
 }
-
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .form-group{display:flex;flex-direction:column;gap:7px}
 .form-group.full{grid-column:1/-1}
-.form-group label{
-  font-size:13px;
-  font-weight:700;
-  color:#b7b7b7;
+.form-group label{font-size:13px;font-weight:700;color:#b7b7b7}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;min-height:48px;font:inherit;color:#f3f3f3!important;padding:12px 13px;
+  border:1px solid #3a3a3a!important;border-radius:10px;background:#171717!important;
+  outline:none;appearance:auto
 }
-.form-group input,
-.form-group select,
-.form-group textarea{
-  width:100%;
-  min-height:48px;
-  font:inherit;
-  color:#f3f3f3!important;
-  padding:12px 13px;
-  border:1px solid #3a3a3a!important;
-  border-radius:10px;
-  background:#171717!important;
-  outline:none;
-  appearance:auto;
+.form-group input::placeholder,.form-group textarea::placeholder{color:#777}
+.form-group select:focus,.form-group input:focus,.form-group textarea:focus{
+  border-color:var(--da-gold)!important;box-shadow:0 0 0 2px rgba(217,173,50,.12)
 }
-.form-group input::placeholder,
-.form-group textarea::placeholder{color:#777}
-.form-group select:focus,
-.form-group input:focus,
-.form-group textarea:focus{
-  border-color:var(--da-gold)!important;
-  box-shadow:0 0 0 2px rgba(217,173,50,.12);
-}
-.form-group select:disabled{
-  opacity:.55;
-  cursor:not-allowed;
-}
+.form-group select:disabled{opacity:.55;cursor:not-allowed}
 .form-group textarea{min-height:100px;resize:vertical}
-
 .section-title{
-  grid-column:1/-1;
-  font-size:13px;
-  font-weight:800;
-  color:var(--da-gold);
-  letter-spacing:.12em;
-  padding-top:12px;
-  border-bottom:1px solid #2b2b2b;
-  padding-bottom:9px;
+  grid-column:1/-1;font-size:13px;font-weight:800;color:var(--da-gold);
+  letter-spacing:.12em;padding-top:12px;border-bottom:1px solid #2b2b2b;padding-bottom:9px
 }
-
-.reference-status{
-  grid-column:1/-1;
-  display:none;
-  padding:10px 12px;
-  border-radius:9px;
-  font-size:13px;
-  background:#181818;
-  color:#9b9b9b;
+.reference-status,.form-error{
+  grid-column:1/-1;padding:11px 12px;border-radius:9px;font-size:13px
 }
+.reference-status{display:none;background:#181818;color:#999}
 .reference-status.show{display:block}
 .reference-status.success{color:#73cf91;background:#102719}
-.reference-status.error{color:#ef8585;background:#2b1515}
-
-.modal-foot{
-  display:flex;
-  justify-content:flex-end;
-  gap:10px;
-  margin-top:22px;
-  position:sticky;
-  bottom:-24px;
-  padding:16px 0 4px;
-  background:#111;
-}
-
-.loading-option{color:#999}
-.form-error{
-  display:none;
-  grid-column:1/-1;
-  padding:11px 12px;
-  border-radius:9px;
-  background:#2b1515;
-  color:#ef8585;
-  font-size:13px;
-}
+.reference-status.error,.form-error{color:#ef8585;background:#2b1515}
+.form-error{display:none}
 .form-error.show{display:block}
+.modal-foot{
+  display:flex;justify-content:flex-end;gap:10px;margin-top:22px;position:sticky;
+  bottom:-24px;padding:16px 0 4px;background:#111
+}
+.loading{opacity:.65;pointer-events:none}
 
 @media(max-width:700px){
   .contract-page{padding:18px}
   .contract-toolbar{align-items:flex-start;flex-direction:column}
   .form-grid{grid-template-columns:1fr}
   .contract-table{min-width:900px}
-  .table-wrap{overflow:auto}
   .form-group.full,.section-title,.reference-status,.form-error{grid-column:auto}
   .contract-modal{padding:18px;border-radius:15px}
   .modal-head{top:-18px}
@@ -282,12 +186,15 @@ body{
   <div class="table-wrap">
     <table class="contract-table">
       <thead>
-        <tr><th>Mã HĐ</th><th>Khách hàng</th><th>Tòa nhà</th><th>Thang máy</th><th>Thời hạn</th><th>Trạng thái</th><th></th></tr>
+        <tr>
+          <th>Mã HĐ</th><th>Khách hàng</th><th>Tòa nhà</th><th>Thang máy</th>
+          <th>Thời hạn</th><th>Trạng thái</th><th></th>
+        </tr>
       </thead>
       <tbody id="contractRows"></tbody>
     </table>
   </div>
-  <div class="empty-state" id="emptyState">Chưa có hợp đồng. Bấm “Thêm hợp đồng” để tạo mới.</div>
+  <div class="empty-state" id="emptyState">Chưa có hợp đồng.</div>
 </section>
 </main>
 </div>
@@ -319,23 +226,17 @@ body{
 
         <div class="form-group">
           <label for="customerId">Khách hàng *</label>
-          <select id="customerId" required>
-            <option value="">Đang tải khách hàng...</option>
-          </select>
+          <select id="customerId" required><option value="">Đang tải...</option></select>
         </div>
 
         <div class="form-group">
           <label for="buildingId">Tòa nhà *</label>
-          <select id="buildingId" required disabled>
-            <option value="">Chọn khách hàng trước</option>
-          </select>
+          <select id="buildingId" required disabled><option value="">Chọn khách hàng trước</option></select>
         </div>
 
         <div class="form-group">
           <label for="elevatorId">Thang máy *</label>
-          <select id="elevatorId" required disabled>
-            <option value="">Chọn tòa nhà trước</option>
-          </select>
+          <select id="elevatorId" required disabled><option value="">Chọn tòa nhà trước</option></select>
         </div>
 
         <div class="form-group">
@@ -347,74 +248,32 @@ body{
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="signedDate">Ngày ký</label>
-          <input id="signedDate" type="date">
-        </div>
-
-        <div class="form-group">
-          <label for="startDate">Ngày bắt đầu</label>
-          <input id="startDate" type="date">
-        </div>
-
-        <div class="form-group">
-          <label for="endDate">Ngày kết thúc</label>
-          <input id="endDate" type="date">
-        </div>
-
-        <div class="form-group">
-          <label for="contractValue">Giá trị hợp đồng (VNĐ)</label>
-          <input id="contractValue" type="number" min="0" step="1000">
-        </div>
+        <div class="form-group"><label for="signedDate">Ngày ký</label><input id="signedDate" type="date"></div>
+        <div class="form-group"><label for="startDate">Ngày bắt đầu</label><input id="startDate" type="date"></div>
+        <div class="form-group"><label for="endDate">Ngày kết thúc</label><input id="endDate" type="date"></div>
+        <div class="form-group"><label for="contractValue">Giá trị hợp đồng (VNĐ)</label><input id="contractValue" type="number" min="0" step="1000"></div>
 
         <div class="section-title">BẢO HÀNH</div>
 
         <div class="form-group">
           <label for="warrantyEnabled">Áp dụng bảo hành</label>
-          <select id="warrantyEnabled">
-            <option value="yes">Có</option>
-            <option value="no">Không</option>
-          </select>
+          <select id="warrantyEnabled"><option value="yes">Có</option><option value="no">Không</option></select>
         </div>
-
-        <div class="form-group">
-          <label for="warrantyPeriod">Thời hạn bảo hành</label>
-          <input id="warrantyPeriod" placeholder="VD: 12 tháng">
-        </div>
-
-        <div class="form-group">
-          <label for="warrantyStart">Bảo hành từ</label>
-          <input id="warrantyStart" type="date">
-        </div>
-
-        <div class="form-group">
-          <label for="warrantyEnd">Bảo hành đến</label>
-          <input id="warrantyEnd" type="date">
-        </div>
-
-        <div class="form-group full">
-          <label for="warrantyNote">Phạm vi / điều kiện bảo hành</label>
-          <textarea id="warrantyNote"></textarea>
-        </div>
+        <div class="form-group"><label for="warrantyPeriod">Thời hạn bảo hành</label><input id="warrantyPeriod" placeholder="VD: 12 tháng"></div>
+        <div class="form-group"><label for="warrantyStart">Bảo hành từ</label><input id="warrantyStart" type="date"></div>
+        <div class="form-group"><label for="warrantyEnd">Bảo hành đến</label><input id="warrantyEnd" type="date"></div>
+        <div class="form-group full"><label for="warrantyNote">Phạm vi / điều kiện bảo hành</label><textarea id="warrantyNote"></textarea></div>
 
         <div class="section-title">BẢO TRÌ</div>
 
         <div class="form-group">
           <label for="maintenanceEnabled">Áp dụng bảo trì</label>
-          <select id="maintenanceEnabled">
-            <option value="yes">Có</option>
-            <option value="no">Không</option>
-          </select>
+          <select id="maintenanceEnabled"><option value="yes">Có</option><option value="no">Không</option></select>
         </div>
-
         <div class="form-group">
           <label for="maintenanceType">Loại bảo trì</label>
-          <select id="maintenanceType">
-            <option value="paid">Có phí</option>
-            <option value="free">Miễn phí</option>
-          </select>
+          <select id="maintenanceType"><option value="paid">Có phí</option><option value="free">Miễn phí</option></select>
         </div>
-
         <div class="form-group">
           <label for="maintenanceCycle">Chu kỳ bảo trì</label>
           <select id="maintenanceCycle">
@@ -424,28 +283,13 @@ body{
             <option value="custom">Khác</option>
           </select>
         </div>
-
-        <div class="form-group">
-          <label for="maintenanceOwner">Người phụ trách</label>
-          <input id="maintenanceOwner" placeholder="KTV phụ trách">
-        </div>
+        <div class="form-group"><label for="maintenanceOwner">Người phụ trách</label><input id="maintenanceOwner" placeholder="KTV phụ trách"></div>
 
         <div class="section-title">THANH TOÁN & TÀI LIỆU</div>
 
-        <div class="form-group">
-          <label for="paidValue">Đã thanh toán (VNĐ)</label>
-          <input id="paidValue" type="number" min="0" step="1000">
-        </div>
-
-        <div class="form-group">
-          <label for="paymentDue">Hạn thanh toán</label>
-          <input id="paymentDue" type="date">
-        </div>
-
-        <div class="form-group full">
-          <label for="note">Ghi chú</label>
-          <textarea id="note"></textarea>
-        </div>
+        <div class="form-group"><label for="paidValue">Đã thanh toán (VNĐ)</label><input id="paidValue" type="number" min="0" step="1000"></div>
+        <div class="form-group"><label for="paymentDue">Hạn thanh toán</label><input id="paymentDue" type="date"></div>
+        <div class="form-group full"><label for="note">Ghi chú</label><textarea id="note"></textarea></div>
 
         <div id="referenceStatus" class="reference-status"></div>
         <div id="formError" class="form-error"></div>
@@ -462,196 +306,181 @@ body{
 <script src="js/ui/app.js"></script>
 
 <script type="module">
-import * as Firestore from "./js/core/firestore-v1.js";
+import {
+  collection,
+  doc,
+  addDoc,
+  getDocs,
+  updateDoc,
+  serverTimestamp,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-const {
-  getCustomers,
-  getBuildings,
-  getElevators
-} = Firestore;
+import { db } from "./js/core/firebase.js";
+
+const COLLECTIONS = {
+  CUSTOMERS:"customers",
+  BUILDINGS:"buildings",
+  ELEVATORS:"elevators",
+  CONTRACTS:"contracts"
+};
 
 const $ = id => document.getElementById(id);
 
-let customers = [];
-let buildings = [];
-let elevators = [];
-let contracts = JSON.parse(localStorage.getItem("da_maintenance_contracts_v2") || "[]");
-let editingId = null;
+let customers=[];
+let buildings=[];
+let elevators=[];
+let contracts=[];
+let editingId=null;
+let busy=false;
 
-const modal = $("contractModal");
-const form = $("contractForm");
+const modal=$("contractModal");
+const form=$("contractForm");
 
-function esc(value){
-  return String(value ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
+function esc(v){
+  return String(v??"")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
 }
 
-function setReferenceStatus(message="", type=""){
+function showError(msg=""){
+  const el=$("formError");
+  el.textContent=msg;
+  el.classList.toggle("show",!!msg);
+}
+
+function showReference(msg="",type=""){
   const el=$("referenceStatus");
-  el.textContent=message;
+  el.textContent=msg;
   el.className="reference-status";
-  if(message) el.classList.add("show");
+  if(msg) el.classList.add("show");
   if(type) el.classList.add(type);
 }
 
-function setFormError(message=""){
-  const el=$("formError");
-  el.textContent=message;
-  el.classList.toggle("show",!!message);
+function nameOf(list,id,fallback="Không xác định"){
+  return list.find(x=>String(x.id)===String(id))?.name || fallback;
 }
 
-function customerName(id){
-  return customers.find(x=>String(x.id)===String(id))?.name || "Không xác định";
-}
-
-function buildingName(id){
-  return buildings.find(x=>String(x.id)===String(id))?.name || "Không xác định";
-}
-
-function elevatorName(id){
-  return elevators.find(x=>String(x.id)===String(id))?.name || "Không xác định";
-}
-
-function renderCustomerOptions(selectedId=""){
-  const select=$("customerId");
-
-  if(!customers.length){
-    select.innerHTML='<option value="">Chưa có khách hàng</option>';
-    select.disabled=true;
-    $("buildingId").innerHTML='<option value="">Chưa có tòa nhà</option>';
-    $("buildingId").disabled=true;
-    $("elevatorId").innerHTML='<option value="">Chưa có thang máy</option>';
-    $("elevatorId").disabled=true;
-    return;
-  }
-
-  const sorted=customers.slice().sort((a,b)=>
-    String(a.name||"").localeCompare(String(b.name||""),"vi")
-  );
-
-  select.disabled=false;
-  select.innerHTML=
-    '<option value="">Chọn khách hàng</option>'+
-    sorted.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
-
-  if(selectedId) select.value=selectedId;
-
-  renderBuildingOptions(select.value,"");
-}
-
-function renderBuildingOptions(customerId="",selectedId=""){
-  const select=$("buildingId");
-
-  if(!customerId){
-    select.innerHTML='<option value="">Chọn khách hàng trước</option>';
-    select.disabled=true;
-    renderElevatorOptions("");
-    return;
-  }
-
-  const related=buildings
-    .filter(x=>String(x.customerId||"")===String(customerId))
-    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
-
-  if(!related.length){
-    select.innerHTML='<option value="">Khách hàng chưa có tòa nhà</option>';
-    select.disabled=true;
-    renderElevatorOptions("");
-    return;
-  }
-
-  select.disabled=false;
-  select.innerHTML=
-    '<option value="">Chọn tòa nhà</option>'+
-    related.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
-
-  if(selectedId) select.value=selectedId;
-
-  renderElevatorOptions(select.value,"");
-}
-
-function renderElevatorOptions(buildingId="",selectedId=""){
-  const select=$("elevatorId");
-
-  if(!buildingId){
-    select.innerHTML='<option value="">Chọn tòa nhà trước</option>';
-    select.disabled=true;
-    return;
-  }
-
-  const related=elevators
-    .filter(x=>String(x.buildingId||"")===String(buildingId))
-    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
-
-  if(!related.length){
-    select.innerHTML='<option value="">Tòa nhà chưa có thang máy</option>';
-    select.disabled=true;
-    return;
-  }
-
-  select.disabled=false;
-  select.innerHTML=
-    '<option value="">Chọn thang máy</option>'+
-    related.map(x=>`<option value="${esc(x.id)}">${esc(x.name || x.id)}</option>`).join("");
-
-  if(selectedId) select.value=selectedId;
+async function getAll(collectionName){
+  const snap=await getDocs(collection(db,collectionName));
+  return snap.docs.map(d=>({id:d.id,...d.data()}));
 }
 
 async function loadReferences(){
-  setReferenceStatus("Đang tải khách hàng, tòa nhà và thang máy từ Firebase...");
-
-  if(
-    typeof getCustomers!=="function" ||
-    typeof getBuildings!=="function" ||
-    typeof getElevators!=="function"
-  ){
-    setReferenceStatus("Không tìm thấy module Firestore. Kiểm tra js/core/firestore-v1.js.","error");
-    renderCustomerOptions("");
-    return;
-  }
-
-  const results=await Promise.allSettled([
-    getCustomers(),
-    getBuildings(),
-    getElevators()
+  showReference("Đang tải khách hàng, tòa nhà và thang máy từ Firebase...");
+  const result=await Promise.allSettled([
+    getAll(COLLECTIONS.CUSTOMERS),
+    getAll(COLLECTIONS.BUILDINGS),
+    getAll(COLLECTIONS.ELEVATORS)
   ]);
 
-  customers=results[0].status==="fulfilled" ? (results[0].value||[]) : [];
-  buildings=results[1].status==="fulfilled" ? (results[1].value||[]) : [];
-  elevators=results[2].status==="fulfilled" ? (results[2].value||[]) : [];
+  customers=result[0].status==="fulfilled"?result[0].value:[];
+  buildings=result[1].status==="fulfilled"?result[1].value:[];
+  elevators=result[2].status==="fulfilled"?result[2].value:[];
 
-  renderCustomerOptions("");
-
-  const errors=results
-    .filter(x=>x.status==="rejected")
-    .map(x=>x.reason?.message||"Lỗi Firebase");
+  const errors=result.filter(x=>x.status==="rejected").map(x=>x.reason?.message||"Lỗi Firebase");
 
   if(errors.length){
-    console.error("CONTRACT REFERENCE ERRORS:",errors);
-    setReferenceStatus(
-      `Một phần dữ liệu chưa tải được: ${errors.join(" | ")}`,
-      "error"
-    );
+    showReference("Không tải đủ dữ liệu tham chiếu: "+errors.join(" | "),"error");
   }else{
-    setReferenceStatus(
+    showReference(
       `Đã tải ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy.`,
       "success"
     );
   }
+
+  renderCustomerOptions($("customerId").value);
 }
 
-async function refreshReferencesForEdit(c){
-  await loadReferences();
+function renderCustomerOptions(selected=""){
+  const s=$("customerId");
+  if(!customers.length){
+    s.innerHTML='<option value="">Chưa có khách hàng</option>';
+    s.disabled=true;
+    renderBuildingOptions("");
+    return;
+  }
+  s.disabled=false;
+  const arr=[...customers].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
+  s.innerHTML='<option value="">Chọn khách hàng</option>'+
+    arr.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+  if(selected) s.value=String(selected);
+  renderBuildingOptions(s.value,$("buildingId").value);
+}
 
-  $("customerId").value=String(c.customerId||"");
-  renderBuildingOptions(c.customerId,c.buildingId);
-  $("buildingId").value=String(c.buildingId||"");
-  renderElevatorOptions(c.buildingId,c.elevatorId);
-  $("elevatorId").value=String(c.elevatorId||"");
+function renderBuildingOptions(customerId="",selected=""){
+  const s=$("buildingId");
+  if(!customerId){
+    s.innerHTML='<option value="">Chọn khách hàng trước</option>';
+    s.disabled=true;
+    renderElevatorOptions("");
+    return;
+  }
+  const arr=buildings
+    .filter(x=>String(x.customerId||"")===String(customerId))
+    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
+
+  if(!arr.length){
+    s.innerHTML='<option value="">Khách hàng chưa có tòa nhà</option>';
+    s.disabled=true;
+    renderElevatorOptions("");
+    return;
+  }
+  s.disabled=false;
+  s.innerHTML='<option value="">Chọn tòa nhà</option>'+
+    arr.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+  if(selected && arr.some(x=>String(x.id)===String(selected))) s.value=String(selected);
+  renderElevatorOptions(s.value,$("elevatorId").value);
+}
+
+function renderElevatorOptions(buildingId="",selected=""){
+  const s=$("elevatorId");
+  if(!buildingId){
+    s.innerHTML='<option value="">Chọn tòa nhà trước</option>';
+    s.disabled=true;
+    return;
+  }
+  const arr=elevators
+    .filter(x=>String(x.buildingId||"")===String(buildingId))
+    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
+
+  if(!arr.length){
+    s.innerHTML='<option value="">Tòa nhà chưa có thang máy</option>';
+    s.disabled=true;
+    return;
+  }
+  s.disabled=false;
+  s.innerHTML='<option value="">Chọn thang máy</option>'+
+    arr.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.assetCode||x.id)}</option>`).join("");
+  if(selected && arr.some(x=>String(x.id)===String(selected))) s.value=String(selected);
+}
+
+async function loadContracts(){
+  $("pageStatus").textContent="Đang tải...";
+  try{
+    contracts=await getAll(COLLECTIONS.CONTRACTS);
+    contracts.sort((a,b)=>{
+      const aa=a.createdAt?.seconds||0;
+      const bb=b.createdAt?.seconds||0;
+      return bb-aa;
+    });
+    render();
+    $("pageStatus").textContent=`${contracts.length} hợp đồng`;
+  }catch(err){
+    console.error(err);
+    $("pageStatus").textContent="Lỗi tải dữ liệu";
+    $("contractRows").innerHTML="";
+    $("emptyState").style.display="block";
+    showPageError(err.message||"Không thể tải hợp đồng từ Firebase.");
+  }
+}
+
+function showPageError(msg){
+  const old=$("pageStatus");
+  old.textContent=msg;
+  old.style.color="#ef8585";
 }
 
 function resetForm(){
@@ -663,7 +492,13 @@ function resetForm(){
   $("maintenanceEnabled").value="yes";
   $("maintenanceType").value="paid";
   $("maintenanceCycle").value="monthly";
-  setFormError("");
+  $("customerId").innerHTML='<option value="">Đang tải...</option>';
+  $("customerId").disabled=true;
+  $("buildingId").innerHTML='<option value="">Chọn khách hàng trước</option>';
+  $("buildingId").disabled=true;
+  $("elevatorId").innerHTML='<option value="">Chọn tòa nhà trước</option>';
+  $("elevatorId").disabled=true;
+  showError("");
 }
 
 function openModal(){
@@ -680,14 +515,28 @@ function closeModal(){
 }
 
 function fillForm(c){
-  const fields=[
-    "contractCode","contractName","status","signedDate","startDate","endDate",
-    "contractValue","warrantyEnabled","warrantyPeriod","warrantyStart","warrantyEnd",
-    "warrantyNote","maintenanceEnabled","maintenanceType","maintenanceCycle",
-    "maintenanceOwner","paidValue","paymentDue","note"
-  ];
-
-  fields.forEach(id=>$(id).value=c[id]??"");
+  const map={
+    contractCode:c.code||"",
+    contractName:c.name||"",
+    status:c.status||"active",
+    signedDate:c.signedDate||"",
+    startDate:c.startDate||"",
+    endDate:c.endDate||"",
+    contractValue:c.contractValue??"",
+    warrantyEnabled:c.warrantyEnabled||"yes",
+    warrantyPeriod:c.warrantyPeriod||"",
+    warrantyStart:c.warrantyStart||"",
+    warrantyEnd:c.warrantyEnd||"",
+    warrantyNote:c.warrantyNote||"",
+    maintenanceEnabled:c.maintenanceEnabled||"yes",
+    maintenanceType:c.maintenanceType||"paid",
+    maintenanceCycle:c.maintenanceCycle||"monthly",
+    maintenanceOwner:c.maintenanceOwner||"",
+    paidValue:c.paidValue??"",
+    paymentDue:c.paymentDue||"",
+    note:c.note||""
+  };
+  Object.entries(map).forEach(([id,v])=>$(id).value=v);
 }
 
 function render(){
@@ -695,18 +544,17 @@ function render(){
   $("emptyState").style.display=contracts.length?"none":"block";
 
   rows.innerHTML=contracts.map(c=>{
-    const badgeClass=c.status==="active"?"active":c.status==="expired"?"expired":"pending";
+    const cls=c.status==="active"?"active":c.status==="expired"?"expired":"pending";
     const status=c.status==="active"?"Đang hiệu lực":c.status==="expired"?"Hết hạn":"Chờ hiệu lực";
-    return `
-      <tr>
-        <td><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
-        <td>${esc(c.customerName||customerName(c.customerId))}</td>
-        <td>${esc(c.buildingName||buildingName(c.buildingId))}</td>
-        <td>${esc(c.elevatorName||elevatorName(c.elevatorId))}</td>
-        <td>${esc(c.startDate||"—")} → ${esc(c.endDate||"—")}</td>
-        <td><span class="badge ${badgeClass}">${status}</span></td>
-        <td><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
-      </tr>`;
+    return `<tr>
+      <td><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
+      <td>${esc(c.customerName||nameOf(customers,c.customerId))}</td>
+      <td>${esc(c.buildingName||nameOf(buildings,c.buildingId))}</td>
+      <td>${esc(c.elevatorName||nameOf(elevators,c.elevatorId))}</td>
+      <td>${esc(c.startDate||"—")} → ${esc(c.endDate||"—")}</td>
+      <td><span class="badge ${cls}">${status}</span></td>
+      <td><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
+    </tr>`;
   }).join("");
 
   rows.querySelectorAll("[data-edit]").forEach(btn=>{
@@ -721,100 +569,136 @@ async function openAdd(){
 }
 
 async function openEdit(id){
-  const c=contracts.find(x=>x.id===id);
+  const c=contracts.find(x=>String(x.id)===String(id));
   if(!c)return;
 
   resetForm();
   editingId=id;
   $("modalTitle").textContent="Sửa hợp đồng";
-  fillForm(c);
   openModal();
+  fillForm(c);
 
-  await refreshReferencesForEdit(c);
+  await loadReferences();
+
+  $("customerId").value=String(c.customerId||"");
+  renderBuildingOptions(c.customerId,c.buildingId);
+  $("buildingId").value=String(c.buildingId||"");
+  renderElevatorOptions(c.buildingId,c.elevatorId);
+  $("elevatorId").value=String(c.elevatorId||"");
 }
 
-$("addContract").addEventListener("click",openAdd);
+function buildPayload(){
+  const customer=$("customerId").value;
+  const building=$("buildingId").value;
+  const elevator=$("elevatorId").value;
 
-$("closeModal").addEventListener("click",closeModal);
-$("cancelModal").addEventListener("click",closeModal);
-
-modal.addEventListener("click",e=>{
-  if(e.target===modal) closeModal();
-});
-
-$("customerId").addEventListener("change",()=>{
-  renderBuildingOptions($("customerId").value,"");
-  setFormError("");
-});
-
-$("buildingId").addEventListener("change",()=>{
-  renderElevatorOptions($("buildingId").value,"");
-  setFormError("");
-});
-
-form.addEventListener("submit",e=>{
-  e.preventDefault();
-
-  const customer=$("customerId");
-  const building=$("buildingId");
-  const elevator=$("elevatorId");
-
-  if(!customer.value || !building.value || !elevator.value){
-    setFormError("Vui lòng chọn đủ Khách hàng → Tòa nhà → Thang máy.");
-    return;
+  if(!customer||!building||!elevator){
+    throw new Error("Vui lòng chọn đủ Khách hàng → Tòa nhà → Thang máy.");
   }
 
-  const now=new Date().toISOString();
+  const b=buildings.find(x=>String(x.id)===String(building));
+  const e=elevators.find(x=>String(x.id)===String(elevator));
 
-  const obj={
-    id:editingId||("ct_"+Date.now()),
+  if(!b) throw new Error("Không tìm thấy tòa nhà đã chọn.");
+  if(!e) throw new Error("Không tìm thấy thang máy đã chọn.");
+
+  if(String(b.customerId||"")!==String(customer)){
+    throw new Error("Tòa nhà không thuộc khách hàng đã chọn.");
+  }
+
+  if(String(e.buildingId||"")!==String(building)){
+    throw new Error("Thang máy không thuộc tòa nhà đã chọn.");
+  }
+
+  return {
     code:$("contractCode").value.trim(),
     name:$("contractName").value.trim(),
-
-    customerId:customer.value,
-    customerName:customer.options[customer.selectedIndex]?.text||"",
-
-    buildingId:building.value,
-    buildingName:building.options[building.selectedIndex]?.text||"",
-
-    elevatorId:elevator.value,
-    elevatorName:elevator.options[elevator.selectedIndex]?.text||"",
+    customerId:customer,
+    customerName:nameOf(customers,customer),
+    buildingId:building,
+    buildingName:nameOf(buildings,building),
+    elevatorId:elevator,
+    elevatorName:nameOf(elevators,elevator,e.assetCode||elevator),
 
     status:$("status").value,
-    signedDate:$("signedDate").value,
-    startDate:$("startDate").value,
-    endDate:$("endDate").value,
-    contractValue:$("contractValue").value,
+    signedDate:$("signedDate").value||null,
+    startDate:$("startDate").value||null,
+    endDate:$("endDate").value||null,
+    contractValue:$("contractValue").value===""?null:Number($("contractValue").value),
 
     warrantyEnabled:$("warrantyEnabled").value,
-    warrantyPeriod:$("warrantyPeriod").value,
-    warrantyStart:$("warrantyStart").value,
-    warrantyEnd:$("warrantyEnd").value,
-    warrantyNote:$("warrantyNote").value,
+    warrantyPeriod:$("warrantyPeriod").value.trim(),
+    warrantyStart:$("warrantyStart").value||null,
+    warrantyEnd:$("warrantyEnd").value||null,
+    warrantyNote:$("warrantyNote").value.trim(),
 
     maintenanceEnabled:$("maintenanceEnabled").value,
     maintenanceType:$("maintenanceType").value,
     maintenanceCycle:$("maintenanceCycle").value,
-    maintenanceOwner:$("maintenanceOwner").value,
+    maintenanceOwner:$("maintenanceOwner").value.trim(),
 
-    paidValue:$("paidValue").value,
-    paymentDue:$("paymentDue").value,
-    note:$("note").value,
+    paidValue:$("paidValue").value===""?null:Number($("paidValue").value),
+    paymentDue:$("paymentDue").value||null,
+    note:$("note").value.trim(),
 
-    updatedAt:now
+    updatedAt:serverTimestamp()
   };
+}
 
-  if(editingId){
-    const i=contracts.findIndex(x=>x.id===editingId);
-    if(i>-1) contracts[i]=obj;
-  }else{
-    obj.createdAt=now;
-    contracts.unshift(obj);
+async function saveContract(){
+  if(busy)return;
+  busy=true;
+  $("saveButton").disabled=true;
+  $("saveButton").textContent="Đang lưu...";
+
+  try{
+    const payload=buildPayload();
+
+    if(!payload.code) throw new Error("Mã hợp đồng là bắt buộc.");
+    if(!payload.name) throw new Error("Tên hợp đồng là bắt buộc.");
+
+    if(editingId){
+      await updateDoc(doc(db,COLLECTIONS.CONTRACTS,editingId),payload);
+    }else{
+      await addDoc(collection(db,COLLECTIONS.CONTRACTS),{
+        ...payload,
+        createdAt:serverTimestamp()
+      });
+    }
+
+    await loadContracts();
+    closeModal();
+  }catch(err){
+    console.error("SAVE CONTRACT ERROR:",err);
+    showError(err.message||"Không thể lưu hợp đồng vào Firebase.");
+  }finally{
+    busy=false;
+    $("saveButton").disabled=false;
+    $("saveButton").textContent="Lưu hợp đồng";
   }
+}
 
-  localStorage.setItem("da_maintenance_contracts_v2",JSON.stringify(contracts));
-  render();
-  closeModal();
+$("addContract").addEventListener("click",openAdd);
+$("closeModal").addEventListener("click",closeModal);
+$("cancelModal").addEventListener("click",closeModal);
+
+modal.addEventListener("click",e=>{
+  if(e.target===modal)closeModal();
+});
+
+$("customerId").addEventListener("change",()=>{
+  renderBuildingOptions($("customerId").value,"");
+  showError("");
+});
+
+$("buildingId").addEventListener("change",()=>{
+  renderElevatorOptions($("buildingId").value,"");
+  showError("");
+});
+
+form.addEventListener("submit",e=>{
+  e.preventDefault();
+  saveContract();
 });
 
 document.querySelectorAll("[data-module]").forEach(a=>{
@@ -824,8 +708,8 @@ document.querySelectorAll("[data-module]").forEach(a=>{
   });
 });
 
-render();
-loadReferences();
+await loadReferences();
+await loadContracts();
 </script>
 </body>
 </html>
