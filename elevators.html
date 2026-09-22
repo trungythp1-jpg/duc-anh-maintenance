@@ -104,13 +104,10 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 }
 
 
-/* V1.9: robust mobile add-button hit area */
-#addButton{position:relative !important;z-index:2955 !important;pointer-events:auto !important;touch-action:manipulation !important;-webkit-tap-highlight-color:transparent !important;}
+/* V1.10: definitive mobile add-button hit area */
+.head{position:relative !important;z-index:2960 !important;}
+#addButton{position:relative !important;z-index:2961 !important;pointer-events:auto !important;touch-action:manipulation !important;-webkit-tap-highlight-color:transparent !important;}
 #addButton *{pointer-events:none !important;}
-
-/* V1.8: mobile + button hit-area fix */
-#addButton{position:relative !important;z-index:20 !important;pointer-events:auto !important;touch-action:manipulation !important;}
-#addButton *{pointer-events:none;}
 .modal,.modal-backdrop,.backdrop{z-index:3000 !important;}
 @media (max-width:1100px), (pointer:coarse){
   body.da-nav-page{padding-left:0 !important;padding-top:74px !important;}
@@ -348,6 +345,64 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 </div>
 
 <script src="js/ui/navigation.js"></script>
+
+<!-- V1.10 DEFINITIVE MOBILE ADD BUTTON FALLBACK
+     This handler is intentionally a normal script (not module-dependent).
+     The + Thêm thang máy button must still open the form even if a Firebase
+     module/CDN import is slow or fails. Once the module is ready it delegates
+     to the full openModal() implementation. -->
+<script>
+(function(){
+  function initElevatorAddButton(){
+    const button=document.getElementById("addButton");
+    const backdrop=document.getElementById("modalBackdrop");
+    const form=document.getElementById("elevatorForm");
+    const title=document.getElementById("modalTitle");
+    const error=document.getElementById("formError");
+    const save=document.getElementById("saveButton");
+    if(!button || !backdrop) return;
+
+    if(button.dataset.daBound === "1") return;
+    button.dataset.daBound="1";
+
+    const fallbackOpen=()=>{
+      if(form) form.reset();
+      const edit=document.getElementById("editingElevatorId");
+      if(edit) edit.value="";
+      if(title) title.textContent="Thêm thang máy";
+      if(error){ error.textContent=""; error.classList.remove("show"); }
+      const status=document.getElementById("elevatorStatus");
+      if(status) status.value="active";
+      if(save){ save.disabled=false; save.textContent="Lưu thang máy"; }
+      backdrop.classList.add("show");
+      document.body.style.overflow="hidden";
+    };
+
+    const activate=(event)=>{
+      if(event){
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      if(typeof window.__openElevatorModal === "function") {
+        window.__openElevatorModal();
+      } else {
+        fallbackOpen();
+      }
+    };
+
+    button.addEventListener("click",activate,{capture:true});
+    button.addEventListener("pointerup",function(event){
+      if(event.pointerType === "touch") activate(event);
+    },{capture:true});
+  }
+
+  if(document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded",initElevatorAddButton,{once:true});
+  } else {
+    initElevatorAddButton();
+  }
+})();
+</script>
 
 <script type="module">
 import {
@@ -862,22 +917,21 @@ $("saveButton").textContent=editingId?"Lưu thay đổi":"Lưu thang máy";
 }
 
 function handleAddButton(event){
-  event.preventDefault();
-  event.stopPropagation();
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
   openModal().catch(error=>{
     console.error("OPEN ELEVATOR MODAL ERROR:",error);
     setMessage(error?.message || "Không thể mở form tạo thang máy.","error");
   });
 }
 
-/* iPhone/iPad: use the normal click event as the primary activation path.
-   The previous pointerup-only handler could be blocked by mobile navigation
-   layers or delayed Firebase reference loading. */
-$("addButton").addEventListener("click",handleAddButton);
-$("addButton").addEventListener("touchend",event=>{
-  if(event.cancelable) event.preventDefault();
-  handleAddButton(event);
-},{passive:false});
+/* Expose the real module implementation to the non-module mobile fallback.
+   The fallback remains responsible for guaranteeing that the modal opens. */
+window.__openElevatorModal = ()=>{
+  handleAddButton();
+};
 $("closeModal").addEventListener("click",closeModal);
 $("cancelModal").addEventListener("click",closeModal);
 
