@@ -16,7 +16,9 @@ import { db } from "./firebase.js";
  * ĐỨC ANH MAINTENANCE
  * FIRESTORE DATA LAYER
  *
- * NGUYÊN TẮC HỆ THỐNG — KHÓA
+ * CONTRACT MODULE — FIXED BASELINE
+ *
+ * NGUYÊN TẮC KHÓA:
  *
  * - Mã thang máy là định danh tài sản lâu dài, tối thiểu 10 năm.
  * - Mã thang không thay đổi theo hợp đồng, khách hàng hoặc đơn vị bảo trì.
@@ -25,12 +27,9 @@ import { db } from "./firebase.js";
  * - Hết bảo hành/bảo trì miễn phí, khách hàng có thể không tiếp tục
  *   ký với Đức Anh và chuyển sang đơn vị khác.
  * - Đức Anh có thể tiếp nhận bảo trì thang máy do đơn vị khác lắp đặt.
- * - Lịch sử sở hữu/dịch vụ của thang phải có thể tiếp tục quản lý,
- *   không làm mất định danh tài sản khi thay đổi khách hàng hoặc đơn vị.
- * - Không xóa cứng dữ liệu vận hành; ưu tiên status/active và lịch sử.
- * - Contracts lưu trực tiếp Firestore, không dùng localStorage làm nguồn dữ liệu.
- * - Các module tương lai đã được khai báo collection từ đầu để hạn chế
- *   phải đổi cấu trúc Firebase về sau.
+ * - Không xóa cứng dữ liệu vận hành.
+ * - Contracts lưu trực tiếp Firestore collection "contracts".
+ * - Không dùng localStorage làm nguồn dữ liệu hợp đồng.
  */
 
 export const COLLECTIONS = {
@@ -39,7 +38,13 @@ export const COLLECTIONS = {
   ELEVATORS: "elevators",
   ELEVATOR_RELATIONSHIPS: "elevatorRelationships",
 
+  /*
+   * QUAN TRỌNG:
+   * contracts.html đang dùng collection này.
+   * Không đổi thành serviceContracts hoặc maintenanceAgreements.
+   */
   CONTRACTS: "contracts",
+
   MAINTENANCE: "maintenance",
   WORK_ORDERS: "workOrders",
   TECHNICIANS: "technicians",
@@ -422,27 +427,6 @@ export async function getElevatorRelationships(elevatorId) {
    CONTRACTS
 ========================= */
 
-/*
- * Hợp đồng lưu trực tiếp tại:
- *   Firestore -> contracts
- *
- * Không sử dụng localStorage làm nguồn dữ liệu hợp đồng.
- *
- * Quan hệ bắt buộc:
- *   Contract -> Customer -> Building -> Elevator
- *
- * Khi tạo/sửa hợp đồng, hệ thống kiểm tra:
- *   - customer tồn tại
- *   - building tồn tại
- *   - elevator tồn tại
- *   - building thuộc customer
- *   - elevator thuộc building
- *   - elevator thuộc customer
- *
- * Điều này giữ nguyên chuỗi dữ liệu:
- * Khách hàng -> Tòa nhà -> Thang máy -> Hợp đồng
- */
-
 async function validateContractReferences(data) {
   requireValue(data.customerId, "customerId");
   requireValue(data.buildingId, "buildingId");
@@ -478,14 +462,17 @@ async function validateContractReferences(data) {
     );
   }
 
-  if (
-    elevator.customerId &&
-    String(elevator.customerId) !== String(customer.id)
-  ) {
-    throw new Error(
-      "Thang máy không thuộc khách hàng đã chọn."
-    );
-  }
+  /*
+   * KHÔNG kiểm tra elevator.customerId ở đây.
+   *
+   * Lý do:
+   * Thang máy là tài sản lâu dài.
+   * Khách hàng / đơn vị dịch vụ có thể thay đổi theo thời gian.
+   * Quan hệ lịch sử phải được quản lý bằng elevatorRelationships.
+   *
+   * Hợp đồng hiện tại vẫn bắt buộc:
+   * Customer -> Building -> Elevator.
+   */
 
   return {
     customer,
@@ -641,7 +628,6 @@ export async function updateContract(contractId, data) {
 
 /* =========================
    GENERIC HELPERS
-   DÙNG CHO MODULE TƯƠNG LAI
 ========================= */
 
 export async function createRecord(collectionName, data) {
