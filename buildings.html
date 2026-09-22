@@ -82,7 +82,34 @@
     .footer{display:flex;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--border);color:var(--muted);font-size:11px}.loading-row{padding:30px 18px;color:#777;text-align:center;font-size:12px}
     @media(max-width:900px){.page{padding:20px 16px}.kpis{grid-template-columns:1fr 1fr}}
     @media(max-width:640px){.page{padding:16px 12px}.head{flex-direction:column}.primary{width:100%}.toolbar{flex-direction:column}.filter{width:100%}.scroll{display:none}.mobile-list{display:block}.grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal{align-items:flex-end;padding:0}.modal-box{max-height:94vh;border-radius:16px 16px 0 0}.drawer{width:100%;border-left:0}.footer{flex-direction:column;gap:5px}}
-  </style>
+  
+/* V1.6 INPUT / MODAL FIX
+   Shared navigation must stay behind page dialogs.
+*/
+.da-shared-sidebar{
+  z-index:900 !important;
+}
+.da-nav-overlay{
+  z-index:850 !important;
+}
+.da-mobile-menu{
+  z-index:950 !important;
+}
+
+/* Customer / Building / Elevator dialogs */
+.modal-backdrop,
+.backdrop,
+.detail-backdrop{
+  z-index:3000 !important;
+}
+
+.modal,
+.drawer{
+  position:relative;
+  z-index:3001;
+}
+
+</style>
 </head>
 
 <body>
