@@ -1,1 +1,209 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Đức Anh Maintenance — contracts</title><link rel="stylesheet" href="css/main.css"><link rel="stylesheet" href="css/mobile.css"></head><body><header class="app-header"><div class="brand">Đức Anh Maintenance</div></header><main class="page"><h1>contracts</h1><div class="card">DEV V1.0 module scaffold.</div></main></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0b">
+<title>Hợp đồng · Đức Anh Maintenance</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/mobile.css">
+<style>
+.contract-page{padding:28px;max-width:1500px;margin:auto}
+.contract-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
+.contract-toolbar h1{margin:0}.contract-toolbar p{margin:6px 0 0}
+.contract-actions{display:flex;gap:10px;flex-wrap:wrap}
+.primary-button,.secondary-button{border:0;border-radius:10px;padding:11px 16px;cursor:pointer}
+.primary-button{background:#111;color:#fff}.secondary-button{background:#eee;color:#111}
+.contract-table{width:100%;border-collapse:collapse}
+.contract-table th,.contract-table td{text-align:left;padding:14px;border-bottom:1px solid #e8e8e8;vertical-align:middle}
+.contract-table th{font-size:12px;text-transform:uppercase;color:#777}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#eee}
+.badge.active{background:#e8f5ea}.badge.expired{background:#f8e8e8}
+.edit-button{border:1px solid #ddd;background:#fff;border-radius:8px;padding:7px 11px;cursor:pointer}
+.empty-state{text-align:center;padding:60px 20px;color:#777}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}
+.modal-backdrop.show{display:flex}
+.contract-modal{background:#fff;width:min(900px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-head h2{margin:0}.close-button{border:0;background:#eee;border-radius:50%;width:36px;height:36px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.form-group{display:flex;flex-direction:column;gap:7px}.form-group.full{grid-column:1/-1}
+.form-group label{font-size:13px;font-weight:600}.form-group input,.form-group select,.form-group textarea{font:inherit;padding:11px 12px;border:1px solid #ddd;border-radius:9px;background:#fff}
+.form-group textarea{min-height:90px;resize:vertical}
+.section-title{grid-column:1/-1;font-size:13px;font-weight:700;padding-top:10px;border-bottom:1px solid #eee;padding-bottom:8px}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+@media(max-width:700px){.contract-page{padding:18px}.contract-toolbar{align-items:flex-start;flex-direction:column}.form-grid{grid-template-columns:1fr}.contract-table{min-width:900px}.table-wrap{overflow:auto}.form-group.full{grid-column:auto}.section-title{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+<div class="brand-block"><div class="brand-mark">DA</div><div><div class="brand-name">ĐỨC ANH</div><div class="brand-sub">MAINTENANCE</div></div></div>
+<nav class="nav">
+<div class="nav-label">TỔNG QUAN</div>
+<a class="nav-item" href="dashboard.html">⌂ <span>Dashboard</span></a>
+<div class="nav-label">VẬN HÀNH</div>
+<a class="nav-item" href="customers.html">♙ <span>Khách hàng</span></a>
+<a class="nav-item" href="buildings.html">⌂ <span>Tòa nhà</span></a>
+<a class="nav-item" href="elevators.html">↕ <span>Thang máy</span></a>
+<a class="nav-item active" href="contracts.html">▤ <span>Hợp đồng</span></a>
+<a class="nav-item" href="#" data-module="maintenance">◷ <span>Bảo trì</span></a>
+<a class="nav-item" href="#" data-module="work-orders">✓ <span>Work Order</span></a>
+<div class="nav-label">NHÂN SỰ</div>
+<a class="nav-item" href="#" data-module="technicians">♟ <span>Kỹ thuật viên</span></a>
+<a class="nav-item" href="#" data-module="kpi">▥ <span>KPI</span></a>
+<div class="nav-label">HỆ THỐNG</div>
+<a class="nav-item" href="#" data-module="import-center">⇧ <span>Import Center</span></a>
+<a class="nav-item" href="#" data-module="documents">▧ <span>Documents</span></a>
+<a class="nav-item" href="#" data-module="settings">⚙ <span>Cài đặt</span></a>
+</nav>
+</aside>
+
+<div class="main-area">
+<header class="topbar">
+<button class="icon-button menu-button" id="menuButton" type="button">☰</button>
+<div class="breadcrumb"><span>Đức Anh Maintenance</span><b>/</b><span>Hợp đồng</span></div>
+<div class="top-actions"><div class="user-chip"><div class="avatar">AD</div><div class="user-text"><strong>Administrator</strong><small>ADMIN</small></div></div></div>
+</header>
+
+<main class="content contract-page">
+<section class="contract-toolbar">
+<div><p class="eyebrow">QUẢN LÝ VẬN HÀNH</p><h1>Hợp đồng</h1><p class="muted">Mỗi hợp đồng gắn với 1 khách hàng, 1 tòa nhà và 1 thang máy.</p></div>
+<div class="contract-actions"><button class="primary-button" id="addContract" type="button">＋ Thêm hợp đồng</button></div>
+</section>
+
+<section class="panel">
+<div class="panel-heading"><div><p class="eyebrow">DANH SÁCH</p><h2>Hợp đồng hiện tại</h2></div></div>
+<div class="table-wrap">
+<table class="contract-table">
+<thead><tr><th>Mã HĐ</th><th>Khách hàng</th><th>Tòa nhà</th><th>Thang máy</th><th>Thời hạn</th><th>Trạng thái</th><th></th></tr></thead>
+<tbody id="contractRows"></tbody>
+</table>
+</div>
+<div class="empty-state" id="emptyState">Chưa có hợp đồng. Bấm “Thêm hợp đồng” để tạo mới.</div>
+</section>
+</main>
+</div>
+</div>
+
+<div class="modal-backdrop" id="contractModal">
+<div class="contract-modal" role="dialog" aria-modal="true">
+<div class="modal-head"><h2 id="modalTitle">Thêm hợp đồng</h2><button class="close-button" id="closeModal" type="button">×</button></div>
+<form id="contractForm">
+<div class="form-grid">
+<div class="section-title">THÔNG TIN HỢP ĐỒNG</div>
+<div class="form-group"><label>Mã hợp đồng *</label><input id="contractCode" required placeholder="VD: HĐ-BT-2026-001"></div>
+<div class="form-group"><label>Tên hợp đồng *</label><input id="contractName" required placeholder="Hợp đồng bảo trì thang máy"></div>
+<div class="form-group"><label>Khách hàng *</label><select id="customerId" required><option value="">Chọn khách hàng</option></select></div>
+<div class="form-group"><label>Tòa nhà *</label><select id="buildingId" required><option value="">Chọn tòa nhà</option></select></div>
+<div class="form-group"><label>Thang máy *</label><select id="elevatorId" required><option value="">Chọn thang máy</option></select></div>
+<div class="form-group"><label>Trạng thái</label><select id="status"><option value="active">Đang hiệu lực</option><option value="pending">Chờ hiệu lực</option><option value="expired">Hết hạn</option></select></div>
+<div class="form-group"><label>Ngày ký</label><input id="signedDate" type="date"></div>
+<div class="form-group"><label>Ngày bắt đầu</label><input id="startDate" type="date"></div>
+<div class="form-group"><label>Ngày kết thúc</label><input id="endDate" type="date"></div>
+<div class="form-group"><label>Giá trị hợp đồng (VNĐ)</label><input id="contractValue" type="number" min="0" step="1000"></div>
+
+<div class="section-title">BẢO HÀNH</div>
+<div class="form-group"><label>Áp dụng bảo hành</label><select id="warrantyEnabled"><option value="yes">Có</option><option value="no">Không</option></select></div>
+<div class="form-group"><label>Thời hạn bảo hành</label><input id="warrantyPeriod" placeholder="VD: 12 tháng"></div>
+<div class="form-group"><label>Bảo hành từ</label><input id="warrantyStart" type="date"></div>
+<div class="form-group"><label>Bảo hành đến</label><input id="warrantyEnd" type="date"></div>
+<div class="form-group full"><label>Phạm vi / điều kiện bảo hành</label><textarea id="warrantyNote"></textarea></div>
+
+<div class="section-title">BẢO TRÌ</div>
+<div class="form-group"><label>Áp dụng bảo trì</label><select id="maintenanceEnabled"><option value="yes">Có</option><option value="no">Không</option></select></div>
+<div class="form-group"><label>Loại bảo trì</label><select id="maintenanceType"><option value="paid">Có phí</option><option value="free">Miễn phí</option></select></div>
+<div class="form-group"><label>Chu kỳ bảo trì</label><select id="maintenanceCycle"><option value="monthly">1 tháng/lần</option><option value="bi_monthly">2 tháng/lần</option><option value="quarterly">3 tháng/lần</option><option value="custom">Khác</option></select></div>
+<div class="form-group"><label>Người phụ trách</label><input id="maintenanceOwner" placeholder="KTV phụ trách"></div>
+
+<div class="section-title">THANH TOÁN & TÀI LIỆU</div>
+<div class="form-group"><label>Đã thanh toán (VNĐ)</label><input id="paidValue" type="number" min="0" step="1000"></div>
+<div class="form-group"><label>Hạn thanh toán</label><input id="paymentDue" type="date"></div>
+<div class="form-group full"><label>Ghi chú</label><textarea id="note"></textarea></div>
+</div>
+<div class="modal-foot"><button class="secondary-button" id="cancelModal" type="button">Hủy</button><button class="primary-button" type="submit">Lưu hợp đồng</button></div>
+</form>
+</div>
+</div>
+
+<script src="js/ui/app.js"></script>
+<script>
+(function(){
+  const KEY='da_maintenance_contracts_v1';
+  let contracts=JSON.parse(localStorage.getItem(KEY)||'[]');
+  let editingId=null;
+
+  const $=id=>document.getElementById(id);
+  const modal=$('contractModal'), form=$('contractForm');
+
+  function save(){localStorage.setItem(KEY,JSON.stringify(contracts));}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+  function fmtDate(v){if(!v)return '—'; const p=v.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v;}
+  function statusText(v){return v==='active'?'Đang hiệu lực':v==='expired'?'Hết hạn':'Chờ hiệu lực';}
+
+  function render(){
+    const rows=$('contractRows');
+    $('emptyState').style.display=contracts.length?'none':'block';
+    rows.innerHTML=contracts.map(c=>`
+      <tr>
+        <td><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
+        <td>${esc(c.customerName||'—')}</td>
+        <td>${esc(c.buildingName||'—')}</td>
+        <td>${esc(c.elevatorName||'—')}</td>
+        <td>${fmtDate(c.startDate)} → ${fmtDate(c.endDate)}</td>
+        <td><span class="badge ${c.status==='active'?'active':c.status==='expired'?'expired':''}">${statusText(c.status)}</span></td>
+        <td><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
+      </tr>`).join('');
+    rows.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(b.dataset.edit));
+  }
+
+  function openModal(){
+    modal.classList.add('show');
+    document.body.style.overflow='hidden';
+    setTimeout(()=>$('contractCode').focus(),50);
+  }
+  function closeModal(){modal.classList.remove('show');document.body.style.overflow='';editingId=null;form.reset();$('modalTitle').textContent='Thêm hợp đồng';}
+  function set(id,val){$(id).value=val??'';}
+
+  function openEdit(id){
+    const c=contracts.find(x=>x.id===id); if(!c)return;
+    editingId=id; $('modalTitle').textContent='Sửa hợp đồng';
+    ['contractCode','contractName','customerId','buildingId','elevatorId','status','signedDate','startDate','endDate','contractValue','warrantyEnabled','warrantyPeriod','warrantyStart','warrantyEnd','warrantyNote','maintenanceEnabled','maintenanceType','maintenanceCycle','maintenanceOwner','paidValue','paymentDue','note']
+      .forEach(k=>set(k,c[k]));
+    openModal();
+  }
+
+  $('addContract').onclick=()=>{editingId=null;form.reset();$('status').value='active';$('warrantyEnabled').value='yes';$('maintenanceEnabled').value='yes';$('maintenanceType').value='paid';$('maintenanceCycle').value='monthly';$('modalTitle').textContent='Thêm hợp đồng';openModal();};
+  $('closeModal').onclick=closeModal; $('cancelModal').onclick=closeModal;
+  modal.onclick=e=>{if(e.target===modal)closeModal();};
+
+  form.onsubmit=e=>{
+    e.preventDefault();
+    const customer=$('customerId'),building=$('buildingId'),elevator=$('elevatorId');
+    const obj={id:editingId||('ct_'+Date.now()),code:$('contractCode').value.trim(),name:$('contractName').value.trim(),
+      customerId:customer.value,customerName:customer.options[customer.selectedIndex]?.text||'',
+      buildingId:building.value,buildingName:building.options[building.selectedIndex]?.text||'',
+      elevatorId:elevator.value,elevatorName:elevator.options[elevator.selectedIndex]?.text||'',
+      status:$('status').value,signedDate:$('signedDate').value,startDate:$('startDate').value,endDate:$('endDate').value,
+      contractValue:$('contractValue').value,warrantyEnabled:$('warrantyEnabled').value,warrantyPeriod:$('warrantyPeriod').value,
+      warrantyStart:$('warrantyStart').value,warrantyEnd:$('warrantyEnd').value,warrantyNote:$('warrantyNote').value,
+      maintenanceEnabled:$('maintenanceEnabled').value,maintenanceType:$('maintenanceType').value,maintenanceCycle:$('maintenanceCycle').value,
+      maintenanceOwner:$('maintenanceOwner').value,paidValue:$('paidValue').value,paymentDue:$('paymentDue').value,note:$('note').value,
+      updatedAt:new Date().toISOString()};
+    if(editingId){const i=contracts.findIndex(x=>x.id===editingId);if(i>-1)contracts[i]=obj;}else{obj.createdAt=obj.updatedAt;contracts.unshift(obj);}
+    save();render();closeModal();
+  };
+
+  // Chuẩn bị chỗ để nối Firebase sau khi schema hiện tại được xác nhận.
+  // Hiện tại dùng localStorage để module chạy độc lập, không làm hỏng dữ liệu Firebase.
+  render();
+
+  document.querySelectorAll('[data-module]').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    alert('Module này đang trong quá trình xây dựng.');
+  }));
+})();
+</script>
+</body>
+</html>
+
