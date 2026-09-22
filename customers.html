@@ -66,18 +66,155 @@
     .detail-section-title{margin:0 0 10px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
     .detail-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.detail-tab{flex:0 0 auto;border:1px solid var(--da-border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.detail-tab.active{border-color:var(--da-yellow);background:rgba(245,196,0,.09);color:var(--da-yellow)}
     .detail-list{display:grid;gap:8px}.detail-row{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid var(--da-border);border-radius:8px;background:#0d0d0d;font-size:12px}.detail-row span{color:#999}
-    .modal-backdrop{align-items:center;justify-content:center;padding:20px}.modal-backdrop.show{display:flex}.customer-modal{width:min(720px,100%);max-height:min(800px,92vh);overflow-y:auto;border:1px solid var(--da-border);border-radius:14px;background:#111;box-shadow:0 25px 80px rgba(0,0,0,.55)}
-    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:19px 20px;border-bottom:1px solid var(--da-border)}.modal-head h2{margin:0;font-size:18px}.close-button{width:34px;height:34px;border:1px solid var(--da-border);border-radius:8px;background:#171717;color:#aaa}
-    .modal-body{padding:20px}.form-section-title{margin:0 0 13px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}.form-field.full{grid-column:1/-1}.form-field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}
-    .form-field input,.form-field select,.form-field textarea{width:100%;border:1px solid var(--da-border);border-radius:8px;outline:none;background:#0b0b0b;color:#eee;padding:11px 12px}.form-field textarea{min-height:85px;resize:vertical}.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--da-yellow)}
-    .modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:15px 20px;border-top:1px solid var(--da-border)}.secondary-button{border:1px solid var(--da-border);border-radius:8px;padding:11px 15px;background:#171717;color:#ccc}
+    .modal-backdrop{
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .modal-backdrop.show{display:flex}
+
+    .customer-modal{
+      width:min(720px,100%);
+      height:min(800px,calc(100dvh - 40px));
+      max-height:calc(100dvh - 40px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid var(--da-border);
+      border-radius:14px;
+      background:#111;
+      box-shadow:0 25px 80px rgba(0,0,0,.55);
+    }
+
+    .modal-head{
+      position:sticky;
+      top:0;
+      z-index:5;
+      flex:0 0 auto;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:17px 20px;
+      border-bottom:1px solid var(--da-border);
+      background:#111;
+    }
+    .modal-head h2{margin:0;font-size:18px}
+    .close-button{
+      width:38px;
+      height:38px;
+      border:1px solid var(--da-border);
+      border-radius:9px;
+      background:#171717;
+      color:#aaa;
+      font-size:22px;
+      line-height:1;
+    }
+
+    .modal-body{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      padding:20px;
+    }
+
+    .form-section-title{margin:0 0 13px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}
+    .form-field.full{grid-column:1/-1}
+    .form-field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea{
+      width:100%;
+      min-height:46px;
+      border:1px solid var(--da-border);
+      border-radius:9px;
+      outline:none;
+      background:#0b0b0b;
+      color:#eee;
+      padding:11px 12px;
+      font-size:16px;
+    }
+    .form-field textarea{min-height:95px;resize:vertical}
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus{border-color:var(--da-yellow)}
+
+    .modal-foot{
+      flex:0 0 auto;
+      display:flex;
+      justify-content:flex-end;
+      gap:9px;
+      padding:13px 20px calc(13px + env(safe-area-inset-bottom));
+      border-top:1px solid var(--da-border);
+      background:#111;
+    }
+    .secondary-button{border:1px solid var(--da-border);border-radius:8px;padding:11px 15px;background:#171717;color:#ccc}
     .firebase-message{margin-bottom:14px;padding:11px 13px;border:1px solid var(--da-border);border-radius:9px;background:#101010;color:#aaa;font-size:12px;display:none}
     .firebase-message.show{display:block}.firebase-message.error{border-color:rgba(239,98,98,.4);color:#ef8989}.firebase-message.success{border-color:rgba(56,199,147,.4);color:#72d8b1}
     @media(max-width:900px){.customer-page{padding:20px 16px}.customer-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-header{align-items:stretch}}
     @media(max-width:640px){
       .customer-page{padding:16px 12px}.customer-header{flex-direction:column}.primary-button{width:100%}.customer-kpis{gap:9px}.kpi-card{min-height:95px;padding:13px}.kpi-value{font-size:24px}
       .customer-toolbar{flex-direction:column;align-items:stretch}.filter-select{width:100%}.table-scroll{display:none}.mobile-customer-list{display:block}.table-footer{flex-direction:column;align-items:flex-start;gap:5px}
-      .detail-drawer{width:100%;border-left:0}.detail-grid{grid-template-columns:1fr 1fr}.modal-backdrop{align-items:flex-end;padding:0}.customer-modal{max-height:94vh;border-radius:16px 16px 0 0}.form-grid{grid-template-columns:1fr}.form-field.full{grid-column:auto}
+      .detail-drawer{width:100%;border-left:0}
+      .detail-grid{grid-template-columns:1fr 1fr}
+
+      .modal-backdrop{
+        align-items:flex-start;
+        justify-content:center;
+        padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+      }
+
+      .customer-modal{
+        width:100%;
+        height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        max-height:none;
+        border-radius:0;
+        border-left:0;
+        border-right:0;
+        border-bottom:0;
+      }
+
+      .modal-head{
+        padding:
+          14px 16px
+          calc(14px + env(safe-area-inset-top));
+      }
+
+      .modal-body{
+        padding:18px 16px 24px;
+      }
+
+      .form-grid{
+        grid-template-columns:1fr;
+        gap:15px;
+      }
+
+      .form-field.full{grid-column:auto}
+
+      .form-field label{
+        margin-bottom:7px;
+        font-size:13px;
+      }
+
+      .form-field input,
+      .form-field select,
+      .form-field textarea{
+        min-height:50px;
+        padding:13px 14px;
+        font-size:16px;
+      }
+
+      .modal-foot{
+        padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+      }
+
+      .modal-foot .primary-button,
+      .modal-foot .secondary-button{
+        min-height:48px;
+      }
     }
 
     /* Shared Navigation V1.11 — embedded to avoid navigation.css load/path/cache issues */
@@ -632,7 +769,7 @@
       </div>
 
       <div class="mobile-customer-list" id="mobileCustomerList"></div>
-      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.12</span></div>
+      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.13</span></div>
     </section>
   </div>
 </main>
@@ -1032,7 +1169,12 @@ $("addCustomerButton").onclick = () => {
   modal.classList.add("show");
   document.body.style.overflow = "hidden";
 
-  setTimeout(() => $("customerName").focus(), 50);
+  const modalBody = modal.querySelector(".modal-body");
+  if (modalBody) modalBody.scrollTop = 0;
+
+  if (window.innerWidth > 820) {
+    setTimeout(() => $("customerName").focus(), 50);
+  }
 };
 
 function closeModal() {
@@ -1192,7 +1334,7 @@ loadCustomers();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.12</span>
+        <span>DEV V1.13</span>
       </div>
     `;
 
@@ -1256,7 +1398,7 @@ loadCustomers();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.12"
+          "Đức Anh Maintenance DEV V1.13"
         );
         return;
       }
