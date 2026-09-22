@@ -109,6 +109,19 @@
   z-index:3001;
 }
 
+
+/* V1.8: mobile + button hit-area fix */
+#addButton{position:relative !important;z-index:20 !important;pointer-events:auto !important;touch-action:manipulation !important;}
+#addButton *{pointer-events:none;}
+.modal,.modal-backdrop,.backdrop{z-index:3000 !important;}
+@media (max-width:1100px), (pointer:coarse){
+  body.da-nav-page{padding-left:0 !important;padding-top:74px !important;}
+  .page{padding:14px !important;}
+  .head{flex-direction:column !important;align-items:stretch !important;}
+  .head .primary{width:100% !important;min-height:54px;}
+  .kpis{grid-template-columns:1fr !important;}
+}
+
 </style>
 </head>
 
@@ -764,7 +777,7 @@ async function handleCreateBuilding(event){
   }
 }
 
-$("addButton").addEventListener("click",() => { openModal().catch(error => { console.error("OPEN BUILDING MODAL ERROR:",error); showNotice(error?.message || "Không thể mở form tạo tòa nhà.","error"); }); });
+$("addButton").addEventListener("pointerup", event => { event.preventDefault(); event.stopPropagation(); openModal().catch(error => { console.error("OPEN BUILDING MODAL ERROR:",error); showNotice(error?.message || "Không thể mở form tạo tòa nhà.","error"); }); });
 $("closeDetail").addEventListener("click",closeDetail);
 
 $("backdrop").addEventListener("click",event => {
