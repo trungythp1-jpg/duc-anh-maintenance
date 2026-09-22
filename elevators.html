@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0b">
-<title>Thang máy — Đức Anh Maintenance</title>
+<title>Thang máy — Đức Anh Maintenance V1.12</title>
 
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/mobile.css">
@@ -55,7 +55,7 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 .drawer-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--border);background:rgba(17,17,17,.96);backdrop-filter:blur(10px)}
 .kicker{margin:0 0 5px;color:var(--y);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.drawer-head h2{margin:0;font-size:20px}.drawer-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}
 .drawer-head-actions{display:flex;align-items:center;gap:8px}.drawer-head-actions .action{min-height:34px}
-.close{width:36px;height:36px;flex:0 0 36px;border:1px solid var(--border);border-radius:9px;background:#171717;color:#aaa;font-size:22px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.close:hover{border-color:var(--y);color:#fff}
+.modal-head .close{position:relative;z-index:30}.close{width:36px;height:36px;flex:0 0 36px;border:1px solid var(--border);border-radius:9px;background:#171717;color:#aaa;font-size:22px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.close:hover{border-color:var(--y);color:#fff}
 .drawer-body{padding:20px}.section-title{margin:0 0 10px;color:var(--y);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}.item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#151515}.item span{display:block;color:#777;font-size:10px;margin-bottom:5px}.item b{font-size:13px}
 .tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.tab{flex:0 0 auto;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.tab.active{border-color:var(--y);background:rgba(245,196,0,.09);color:var(--y)}
@@ -68,7 +68,7 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 .notice{padding:12px 14px;margin-bottom:14px;border:1px solid rgba(245,196,0,.25);border-radius:9px;background:rgba(245,196,0,.06);color:#d8c46c;font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
 .modal-backdrop.show{display:flex}.modal{width:min(620px,100%);max-height:92vh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:#111;box-shadow:0 30px 100px rgba(0,0,0,.65)}
-.modal-head{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;gap:15px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--border);background:rgba(17,17,17,.98);backdrop-filter:blur(10px)}.modal-head h3{margin:0;font-size:18px}.modal-head p{margin:5px 0 0;color:#777;font-size:11px}
+.modal-head{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;gap:15px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--border);background:rgba(17,17,17,.98);backdrop-filter:blur(10px)}.modal-head h3{margin:0;font-size:18px}.modal-head p{margin:5px 0 0;color:#777;font-size:11px}
 .modal-body{padding:20px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{color:#888;font-size:11px}.field input,.field select{height:42px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d;color:#f4f4f4;outline:none}.field input:focus,.field select:focus{border-color:var(--y)}
 .modal-actions{position:sticky;bottom:0;z-index:5;display:flex;justify-content:flex-end;gap:9px;padding:14px 20px;border-top:1px solid var(--border);background:rgba(17,17,17,.97);backdrop-filter:blur(10px)}
 .modal-actions .primary,.modal-actions .secondary{min-height:42px}
@@ -177,7 +177,7 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 </div>
 
 <div class="mobile-list" id="mobileList"></div>
-<div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.11</span></div>
+<div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.12</span></div>
 </section>
 </div>
 </main>
@@ -405,13 +405,15 @@ thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
 </script>
 
 <script type="module">
-import {
+import * as Firestore from "./js/core/firestore-v1.js";
+
+const {
 createElevator,
 updateElevator,
 getElevators,
 getBuildings,
 getCustomers
-} from "./js/core/firestore-v1.js";
+} = Firestore;
 
 const $ = id => document.getElementById(id);
 
@@ -614,6 +616,14 @@ relatedBuildings.map(building=>`<option value="${escapeHtml(building.id)}">${esc
 
 async function loadData(){
 setMessage("");
+if(typeof getCustomers!=="function" || typeof getBuildings!=="function" || typeof getElevators!=="function"){
+  const missing = [
+    typeof getCustomers!=="function" ? "getCustomers" : "",
+    typeof getBuildings!=="function" ? "getBuildings" : "",
+    typeof getElevators!=="function" ? "getElevators" : ""
+  ].filter(Boolean).join(", ");
+  throw new Error(`Firestore module thiếu hàm: ${missing}. Kiểm tra js/core/firestore-v1.js.`);
+}
 
 $("tbody").innerHTML='<tr><td colspan="9"><div class="loading">Đang tải dữ liệu Firebase...</div></td></tr>';
 $("mobileList").innerHTML="";
@@ -677,6 +687,8 @@ async function openModal(){
      + Thêm thang máy button look dead on iPhone/iPad. */
   resetForm();
   $("modalBackdrop").classList.add("show");
+  const modal = document.querySelector("#modalBackdrop .modal");
+  if(modal) modal.scrollTop = 0;
   document.body.style.overflow="hidden";
 
   if(!customers.length || !buildings.length){
@@ -735,6 +747,8 @@ $("assetCode").value=elevator.assetCode??"";
 
 $("saveButton").textContent="Lưu thay đổi";
 $("modalBackdrop").classList.add("show");
+const modal = document.querySelector("#modalBackdrop .modal");
+if(modal) modal.scrollTop = 0;
 document.body.style.overflow="hidden";
 }
 
