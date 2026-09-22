@@ -997,6 +997,135 @@
 }
 
 </style>
+
+    /* =========================================================
+       BUILDING MODAL V1.24 — EXACT CUSTOMER MODAL MODEL
+       ========================================================= */
+    .building-modal-backdrop{
+      position:fixed !important;
+      inset:0 !important;
+      z-index:4000 !important;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      margin:0 !important;
+      width:auto !important;
+      height:auto !important;
+      background:rgba(0,0,0,.78);
+      backdrop-filter:blur(5px);
+      -webkit-backdrop-filter:blur(5px);
+      box-sizing:border-box;
+    }
+    .building-modal-backdrop.show{display:flex !important}
+    .building-modal{
+      width:min(720px,100%);
+      height:min(800px,calc(100dvh - 40px));
+      max-height:calc(100dvh - 40px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#111;
+      box-shadow:0 25px 80px rgba(0,0,0,.55);
+      box-sizing:border-box;
+      margin:0 auto;
+    }
+    .building-modal-head{
+      position:sticky;
+      top:0;
+      z-index:10;
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:17px 20px;
+      border-bottom:1px solid var(--border);
+      background:#111;
+    }
+    .building-modal-head h2{margin:0;font-size:18px;color:#f4f4f4}
+    .building-modal > form{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      margin:0;
+    }
+    .building-modal-body{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      padding:20px;
+    }
+    .building-modal-foot{
+      flex:0 0 auto;
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      gap:9px;
+      padding:13px 20px calc(13px + env(safe-area-inset-bottom));
+      border-top:1px solid var(--border);
+      background:#111;
+    }
+    .building-modal-foot .primary,
+    .building-modal-foot .secondary{min-height:44px}
+
+    @media(max-width:640px){
+      .building-modal-backdrop{
+        align-items:flex-start;
+        justify-content:center;
+        padding:0;
+        overflow-y:auto;
+        -webkit-overflow-scrolling:touch;
+        overscroll-behavior:contain;
+      }
+      .building-modal{
+        width:100%;
+        min-height:100dvh;
+        height:auto;
+        max-height:none;
+        display:block;
+        overflow:visible;
+        border:0;
+        border-radius:0;
+        margin:0;
+      }
+      .building-modal > form{
+        display:block;
+        min-height:auto;
+        overflow:visible;
+      }
+      .building-modal-head{
+        position:sticky;
+        top:0;
+        z-index:10;
+        padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
+        background:#111;
+      }
+      .building-modal-body{
+        min-height:auto;
+        overflow:visible;
+        padding:18px 16px 30px;
+      }
+      .building-modal-foot{
+        position:relative;
+        display:flex;
+        padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+        background:#111;
+        border-top:1px solid var(--border);
+      }
+      .building-modal-foot .primary,
+      .building-modal-foot .secondary{min-height:48px}
+      .building-modal-foot .primary{flex:1}
+      .building-modal-foot .secondary{min-width:84px}
+    }
+
 </head>
 
 <body>
@@ -1083,7 +1212,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.23</span>
+        <span>DEV V1.24</span>
       </div>
     </section>
 
@@ -1133,15 +1262,15 @@
   </aside>
 </div>
 
-<div class="modal" id="modal">
-  <section class="modal-box">
-    <div class="modal-head">
+<div class="building-modal-backdrop" id="modal">
+  <section class="building-modal">
+    <div class="building-modal-head">
       <h2>Thêm tòa nhà</h2>
-      <button class="close" id="closeModal" type="button">×</button>
+      <button class="close-button" id="closeModal" type="button">×</button>
     </div>
 
     <form id="buildingForm">
-      <div class="modal-body">
+      <div class="building-modal-body">
 
         <p class="form-title">Thông tin tòa nhà</p>
 
@@ -1219,7 +1348,7 @@
         </div>
       </div>
 
-      <div class="modal-foot">
+      <div class="building-modal-foot">
         <button class="secondary" id="cancel" type="button">Hủy</button>
         <button class="primary" id="saveBuilding" type="submit">Lưu tòa nhà</button>
       </div>
@@ -1648,10 +1777,11 @@ async function openModal(){
   resetLocation();
   renderCustomerOptions();
 
-  $("modal").classList.add("show");
+  const modal = $("modal");
+  modal.classList.add("show");
   document.body.style.overflow = "hidden";
-  $("modal").scrollTop = 0;
-  const modalBody = $("modal").querySelector(".modal-body");
+  modal.scrollTop = 0;
+  const modalBody = modal.querySelector(".building-modal-body");
   if (modalBody) modalBody.scrollTop = 0;
 
   if (window.innerWidth > 820){
@@ -1756,7 +1886,7 @@ loadData();
 </script>
 
 <script>
-/* Shared Navigation V1.23 — same topbar behavior as Dashboard */
+/* Shared Navigation V1.24 — same topbar behavior as Dashboard */
 (() => {
   const NAV_ITEMS = [
     { section:"TỔNG QUAN", items:[
@@ -1824,7 +1954,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.23</span>
+        <span>DEV V1.24</span>
       </div>
     `;
 
@@ -1888,7 +2018,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.23"
+          "Đức Anh Maintenance DEV V1.24"
         );
         return;
       }
