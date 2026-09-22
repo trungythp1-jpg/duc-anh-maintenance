@@ -1,9 +1,24 @@
 <!doctype html>
-Đức Anh Maintenance
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0b">
+  <title>Đức Anh Maintenance</title>
+
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/mobile.css">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
 
     <div class="brand-block">
       <div class="brand-mark">DA</div>
-
       <div>
         <div class="brand-name">ĐỨC ANH</div>
         <div class="brand-sub">MAINTENANCE</div>
@@ -15,81 +30,74 @@
       <div class="nav-label">TỔNG QUAN</div>
 
       <a class="nav-item active" href="dashboard.html">
-        ⌂
-        <span>Dashboard</span>
+        ⌂ <span>Dashboard</span>
       </a>
 
       <div class="nav-label">VẬN HÀNH</div>
 
       <a class="nav-item" href="customers.html">
-        ♙
-        <span>Khách hàng</span>
+        ♙ <span>Khách hàng</span>
       </a>
 
       <a class="nav-item" href="buildings.html">
-        ⌂
-        <span>Tòa nhà</span>
+        ⌂ <span>Tòa nhà</span>
       </a>
 
       <a class="nav-item" href="elevators.html">
-        ↕
-        <span>Thang máy</span>
+        ↕ <span>Thang máy</span>
       </a>
 
       <a class="nav-item" href="#" data-module="contracts">
-        ▤
-        <span>Hợp đồng</span>
+        ▤ <span>Hợp đồng</span>
       </a>
 
       <a class="nav-item" href="#" data-module="maintenance">
-        ◷
-        <span>Bảo trì</span>
+        ◷ <span>Bảo trì</span>
       </a>
 
       <a class="nav-item" href="#" data-module="work-orders">
-        ✓
-        <span>Work Order</span>
+        ✓ <span>Work Order</span>
       </a>
 
       <div class="nav-label">NHÂN SỰ</div>
 
       <a class="nav-item" href="#" data-module="technicians">
-        ♟
-        <span>Kỹ thuật viên</span>
+        ♟ <span>Kỹ thuật viên</span>
       </a>
 
       <a class="nav-item" href="#" data-module="kpi">
-        ▥
-        <span>KPI</span>
+        ▥ <span>KPI</span>
       </a>
 
       <div class="nav-label">HỆ THỐNG</div>
 
       <a class="nav-item" href="#" data-module="import-center">
-        ⇧
-        <span>Import Center</span>
+        ⇧ <span>Import Center</span>
       </a>
 
       <a class="nav-item" href="#" data-module="documents">
-        ▧
-        <span>Documents</span>
+        ▧ <span>Documents</span>
       </a>
 
       <a class="nav-item" href="#" data-module="settings">
-        ⚙
-        <span>Cài đặt</span>
+        ⚙ <span>Cài đặt</span>
       </a>
 
     </nav>
 
     <div class="sidebar-footer">
       <i></i>
-
       <div>
-        <strong>DEV V1.0</strong>
-        <small>Giao diện đang xây dựng</small>
+        <strong>DEV V1.1</strong>
+        <small>Dashboard liên kết Firebase</small>
       </div>
     </div>
+
+  </aside>
+
+
+  <!-- MAIN AREA -->
+  <div class="main-area">
 
     <!-- TOPBAR -->
     <header class="topbar">
@@ -112,7 +120,7 @@
 
         <button
           class="icon-button"
-          id="dashboardRefresh"
+          id="refreshTop"
           type="button"
           aria-label="Làm mới dữ liệu">
           ↻
@@ -120,7 +128,6 @@
 
         <div class="user-chip">
           <div class="avatar">AD</div>
-
           <div class="user-text">
             <strong>Administrator</strong>
             <small>ADMIN</small>
@@ -132,16 +139,31 @@
     </header>
 
 
-    <!-- DASHBOARD -->
+    <!-- DASHBOARD CONTENT -->
     <main class="content">
 
-      <!-- HEADING: đã bỏ các dòng mô tả Firebase dư thừa -->
-      <section class="page-heading dashboard-heading">
+      <section class="page-heading">
 
         <div>
           <p class="eyebrow">TỔNG QUAN HỆ THỐNG</p>
+
           <h1>Dashboard</h1>
+
+          <p class="muted">
+            Dữ liệu trực tiếp từ Firebase: Khách hàng → Tòa nhà → Thang máy.
+          </p>
+
+          <div id="firebaseStatus" class="muted" style="margin-top:8px;">
+            Đang kết nối Firebase...
+          </div>
         </div>
+
+        <button
+          class="primary-button"
+          id="refreshButton"
+          type="button">
+          ↻ Làm mới dữ liệu
+        </button>
 
       </section>
 
@@ -149,13 +171,13 @@
       <!-- STATS -->
       <section class="stats-grid">
 
-        <article class="stat-card accent">
+        <article class="stat-card accent" data-href="customers.html" role="button" tabindex="0">
           <div class="stat-top">
             TỔNG KHÁCH HÀNG
             <span>♙</span>
           </div>
 
-          <div class="stat-value" id="dashboardCustomerCount">0</div>
+          <div class="stat-value" id="statCustomers">0</div>
 
           <div class="stat-foot">
             Khách hàng trong hệ thống
@@ -163,127 +185,218 @@
         </article>
 
 
-        <article class="stat-card">
+        <article class="stat-card" data-href="buildings.html" role="button" tabindex="0">
+
           <div class="stat-top">
             TỔNG TÒA NHÀ
             <span>⌂</span>
           </div>
 
-          <div class="stat-value" id="dashboardBuildingCount">0</div>
+          <div class="stat-value" id="statBuildings">0</div>
 
           <div class="stat-foot">
             Tòa nhà đang quản lý
           </div>
+
         </article>
 
 
-        <article class="stat-card">
+        <article class="stat-card" data-href="elevators.html" role="button" tabindex="0">
+
           <div class="stat-top">
             TỔNG THANG MÁY
             <span>↕</span>
           </div>
 
-          <div class="stat-value" id="dashboardElevatorCount">0</div>
+          <div class="stat-value" id="statElevators">0</div>
 
           <div class="stat-foot">
             Tài sản thang máy
           </div>
+
         </article>
 
 
-        <article class="stat-card">
+        <article class="stat-card" data-href="elevators.html" role="button" tabindex="0">
+
           <div class="stat-top">
             ĐANG HOẠT ĐỘNG
             <span>●</span>
           </div>
 
-          <div class="stat-value" id="dashboardActiveElevatorCount">0</div>
+          <div class="stat-value" id="statActive">0</div>
 
           <div class="stat-foot">
-            <em id="dashboardActiveElevatorPercent">0%</em> tổng thang máy
+            <em id="statActivePercent">0%</em> tổng thang máy
           </div>
+
         </article>
 
       </section>
 
 
-      <!-- ELEVATOR STATUS -->
+      <!-- DATA STATUS -->
+      <section class="dashboard-grid">
+
+        <article class="panel">
+
+          <div class="panel-heading">
+
+            <div>
+              <p class="eyebrow">THANG MÁY</p>
+              <h2>Tình trạng hiện tại</h2>
+            </div>
+
+            <button
+              class="text-button"
+              type="button"
+              data-href="elevators.html">
+              Mở danh sách →
+            </button>
+
+          </div>
+
+
+          <div class="work-list">
+
+            <div class="work-row">
+              <time>●</time>
+              <i></i>
+
+              <div>
+                <strong>Đang hoạt động</strong>
+                <span>Thang máy vận hành bình thường</span>
+              </div>
+
+              <label class="success" id="statusActive">0</label>
+            </div>
+
+
+            <div class="work-row">
+              <time>◷</time>
+              <i></i>
+
+              <div>
+                <strong>Đang bảo trì</strong>
+                <span>Trạng thái tài sản đang bảo trì</span>
+              </div>
+
+              <label class="primary" id="statusMaint">0</label>
+            </div>
+
+
+            <div class="work-row">
+              <time>!</time>
+              <i></i>
+
+              <div>
+                <strong>Cần xử lý</strong>
+                <span>Thang máy cần kiểm tra / liên hệ</span>
+              </div>
+
+              <label class="warning" id="statusCare">0</label>
+            </div>
+
+
+            <div class="work-row">
+              <time>×</time>
+              <i></i>
+
+              <div>
+                <strong>Ngừng hoạt động</strong>
+                <span>Tài sản đang ở trạng thái inactive</span>
+              </div>
+
+              <label id="statusInactive">0</label>
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <article class="panel">
+
+          <div class="panel-heading">
+
+            <div>
+              <p class="eyebrow">LIÊN KẾT DỮ LIỆU</p>
+              <h2>Khách hàng → Tòa nhà → Thang máy</h2>
+            </div>
+
+          </div>
+
+
+          <div class="alerts">
+
+            <div>
+              ♙
+              <span>
+                <strong id="linkCustomers">0 khách hàng</strong>
+                <small>Dữ liệu từ collection customers</small>
+              </span>
+            </div>
+
+
+            <div>
+              ⌂
+              <span>
+                <strong id="linkBuildings">0 tòa nhà</strong>
+                <small>Tòa nhà được liên kết bằng customerId</small>
+              </span>
+            </div>
+
+
+            <div>
+              ↕
+              <span>
+                <strong id="linkElevators">0 thang máy</strong>
+                <small>Thang máy liên kết customerId + buildingId</small>
+              </span>
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- BUILDINGS -->
       <section class="panel">
 
         <div class="panel-heading">
 
           <div>
-            <p class="eyebrow">THANG MÁY</p>
-            <h2>Tình trạng hiện tại</h2>
+            <p class="eyebrow">TÒA NHÀ</p>
+            <h2>Tòa nhà đang quản lý</h2>
           </div>
 
-          <a class="section-link" href="elevators.html">
-            Mở danh sách →
-          </a>
+          <button
+            class="text-button"
+            type="button"
+            data-href="buildings.html">
+            Xem tất cả →
+          </button>
 
         </div>
 
-
-        <div class="work-list">
-
+        <div id="buildingList" class="work-list">
           <div class="work-row">
-            <time>●</time>
+            <time>…</time>
             <i></i>
-
             <div>
-              <strong>Đang hoạt động</strong>
-              <span>Thang máy vận hành bình thường</span>
+              <strong>Đang tải dữ liệu...</strong>
+              <span>Đang đọc Firebase</span>
             </div>
-
-            <label class="success" id="dashboardStatusActive">0</label>
           </div>
-
-
-          <div class="work-row">
-            <time>◷</time>
-            <i></i>
-
-            <div>
-              <strong>Đang bảo trì</strong>
-              <span>Thang máy đang trong trạng thái bảo trì</span>
-            </div>
-
-            <label class="warning" id="dashboardStatusMaintenance">0</label>
-          </div>
-
-
-          <div class="work-row">
-            <time>!</time>
-            <i></i>
-
-            <div>
-              <strong>Cần xử lý</strong>
-              <span>Cần kiểm tra hoặc liên hệ</span>
-            </div>
-
-            <label id="dashboardStatusAttention">0</label>
-          </div>
-
-
-          <div class="work-row">
-            <time>—</time>
-            <i></i>
-
-            <div>
-              <strong>Chưa có tòa nhà</strong>
-              <span>Hiển thị khi hệ thống chưa có dữ liệu tòa nhà</span>
-            </div>
-
-            <label id="dashboardStatusNoBuilding">0</label>
-          </div>
-
         </div>
 
       </section>
 
 
       <!-- LATEST ELEVATORS -->
-      <section class="panel">
+      <section class="panel" style="margin-top:18px;">
 
         <div class="panel-heading">
 
@@ -292,102 +405,652 @@
             <h2>Thang máy mới nhất</h2>
           </div>
 
-          <a class="section-link" href="elevators.html">
+          <button
+            class="text-button"
+            type="button"
+            data-href="elevators.html">
             Xem tất cả →
-          </a>
+          </button>
 
         </div>
 
-
-        <div id="dashboardLatestElevators">
-
-          <div class="empty-row">
-            <span>—</span>
-            <i class="dot"></i>
-
+        <div id="latestElevatorList" class="work-list">
+          <div class="work-row">
+            <time>…</time>
+            <i></i>
             <div>
-              <strong>Chưa có thang máy</strong>
-              <small>Danh sách sẽ tự cập nhật khi có dữ liệu.</small>
+              <strong>Đang tải dữ liệu...</strong>
+              <span>Đang đọc Firebase</span>
             </div>
-
-            <span class="count-pill">0</span>
           </div>
-
         </div>
 
       </section>
 
 
-      <!-- LATEST CUSTOMERS / BUILDINGS -->
-      <section class="dashboard-grid two">
+      <!-- AUDIT / CURRENT LIMIT -->
+      <section class="panel activity">
 
-        <article class="panel">
+        <div class="panel-heading">
 
-          <div class="panel-heading">
-
-            <div>
-              <p class="eyebrow">KHÁCH HÀNG</p>
-              <h2>Khách hàng mới nhất</h2>
-            </div>
-
-            <a class="section-link" href="customers.html">
-              Xem tất cả →
-            </a>
-
+          <div>
+            <p class="eyebrow">HỆ THỐNG</p>
+            <h2>Phạm vi Dashboard V1.1</h2>
           </div>
 
-          <div id="dashboardLatestCustomers">
+        </div>
 
-            <div class="empty-row">
-              <span>—</span>
-              <i class="dot"></i>
+        <div class="activity-row">
+          <span>01</span>
+          <span>Khách hàng</span>
+          <span>Đã liên kết dữ liệu Firebase</span>
+          <label class="success">LIVE</label>
+        </div>
 
-              <div>
-                <strong>Chưa có khách hàng</strong>
-                <small>Danh sách sẽ tự cập nhật.</small>
-              </div>
+        <div class="activity-row">
+          <span>02</span>
+          <span>Tòa nhà</span>
+          <span>Đã liên kết dữ liệu Firebase</span>
+          <label class="success">LIVE</label>
+        </div>
 
-              <span class="count-pill">0</span>
-            </div>
+        <div class="activity-row">
+          <span>03</span>
+          <span>Thang máy</span>
+          <span>Đã liên kết dữ liệu Firebase</span>
+          <label class="success">LIVE</label>
+        </div>
 
-          </div>
-
-        </article>
-
-
-        <article class="panel">
-
-          <div class="panel-heading">
-
-            <div>
-              <p class="eyebrow">TÒA NHÀ</p>
-              <h2>Tòa nhà mới nhất</h2>
-            </div>
-
-            <a class="section-link" href="buildings.html">
-              Xem tất cả →
-            </a>
-
-          </div>
-
-          <div id="dashboardLatestBuildings">
-
-            <div class="empty-row">
-              <span>—</span>
-              <i class="dot"></i>
-
-              <div>
-                <strong>Chưa có tòa nhà</strong>
-                <small>Danh sách sẽ tự cập nhật.</small>
-              </div>
-
-              <span class="count-pill">0</span>
-            </div>
-
-          </div>
-
-        </article>
+        <div class="activity-row">
+          <span>04</span>
+          <span>Work Order / Bảo trì</span>
+          <span>Chưa triển khai collection nghiệp vụ</span>
+          <label>CHƯA CÓ</label>
+        </div>
 
       </section>
 
     </main>
+
+  </div>
+
+</div>
+
+
+<!-- MOBILE OVERLAY -->
+<div class="overlay" id="overlay"></div>
+
+
+<!-- UI CORE -->
+<script src="js/ui/app.js"></script>
+
+
+<!-- DASHBOARD FIREBASE -->
+<script type="module">
+
+import {
+  getCustomers,
+  getBuildings,
+  getElevators
+} from "./js/core/firestore-v1.js";
+
+
+const $ = id => document.getElementById(id);
+
+let customers = [];
+let buildings = [];
+let elevators = [];
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+function safeDate(value) {
+
+  if (!value) return 0;
+
+  if (typeof value?.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  if (typeof value?.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  const time = new Date(value).getTime();
+
+  return Number.isFinite(time) ? time : 0;
+}
+
+
+function customerName(customerId) {
+
+  return customers.find(
+    item => String(item.id) === String(customerId)
+  )?.name || "Không xác định";
+}
+
+
+function buildingName(buildingId) {
+
+  return buildings.find(
+    item => String(item.id) === String(buildingId)
+  )?.name || "Không xác định";
+}
+
+
+function elevatorStatusLabel(status) {
+
+  const map = {
+    active: ["Đang hoạt động", "success"],
+    maint: ["Đang bảo trì", "primary"],
+    care: ["Cần xử lý", "warning"],
+    inactive: ["Ngừng hoạt động", ""]
+  };
+
+  return map[status] || ["Chưa xác định", ""];
+}
+
+
+/* =========================================================
+   FIREBASE MESSAGE
+========================================================= */
+
+function setFirebaseStatus(message, type = "") {
+
+  const element = $("firebaseStatus");
+
+  if (!element) return;
+
+  element.textContent = message;
+
+  element.style.color =
+    type === "error"
+      ? "#d9534f"
+      : type === "success"
+        ? "#5c8f68"
+        : "";
+}
+
+
+/* =========================================================
+   KPI
+========================================================= */
+
+function renderStats() {
+
+  const totalCustomers = customers.length;
+  const totalBuildings = buildings.length;
+  const totalElevators = elevators.length;
+
+  const active = elevators.filter(
+    item => item.status === "active"
+  ).length;
+
+  const maint = elevators.filter(
+    item => item.status === "maint"
+  ).length;
+
+  const care = elevators.filter(
+    item => item.status === "care"
+  ).length;
+
+  const inactive = elevators.filter(
+    item => item.status === "inactive"
+  ).length;
+
+  const activePercent =
+    totalElevators > 0
+      ? Math.round((active / totalElevators) * 100)
+      : 0;
+
+
+  $("statCustomers").textContent = totalCustomers;
+  $("statBuildings").textContent = totalBuildings;
+  $("statElevators").textContent = totalElevators;
+  $("statActive").textContent = active;
+
+  $("statActivePercent").textContent =
+    `${activePercent}%`;
+
+
+  $("statusActive").textContent = active;
+  $("statusMaint").textContent = maint;
+  $("statusCare").textContent = care;
+  $("statusInactive").textContent = inactive;
+
+
+  $("linkCustomers").textContent =
+    `${totalCustomers} khách hàng`;
+
+  $("linkBuildings").textContent =
+    `${totalBuildings} tòa nhà`;
+
+  $("linkElevators").textContent =
+    `${totalElevators} thang máy`;
+}
+
+
+/* =========================================================
+   BUILDING LIST
+========================================================= */
+
+function renderBuildings() {
+
+  const container = $("buildingList");
+
+  if (!container) return;
+
+
+  if (!buildings.length) {
+
+    container.innerHTML = `
+      <div class="work-row">
+        <time>—</time>
+        <i></i>
+        <div>
+          <strong>Chưa có tòa nhà</strong>
+          <span>Hãy tạo tòa nhà trong module Tòa nhà.</span>
+        </div>
+        <label>0</label>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const rows = buildings
+    .map(building => {
+
+      const relatedElevators = elevators.filter(
+        elevator =>
+          String(elevator.buildingId) ===
+          String(building.id)
+      );
+
+      const activeCount = relatedElevators.filter(
+        elevator => elevator.status === "active"
+      ).length;
+
+      return {
+        building,
+        relatedElevators,
+        activeCount
+      };
+
+    })
+    .sort(
+      (a, b) =>
+        b.relatedElevators.length -
+        a.relatedElevators.length
+    )
+    .slice(0, 8);
+
+
+  container.innerHTML = rows.map(item => {
+
+    const building = item.building;
+
+    return `
+      <div class="work-row">
+
+        <time>⌂</time>
+        <i></i>
+
+        <div>
+          <strong>
+            ${escapeHtml(building.name || "Tòa nhà")}
+          </strong>
+
+          <span>
+            ${escapeHtml(customerName(building.customerId))}
+            · ${item.relatedElevators.length} thang máy
+            · ${item.activeCount} đang hoạt động
+          </span>
+        </div>
+
+        <button
+          class="text-button"
+          type="button"
+          data-href="buildings.html">
+          Mở
+        </button>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
+
+/* =========================================================
+   LATEST ELEVATORS
+========================================================= */
+
+function renderLatestElevators() {
+
+  const container = $("latestElevatorList");
+
+  if (!container) return;
+
+
+  if (!elevators.length) {
+
+    container.innerHTML = `
+      <div class="work-row">
+        <time>—</time>
+        <i></i>
+        <div>
+          <strong>Chưa có thang máy</strong>
+          <span>Hãy tạo thang máy trong module Thang máy.</span>
+        </div>
+        <label>0</label>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const latest = elevators
+    .slice()
+    .sort(
+      (a, b) =>
+        safeDate(b.createdAt) -
+        safeDate(a.createdAt)
+    )
+    .slice(0, 8);
+
+
+  container.innerHTML = latest.map(elevator => {
+
+    const status =
+      elevatorStatusLabel(elevator.status);
+
+    return `
+      <div class="work-row">
+
+        <time>↕</time>
+        <i></i>
+
+        <div>
+          <strong>
+            ${escapeHtml(
+              elevator.name ||
+              elevator.assetCode ||
+              elevator.id ||
+              "Thang máy"
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(
+              buildingName(elevator.buildingId)
+            )}
+            ·
+            ${escapeHtml(
+              customerName(elevator.customerId)
+            )}
+            ·
+            ${escapeHtml(elevator.id)}
+          </span>
+        </div>
+
+        <label class="${status[1]}">
+          ${status[0]}
+        </label>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
+
+/* =========================================================
+   LOAD FIREBASE
+========================================================= */
+
+async function loadDashboardData() {
+
+  setFirebaseStatus(
+    "Đang tải dữ liệu từ Firebase..."
+  );
+
+
+  try {
+
+    /*
+     * Promise.allSettled được dùng để một collection lỗi
+     * không làm toàn bộ Dashboard trắng.
+     */
+    const results = await Promise.allSettled([
+
+      getCustomers(),
+      getBuildings(),
+      getElevators()
+
+    ]);
+
+
+    const customerResult = results[0];
+    const buildingResult = results[1];
+    const elevatorResult = results[2];
+
+
+    customers =
+      customerResult.status === "fulfilled"
+        ? customerResult.value || []
+        : [];
+
+
+    buildings =
+      buildingResult.status === "fulfilled"
+        ? buildingResult.value || []
+        : [];
+
+
+    elevators =
+      elevatorResult.status === "fulfilled"
+        ? elevatorResult.value || []
+        : [];
+
+
+    renderStats();
+    renderBuildings();
+    renderLatestElevators();
+
+
+    const errors = results
+      .filter(result => result.status === "rejected")
+      .map(
+        result =>
+          result.reason?.message ||
+          "Lỗi Firebase không xác định"
+      );
+
+
+    if (errors.length) {
+
+      console.error(
+        "DASHBOARD FIRESTORE ERRORS:",
+        errors
+      );
+
+      setFirebaseStatus(
+        `Đã tải một phần dữ liệu. ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy. ${errors.join(" | ")}`,
+        "error"
+      );
+
+    } else {
+
+      setFirebaseStatus(
+        `Đã kết nối Firebase · ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy`,
+        "success"
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "DASHBOARD FIREBASE ERROR:",
+      error
+    );
+
+    customers = [];
+    buildings = [];
+    elevators = [];
+
+    renderStats();
+    renderBuildings();
+    renderLatestElevators();
+
+    setFirebaseStatus(
+      `Không thể tải dữ liệu Firebase: ${error?.message || "UNKNOWN_ERROR"}`,
+      "error"
+    );
+  }
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function navigateTo(href) {
+
+  if (!href) return;
+
+  window.location.href = href;
+}
+
+
+document.addEventListener("click", event => {
+
+  const element =
+    event.target.closest("[data-href]");
+
+  if (!element) return;
+
+  event.preventDefault();
+
+  navigateTo(
+    element.dataset.href
+  );
+
+});
+
+
+document.addEventListener("keydown", event => {
+
+  if (
+    event.key !== "Enter" &&
+    event.key !== " "
+  ) {
+    return;
+  }
+
+  const element =
+    event.target.closest("[data-href]");
+
+  if (!element) return;
+
+  event.preventDefault();
+
+  navigateTo(
+    element.dataset.href
+  );
+
+});
+
+
+/* =========================================================
+   MODULES CHƯA TRIỂN KHAI
+========================================================= */
+
+const pendingModules = [
+
+  "contracts",
+  "maintenance",
+  "work-orders",
+  "technicians",
+  "kpi",
+  "import-center",
+  "documents",
+  "settings"
+
+];
+
+
+document.querySelectorAll(
+  "[data-module]"
+).forEach(button => {
+
+  button.addEventListener(
+    "click",
+    event => {
+
+      const module =
+        button.dataset.module;
+
+      if (!pendingModules.includes(module)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      alert(
+        "Module này đang trong quá trình xây dựng.\n\n" +
+        "Dashboard hiện đã liên kết:\n" +
+        "• Khách hàng\n" +
+        "• Tòa nhà\n" +
+        "• Thang máy"
+      );
+
+    }
+  );
+
+});
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+$("refreshButton")
+  ?.addEventListener(
+    "click",
+    loadDashboardData
+  );
+
+
+$("refreshTop")
+  ?.addEventListener(
+    "click",
+    loadDashboardData
+  );
+
+
+/* =========================================================
+   START
+========================================================= */
+
+loadDashboardData();
+
+</script>
+
+</body>
+</html>
