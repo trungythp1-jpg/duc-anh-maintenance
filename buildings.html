@@ -66,9 +66,54 @@
     .tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.tab{flex:0 0 auto;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.tab.active{border-color:var(--y);background:rgba(245,196,0,.09);color:var(--y)}
     .list{display:grid;gap:8px}.row{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d;font-size:12px}.row span{color:#999}
     .empty{padding:16px;border:1px dashed var(--border);border-radius:9px;color:#777;font-size:12px;text-align:center}
-    .modal{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}.modal.show{display:flex}
-    .modal-box{width:min(720px,100%);max-height:92vh;overflow-y:auto;border:1px solid var(--border);border-radius:14px;background:#111;box-shadow:0 25px 80px rgba(0,0,0,.55)}
-    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:19px 20px;border-bottom:1px solid var(--border)}.modal-head h2{margin:0;font-size:18px}.modal-body{padding:20px}
+    .modal{
+      position:fixed;
+      inset:0;
+      z-index:1100;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(0,0,0,.78);
+      backdrop-filter:blur(5px);
+    }
+    .modal.show{display:flex}
+
+    /* Match the locked Customer modal on Desktop + iPad */
+    .modal-box{
+      width:min(720px,100%);
+      height:min(800px,calc(100dvh - 40px));
+      max-height:calc(100dvh - 40px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#111;
+      box-shadow:0 25px 80px rgba(0,0,0,.55);
+    }
+
+    .modal-head{
+      position:sticky;
+      top:0;
+      z-index:5;
+      flex:0 0 auto;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:17px 20px;
+      border-bottom:1px solid var(--border);
+      background:#111;
+    }
+    .modal-head h2{margin:0;font-size:18px}
+    .modal-body{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      padding:20px;
+    }
     .form-title{margin:0 0 13px;color:var(--y);font-size:11px;letter-spacing:.1em;text-transform:uppercase}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}.field.full{grid-column:1/-1}
     .field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;outline:none;background:#0b0b0b;color:#eee}.field textarea{min-height:80px;resize:vertical}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--y)}.field select:disabled{opacity:.55;cursor:not-allowed}.form-help{margin-top:6px;color:#666;font-size:10px;line-height:1.4}
@@ -92,17 +137,25 @@
   .form-grid{grid-template-columns:1fr}
   .field.full{grid-column:auto}
 
+  /*
+   * iPhone — exact same modal model as locked Customer:
+   * one page scroll surface, full-screen form, bottom actions reachable.
+   */
   .modal{
     align-items:flex-start;
+    justify-content:center;
     padding:0;
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
   }
 
   .modal-box{
     width:100%;
     min-height:100dvh;
+    height:auto;
     max-height:none;
+    display:block;
     overflow:visible;
     border:0;
     border-radius:0;
@@ -111,19 +164,39 @@
   .modal-head{
     position:sticky;
     top:0;
-    z-index:5;
+    z-index:10;
+    padding:
+      calc(14px + env(safe-area-inset-top))
+      16px
+      14px;
     background:#111;
   }
 
-  .modal-body{overflow:visible}
+  .modal-body{
+    min-height:auto;
+    overflow:visible;
+    padding:18px 16px 30px;
+  }
 
   .modal-foot{
     position:relative;
-    padding-bottom:calc(15px + env(safe-area-inset-bottom));
+    display:flex;
+    padding:
+      12px
+      16px
+      calc(12px + env(safe-area-inset-bottom));
     background:#111;
+    border-top:1px solid var(--border);
   }
 
-  .modal-foot .primary{flex:1}
+  .modal-foot .primary{
+    flex:1;
+  }
+
+  .modal-foot .secondary{
+    min-width:84px;
+    min-height:48px;
+  }
 
   .drawer{width:100%;border-left:0}
   .footer{flex-direction:column;gap:5px}
@@ -994,7 +1067,7 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.21</span>
+        <span>DEV V1.22</span>
       </div>
     </section>
 
@@ -1561,6 +1634,9 @@ async function openModal(){
 
   $("modal").classList.add("show");
   document.body.style.overflow = "hidden";
+  $("modal").scrollTop = 0;
+  const modalBody = $("modal").querySelector(".modal-body");
+  if (modalBody) modalBody.scrollTop = 0;
 
   if (window.innerWidth > 820){
     setTimeout(() => $("buildingName").focus(),40);
@@ -1664,7 +1740,7 @@ loadData();
 </script>
 
 <script>
-/* Shared Navigation V1.21 — same topbar behavior as Dashboard */
+/* Shared Navigation V1.22 — same topbar behavior as Dashboard */
 (() => {
   const NAV_ITEMS = [
     { section:"TỔNG QUAN", items:[
@@ -1732,7 +1808,7 @@ loadData();
 
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.21</span>
+        <span>DEV V1.22</span>
       </div>
     `;
 
@@ -1796,7 +1872,7 @@ loadData();
         close();
         alert(
           "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.21"
+          "Đức Anh Maintenance DEV V1.22"
         );
         return;
       }
