@@ -8,6 +8,7 @@
 
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
+  <link rel="stylesheet" href="css/navigation.css">
 
   <style>
     :root{
@@ -15,763 +16,72 @@
       --border:#292929;--text:#f4f4f4;--muted:#949494;--green:#38c793;
       --red:#ef6262;--blue:#5da9ff;
     }
-
     *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
-    }
-
-    button,input,select,textarea{font:inherit}
-    button{cursor:pointer}
-
-    .page{min-height:100vh;padding:28px}
-    .container{width:min(1500px,100%);margin:auto}
-
-    .head{
-      display:flex;
-      justify-content:space-between;
-      gap:20px;
-      align-items:flex-start;
-      margin-bottom:26px
-    }
-
-    .eyebrow{
-      margin:0 0 7px;
-      color:var(--y);
-      font-size:11px;
-      font-weight:800;
-      letter-spacing:.14em;
-      text-transform:uppercase
-    }
-
-    h1{
-      margin:0;
-      font-size:clamp(28px,3vw,38px);
-      letter-spacing:-.03em
-    }
-
-    .sub{
-      margin:9px 0 0;
-      color:var(--muted);
-      font-size:14px
-    }
-
-    .primary{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:9px;
-      border:0;
-      border-radius:9px;
-      padding:12px 17px;
-      background:var(--y);
-      color:#080808;
-      font-weight:800
-    }
-
-    .primary:hover{background:var(--y2)}
-
-    .primary:disabled{
-      opacity:.6;
-      cursor:not-allowed
-    }
-
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:14px;
-      margin-bottom:18px
-    }
-
-    .kpi{
-      position:relative;
-      overflow:hidden;
-      min-height:112px;
-      padding:18px;
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:linear-gradient(145deg,#151515,#101010)
-    }
-
-    .kpi:after{
-      content:"";
-      position:absolute;
-      right:-25px;
-      bottom:-40px;
-      width:110px;
-      height:110px;
-      border-radius:50%;
-      background:rgba(245,196,0,.06)
-    }
-
-    .label{color:var(--muted);font-size:12px}
-    .value{margin-top:9px;font-size:29px;font-weight:800}
-    .note{margin-top:5px;color:var(--muted);font-size:11px}
-
-    .toolbar{
-      display:flex;
-      gap:10px;
-      padding:13px;
-      margin-bottom:14px;
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:var(--panel)
-    }
-
-    .search{position:relative;flex:1}
-
-    .search span{
-      position:absolute;
-      left:13px;
-      top:50%;
-      transform:translateY(-50%);
-      color:#777
-    }
-
-    .search input,.filter{
-      height:42px;
-      width:100%;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:#0d0d0d;
-      color:var(--text);
-      outline:none
-    }
-
-    .search input{padding:0 13px 0 37px}
-    .filter{width:190px;padding:0 12px}
-
-    .search input:focus,.filter:focus{border-color:var(--y)}
-
-    .card{
-      overflow:hidden;
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:var(--panel)
-    }
-
-    .card-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:16px 18px;
-      border-bottom:1px solid var(--border)
-    }
-
-    .card-title{font-size:14px;font-weight:800}
-    .count{font-size:12px;color:var(--muted)}
-
-    .notice{
-      margin:0;
-      padding:11px 16px;
-      border-bottom:1px solid var(--border);
-      font-size:12px;
-      line-height:1.5;
-      display:none
-    }
-
-    .notice.show{display:block}
-    .notice.success{color:var(--green);background:rgba(56,199,147,.04)}
-    .notice.error{color:var(--red);background:rgba(239,98,98,.04)}
-    .notice.info{color:#aaa;background:rgba(255,255,255,.02)}
-
-    .scroll{
-      overflow-x:auto;
-      -webkit-overflow-scrolling:touch
-    }
-
-    table{
-      width:100%;
-      min-width:980px;
-      border-collapse:collapse
-    }
-
-    th{
-      padding:13px 16px;
-      border-bottom:1px solid var(--border);
-      color:#858585;
-      font-size:10px;
-      letter-spacing:.08em;
-      text-align:left;
-      white-space:nowrap
-    }
-
-    td{
-      padding:15px 16px;
-      border-bottom:1px solid #202020;
-      color:#ddd;
-      font-size:13px;
-      vertical-align:middle
-    }
-
-    tbody tr:hover{background:#171717}
-    tbody tr:last-child td{border-bottom:0}
-
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}
+    .page{min-height:100vh;padding:28px}.container{width:min(1500px,100%);margin:auto}
+    .head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}
+    .eyebrow{margin:0 0 7px;color:var(--y);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(28px,3vw,38px);letter-spacing:-.03em}
+    .sub{margin:9px 0 0;color:var(--muted);font-size:14px}
+    .primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:9px;padding:12px 17px;background:var(--y);color:#080808;font-weight:800}
+    .primary:hover{background:var(--y2)}.primary:disabled{opacity:.6;cursor:not-allowed}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .kpi{position:relative;overflow:hidden;min-height:112px;padding:18px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(145deg,#151515,#101010)}
+    .kpi:after{content:"";position:absolute;right:-25px;bottom:-40px;width:110px;height:110px;border-radius:50%;background:rgba(245,196,0,.06)}
+    .label{color:var(--muted);font-size:12px}.value{margin-top:9px;font-size:29px;font-weight:800}.note{margin-top:5px;color:var(--muted);font-size:11px}
+    .toolbar{display:flex;gap:10px;padding:13px;margin-bottom:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+    .search{position:relative;flex:1}.search span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#777}
+    .search input,.filter{height:42px;width:100%;border:1px solid var(--border);border-radius:8px;background:#0d0d0d;color:var(--text);outline:none}
+    .search input{padding:0 13px 0 37px}.filter{width:190px;padding:0 12px}.search input:focus,.filter:focus{border-color:var(--y)}
+    .card{overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+    .card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+    .card-title{font-size:14px;font-weight:800}.count{font-size:12px;color:var(--muted)}
+    .notice{margin:0;padding:11px 16px;border-bottom:1px solid var(--border);font-size:12px;line-height:1.5;display:none}
+    .notice.show{display:block}.notice.success{color:var(--green);background:rgba(56,199,147,.04)}.notice.error{color:var(--red);background:rgba(239,98,98,.04)}.notice.info{color:#aaa;background:rgba(255,255,255,.02)}
+    .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{width:100%;min-width:980px;border-collapse:collapse}
+    th{padding:13px 16px;border-bottom:1px solid var(--border);color:#858585;font-size:10px;letter-spacing:.08em;text-align:left;white-space:nowrap}
+    td{padding:15px 16px;border-bottom:1px solid #202020;color:#ddd;font-size:13px;vertical-align:middle}
+    tbody tr:hover{background:#171717}tbody tr:last-child td{border-bottom:0}
     th:nth-last-child(2),td:nth-last-child(2){padding-right:110px}
-
-    th:last-child,td:last-child{
-      position:sticky;
-      right:0;
-      background:var(--panel);
-      box-shadow:-10px 0 18px rgba(0,0,0,.3);
-      z-index:1;
-      min-width:82px
-    }
-
-    thead th:last-child{z-index:3}
-    tbody tr:hover td:last-child{background:#171717}
-
-    .name{font-weight:700;color:#fff}
-    .id{
-      margin-top:4px;
-      color:#666;
-      font-size:10px;
-      font-family:monospace
-    }
-
-    .muted{color:var(--muted)}
-
-    .status{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:5px 9px;
-      border-radius:999px;
-      font-size:10px;
-      font-weight:700;
-      white-space:nowrap
-    }
-
-    .status:before{
-      content:"";
-      width:6px;
-      height:6px;
-      border-radius:50%
-    }
-
-    .active{
-      background:rgba(56,199,147,.1);
-      color:var(--green)
-    }
-
-    .active:before{background:var(--green)}
-
-    .care{
-      background:rgba(245,196,0,.1);
-      color:var(--y)
-    }
-
-    .care:before{background:var(--y)}
-
-    .inactive{
-      background:rgba(239,98,98,.1);
-      color:var(--red)
-    }
-
-    .inactive:before{background:var(--red)}
-
-    .action{
-      border:1px solid var(--border);
-      border-radius:7px;
-      padding:7px 10px;
-      background:#101010;
-      color:#ccc;
-      font-size:11px
-    }
-
-    .action:hover{
-      border-color:var(--y);
-      color:var(--y)
-    }
-
-    .mobile-list{display:none}
-
-    .building-item{
-      padding:15px;
-      border-bottom:1px solid #202020
-    }
-
-    .building-item:last-child{border:0}
-
-    .building-top{
-      display:flex;
-      justify-content:space-between;
-      gap:10px
-    }
-
-    .building-contact{
-      margin:8px 0;
-      color:#aaa;
-      font-size:12px;
-      line-height:1.5
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:8px
-    }
-
-    .stat{
-      padding:9px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:#0d0d0d
-    }
-
-    .stat b{
-      display:block;
-      font-size:15px
-    }
-
-    .stat span{
-      color:#777;
-      font-size:9px
-    }
-
-    .bottom{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      margin-top:12px
-    }
-
-    .backdrop{
-      position:fixed;
-      inset:0;
-      z-index:1000;
-      display:none;
-      background:rgba(0,0,0,.78);
-      backdrop-filter:blur(5px)
-    }
-
-    .backdrop.show{display:block}
-
-    .drawer{
-      position:absolute;
-      top:0;
-      right:0;
-      width:min(620px,100%);
-      height:100%;
-      overflow-y:auto;
-      background:#111;
-      border-left:1px solid var(--border);
-      box-shadow:-25px 0 80px rgba(0,0,0,.55)
-    }
-
-    .drawer-head{
-      position:sticky;
-      top:0;
-      z-index:2;
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      padding:20px;
-      border-bottom:1px solid var(--border);
-      background:rgba(17,17,17,.96);
-      backdrop-filter:blur(10px)
-    }
-
-    .kicker{
-      margin:0 0 5px;
-      color:var(--y);
-      font-size:10px;
-      letter-spacing:.12em;
-      text-transform:uppercase
-    }
-
-    .drawer-head h2{
-      margin:0;
-      font-size:20px
-    }
-
-    .drawer-id{
-      margin-top:4px;
-      color:#666;
-      font-size:10px;
-      font-family:monospace
-    }
-
-    .close{
-      width:34px;
-      height:34px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:#171717;
-      color:#aaa;
-      font-size:18px
-    }
-
-    .drawer-body{padding:20px}
-
-    .section-title{
-      margin:0 0 10px;
-      color:var(--y);
-      font-size:11px;
-      letter-spacing:.1em;
-      text-transform:uppercase
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-bottom:24px
-    }
-
-    .item{
-      padding:12px;
-      border:1px solid var(--border);
-      border-radius:9px;
-      background:#151515
-    }
-
-    .item span{
-      display:block;
-      color:#777;
-      font-size:10px;
-      margin-bottom:5px
-    }
-
-    .item b{font-size:13px}
-
-    .tabs{
-      display:flex;
-      gap:7px;
-      overflow-x:auto;
-      padding-bottom:3px;
-      margin-bottom:18px
-    }
-
-    .tab{
-      flex:0 0 auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:9px 11px;
-      background:#151515;
-      color:#aaa;
-      font-size:11px
-    }
-
-    .tab.active{
-      border-color:var(--y);
-      background:rgba(245,196,0,.09);
-      color:var(--y)
-    }
-
-    .list{display:grid;gap:8px}
-
-    .row{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      padding:11px 12px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:#0d0d0d;
-      font-size:12px
-    }
-
-    .row span{color:#999}
-
-    .empty{
-      padding:16px;
-      border:1px dashed var(--border);
-      border-radius:9px;
-      color:#777;
-      font-size:12px;
-      text-align:center
-    }
-
-    .modal{
-      position:fixed;
-      inset:0;
-      z-index:1100;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-      background:rgba(0,0,0,.78);
-      backdrop-filter:blur(5px)
-    }
-
-    .modal.show{display:flex}
-
-    .modal-box{
-      width:min(720px,100%);
-      max-height:92vh;
-      overflow-y:auto;
-      border:1px solid var(--border);
-      border-radius:14px;
-      background:#111;
-      box-shadow:0 25px 80px rgba(0,0,0,.55)
-    }
-
-    .modal-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:19px 20px;
-      border-bottom:1px solid var(--border)
-    }
-
-    .modal-head h2{
-      margin:0;
-      font-size:18px
-    }
-
-    .modal-body{padding:20px}
-
-    .form-title{
-      margin:0 0 13px;
-      color:var(--y);
-      font-size:11px;
-      letter-spacing:.1em;
-      text-transform:uppercase
-    }
-
-    .form-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px;
-      margin-bottom:24px
-    }
-
-    .field.full{grid-column:1/-1}
-
-    .field label{
-      display:block;
-      margin-bottom:6px;
-      color:#aaa;
-      font-size:11px
-    }
-
-    .field input,.field select,.field textarea{
-      width:100%;
-      padding:11px 12px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      outline:none;
-      background:#0b0b0b;
-      color:#eee
-    }
-
-    .field textarea{
-      min-height:80px;
-      resize:vertical
-    }
-
-    .field input:focus,.field select:focus,.field textarea:focus{
-      border-color:var(--y)
-    }
-
-    .field select:disabled{
-      opacity:.55;
-      cursor:not-allowed
-    }
-
-    .form-help{
-      margin-top:6px;
-      color:#666;
-      font-size:10px;
-      line-height:1.4
-    }
-
-    .modal-foot{
-      display:flex;
-      justify-content:flex-end;
-      gap:9px;
-      padding:15px 20px;
-      border-top:1px solid var(--border)
-    }
-
-    .secondary{
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:11px 15px;
-      background:#171717;
-      color:#ccc
-    }
-
-    .secondary:hover{
-      border-color:#555
-    }
-
-    .location-box{
-      padding:12px;
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#0d0d0d
-    }
-
-    .location-status{
-      display:flex;
-      align-items:flex-start;
-      gap:10px
-    }
-
-    .location-dot{
-      width:9px;
-      height:9px;
-      margin-top:5px;
-      flex:0 0 auto;
-      border-radius:50%;
-      background:#666;
-      box-shadow:0 0 0 4px rgba(255,255,255,.03)
-    }
-
-    .location-status.ready .location-dot{
-      background:var(--y);
-      box-shadow:0 0 0 4px rgba(245,196,0,.10)
-    }
-
-    .location-status b{
-      display:block;
-      color:#eee;
-      font-size:12px
-    }
-
-    .location-status small{
-      display:block;
-      margin-top:4px;
-      color:#777;
-      font-size:10px;
-      line-height:1.4
-    }
-
-    .location-actions{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-top:12px
-    }
-
-    .location-button{
-      min-height:40px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:#151515;
-      color:#ddd;
-      font-size:11px;
-      font-weight:700
-    }
-
-    .location-button:hover{
-      border-color:var(--y);
-      color:var(--y)
-    }
-
-    .location-button.secondary-location{
-      background:#111
-    }
-
-    .location-coordinates{
-      display:none;
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px solid var(--border);
-      color:#999;
-      font-size:10px;
-      line-height:1.5
-    }
-
-    .location-coordinates.show{
-      display:block
-    }
-
-    .location-profile{
-      margin-bottom:24px
-    }
-
-    .location-profile-card{
-      padding:12px;
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#0d0d0d
-    }
-
-    .location-profile-title{
-      color:#eee;
-      font-size:12px;
-      font-weight:700
-    }
-
-    .location-profile-meta{
-      margin-top:5px;
-      color:#777;
-      font-size:10px;
-      line-height:1.5
-    }
-
-    .location-profile-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:11px
-    }
-
-    .location-profile-empty{
-      padding:14px;
-      border:1px dashed var(--border);
-      border-radius:10px;
-      color:#777;
-      font-size:11px
-    }
-
-    .footer{
-      display:flex;
-      justify-content:space-between;
-      padding:13px 18px;
-      border-top:1px solid var(--border);
-      color:var(--muted);
-      font-size:11px
-    }
-
-    .loading-row{
-      padding:30px 18px;
-      color:#777;
-      text-align:center;
-      font-size:12px
-    }
-
-    @media(max-width:900px){
-      .page{padding:20px 16px}
-      .kpis{grid-template-columns:1fr 1fr}
-    }
-
-    @media(max-width:640px){
-      .page{padding:16px 12px}
-      .head{flex-direction:column}
-      .primary{width:100%}
-      .toolbar{flex-direction:column}
-      .filter{width:100%}
-      .scroll{display:none}
-      .mobile-list{display:block}
-      .grid{grid-template-columns:1fr 1fr}
-      .form-grid{grid-template-columns:1fr}
-      .field.full{grid-column:auto}
-      .modal{
-        align-items:flex-end;
-        padding:0
-      }
-      .modal-box{
-        max-height:94vh;
-        border-radius:16px 16px 0 0
-      }
-      .drawer{
-        width:100%;
-        border-left:0
-      }
-      .footer{
-        flex-direction:column;
-        gap:5px
-      }
-    }
+    th:last-child,td:last-child{position:sticky;right:0;background:var(--panel);box-shadow:-10px 0 18px rgba(0,0,0,.3);z-index:1;min-width:82px}
+    thead th:last-child{z-index:3}tbody tr:hover td:last-child{background:#171717}
+    .name{font-weight:700;color:#fff}.id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}.muted{color:var(--muted)}
+    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}.status:before{content:"";width:6px;height:6px;border-radius:50%}
+    .active{background:rgba(56,199,147,.1);color:var(--green)}.active:before{background:var(--green)}
+    .care{background:rgba(245,196,0,.1);color:var(--y)}.care:before{background:var(--y)}
+    .inactive{background:rgba(239,98,98,.1);color:var(--red)}.inactive:before{background:var(--red)}
+    .action{border:1px solid var(--border);border-radius:7px;padding:7px 10px;background:#101010;color:#ccc;font-size:11px}.action:hover{border-color:var(--y);color:var(--y)}
+    .mobile-list{display:none}.building-item{padding:15px;border-bottom:1px solid #202020}.building-item:last-child{border:0}
+    .building-top{display:flex;justify-content:space-between;gap:10px}.building-contact{margin:8px 0;color:#aaa;font-size:12px;line-height:1.5}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{padding:9px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d}.stat b{display:block;font-size:15px}.stat span{color:#777;font-size:9px}
+    .bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+    .backdrop{position:fixed;inset:0;z-index:1000;display:none;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}.backdrop.show{display:block}
+    .drawer{position:absolute;top:0;right:0;width:min(620px,100%);height:100%;overflow-y:auto;background:#111;border-left:1px solid var(--border);box-shadow:-25px 0 80px rgba(0,0,0,.55)}
+    .drawer-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--border);background:rgba(17,17,17,.96);backdrop-filter:blur(10px)}
+    .kicker{margin:0 0 5px;color:var(--y);font-size:10px;letter-spacing:.12em;text-transform:uppercase}.drawer-head h2{margin:0;font-size:20px}.drawer-id{margin-top:4px;color:#666;font-size:10px;font-family:monospace}
+    .close{width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:#171717;color:#aaa;font-size:18px}.drawer-body{padding:20px}
+    .section-title{margin:0 0 10px;color:var(--y);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}.item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#151515}.item span{display:block;color:#777;font-size:10px;margin-bottom:5px}.item b{font-size:13px}
+    .tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.tab{flex:0 0 auto;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.tab.active{border-color:var(--y);background:rgba(245,196,0,.09);color:var(--y)}
+    .list{display:grid;gap:8px}.row{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--border);border-radius:8px;background:#0d0d0d;font-size:12px}.row span{color:#999}
+    .empty{padding:16px;border:1px dashed var(--border);border-radius:9px;color:#777;font-size:12px;text-align:center}
+    .modal{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}.modal.show{display:flex}
+    .modal-box{width:min(720px,100%);max-height:92vh;overflow-y:auto;border:1px solid var(--border);border-radius:14px;background:#111;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:19px 20px;border-bottom:1px solid var(--border)}.modal-head h2{margin:0;font-size:18px}.modal-body{padding:20px}
+    .form-title{margin:0 0 13px;color:var(--y);font-size:11px;letter-spacing:.1em;text-transform:uppercase}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}.field.full{grid-column:1/-1}
+    .field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;outline:none;background:#0b0b0b;color:#eee}.field textarea{min-height:80px;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--y)}.field select:disabled{opacity:.55;cursor:not-allowed}.form-help{margin-top:6px;color:#666;font-size:10px;line-height:1.4}
+    .modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:15px 20px;border-top:1px solid var(--border)}.secondary{border:1px solid var(--border);border-radius:8px;padding:11px 15px;background:#171717;color:#ccc}.secondary:hover{border-color:#555}
+    .location-box{padding:12px;border:1px solid var(--border);border-radius:10px;background:#0d0d0d}.location-status{display:flex;align-items:flex-start;gap:10px}.location-dot{width:9px;height:9px;margin-top:5px;flex:0 0 auto;border-radius:50%;background:#666;box-shadow:0 0 0 4px rgba(255,255,255,.03)}
+    .location-status.ready .location-dot{background:var(--y);box-shadow:0 0 0 4px rgba(245,196,0,.10)}.location-status b{display:block;color:#eee;font-size:12px}.location-status small{display:block;margin-top:4px;color:#777;font-size:10px;line-height:1.4}
+    .location-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.location-button{min-height:40px;border:1px solid var(--border);border-radius:8px;background:#151515;color:#ddd;font-size:11px;font-weight:700}.location-button:hover{border-color:var(--y);color:var(--y)}.location-button.secondary-location{background:#111}
+    .location-coordinates{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);color:#999;font-size:10px;line-height:1.5}.location-coordinates.show{display:block}
+    .location-profile{margin-bottom:24px}.location-profile-card{padding:12px;border:1px solid var(--border);border-radius:10px;background:#0d0d0d}.location-profile-title{color:#eee;font-size:12px;font-weight:700}.location-profile-meta{margin-top:5px;color:#777;font-size:10px;line-height:1.5}.location-profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.location-profile-empty{padding:14px;border:1px dashed var(--border);border-radius:10px;color:#777;font-size:11px}
+    .footer{display:flex;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--border);color:var(--muted);font-size:11px}.loading-row{padding:30px 18px;color:#777;text-align:center;font-size:12px}
+    @media(max-width:900px){.page{padding:20px 16px}.kpis{grid-template-columns:1fr 1fr}}
+    @media(max-width:640px){.page{padding:16px 12px}.head{flex-direction:column}.primary{width:100%}.toolbar{flex-direction:column}.filter{width:100%}.scroll{display:none}.mobile-list{display:block}.grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal{align-items:flex-end;padding:0}.modal-box{max-height:94vh;border-radius:16px 16px 0 0}.drawer{width:100%;border-left:0}.footer{flex-direction:column;gap:5px}}
   </style>
 </head>
 
@@ -784,101 +94,38 @@
       <div>
         <p class="eyebrow">Building Management</p>
         <h1>Tòa nhà</h1>
-        <p class="sub">
-          Quản lý tòa nhà, khách hàng, thang máy và trạng thái dịch vụ.
-        </p>
+        <p class="sub">Quản lý tòa nhà, khách hàng, thang máy và trạng thái dịch vụ.</p>
       </div>
-
-      <button class="primary" id="addButton" type="button">
-        ＋ <span>Thêm tòa nhà</span>
-      </button>
+      <button class="primary" id="addButton" type="button">＋ <span>Thêm tòa nhà</span></button>
     </header>
 
-
     <section class="kpis">
-
-      <article class="kpi">
-        <div class="label">Tổng tòa nhà</div>
-        <div class="value" id="kpiTotal">0</div>
-        <div class="note">Trong hệ thống</div>
-      </article>
-
-      <article class="kpi">
-        <div class="label">Đang hoạt động</div>
-        <div class="value" id="kpiActive">0</div>
-        <div class="note">Có dịch vụ đang theo dõi</div>
-      </article>
-
-      <article class="kpi">
-        <div class="label">Tổng thang máy</div>
-        <div class="value" id="kpiElevators">0</div>
-        <div class="note">Thuộc các tòa nhà</div>
-      </article>
-
-      <article class="kpi">
-        <div class="label">Cần chăm sóc</div>
-        <div class="value" id="kpiCare">0</div>
-        <div class="note">Cần xử lý / liên hệ</div>
-      </article>
-
+      <article class="kpi"><div class="label">Tổng tòa nhà</div><div class="value" id="kpiTotal">0</div><div class="note">Trong hệ thống</div></article>
+      <article class="kpi"><div class="label">Đang hoạt động</div><div class="value" id="kpiActive">0</div><div class="note">Có dịch vụ đang theo dõi</div></article>
+      <article class="kpi"><div class="label">Tổng thang máy</div><div class="value" id="kpiElevators">0</div><div class="note">Thuộc các tòa nhà</div></article>
+      <article class="kpi"><div class="label">Cần chăm sóc</div><div class="value" id="kpiCare">0</div><div class="note">Cần xử lý / liên hệ</div></article>
     </section>
 
-
     <section class="toolbar">
-
-      <div class="search">
-        <span>⌕</span>
-        <input
-          id="search"
-          type="search"
-          placeholder="Tìm tên tòa nhà, khách hàng, địa chỉ..."
-          autocomplete="off">
-      </div>
-
+      <div class="search"><span>⌕</span><input id="search" type="search" placeholder="Tìm tên tòa nhà, khách hàng, địa chỉ..." autocomplete="off"></div>
       <select class="filter" id="status">
         <option value="all">Tất cả trạng thái</option>
         <option value="active">Đang hoạt động</option>
         <option value="care">Cần chăm sóc</option>
         <option value="inactive">Ngừng hoạt động</option>
       </select>
-
     </section>
 
-
     <section class="card">
-
-      <div class="card-head">
-        <div class="card-title">Danh sách tòa nhà</div>
-        <div class="count" id="count">0 tòa nhà</div>
-      </div>
-
+      <div class="card-head"><div class="card-title">Danh sách tòa nhà</div><div class="count" id="count">0 tòa nhà</div></div>
       <div class="notice" id="notice"></div>
 
       <div class="scroll">
         <table>
-
-          <thead>
-            <tr>
-              <th>Tòa nhà</th>
-              <th>Khách hàng</th>
-              <th>Địa chỉ</th>
-              <th>Thang máy</th>
-              <th>Phụ trách</th>
-              <th>Trạng thái</th>
-              <th></th>
-            </tr>
-          </thead>
-
+          <thead><tr><th>Tòa nhà</th><th>Khách hàng</th><th>Địa chỉ</th><th>Thang máy</th><th>Phụ trách</th><th>Trạng thái</th><th></th></tr></thead>
           <tbody id="tbody">
-            <tr>
-              <td colspan="7">
-                <div class="loading-row">
-                  Đang tải dữ liệu từ Firebase...
-                </div>
-              </td>
-            </tr>
+            <tr><td colspan="7"><div class="loading-row">Đang tải dữ liệu từ Firebase...</div></td></tr>
           </tbody>
-
         </table>
       </div>
 
@@ -886,191 +133,83 @@
 
       <div class="footer">
         <span id="footerSource">Đang kết nối Firebase DEV — Firestore.</span>
-        <span>DEV V1.2</span>
+        <span>DEV V1.5</span>
       </div>
-
     </section>
 
   </div>
 </main>
 
-
-<!-- BUILDING PROFILE -->
 <div class="backdrop" id="backdrop">
-
   <aside class="drawer" role="dialog" aria-modal="true">
-
     <div class="drawer-head">
-
-      <div>
-        <p class="kicker">Building Profile</p>
-        <h2 id="dName">—</h2>
-        <div class="drawer-id" id="dId">—</div>
-      </div>
-
+      <div><p class="kicker">Building Profile</p><h2 id="dName">—</h2><div class="drawer-id" id="dId">—</div></div>
       <button class="close" id="closeDetail" type="button">×</button>
-
     </div>
 
-
     <div class="drawer-body">
-
       <div id="dStatus" style="margin-bottom:18px"></div>
 
       <p class="section-title">Thông tin tòa nhà</p>
-
       <div class="grid">
-
-        <div class="item">
-          <span>Khách hàng</span>
-          <b id="dCustomer">—</b>
-        </div>
-
-        <div class="item">
-          <span>Địa chỉ</span>
-          <b id="dAddress">—</b>
-        </div>
-
-        <div class="item">
-          <span>Người phụ trách</span>
-          <b id="dManager">—</b>
-        </div>
-
-        <div class="item">
-          <span>Loại công trình</span>
-          <b id="dType">—</b>
-        </div>
-
+        <div class="item"><span>Khách hàng</span><b id="dCustomer">—</b></div>
+        <div class="item"><span>Địa chỉ</span><b id="dAddress">—</b></div>
+        <div class="item"><span>Người phụ trách</span><b id="dManager">—</b></div>
+        <div class="item"><span>Loại công trình</span><b id="dType">—</b></div>
       </div>
-
 
       <p class="section-title">Vị trí công trình</p>
-
       <div class="location-profile" id="dLocation">
-        <div class="location-profile-empty">
-          Chưa có vị trí được ghim.
-        </div>
+        <div class="location-profile-empty">Chưa có vị trí được ghim.</div>
       </div>
-
 
       <p class="section-title">Tài sản & dịch vụ</p>
-
       <div class="grid">
-
-        <div class="item">
-          <span>Thang máy</span>
-          <b id="dElevators">0</b>
-        </div>
-
-        <div class="item">
-          <span>Hợp đồng</span>
-          <b>—</b>
-        </div>
-
-        <div class="item">
-          <span>Bảo trì</span>
-          <b id="dMaintenance">Đang theo dõi</b>
-        </div>
-
-        <div class="item">
-          <span>Work Order</span>
-          <b>—</b>
-        </div>
-
+        <div class="item"><span>Thang máy</span><b id="dElevators">0</b></div>
+        <div class="item"><span>Hợp đồng</span><b>—</b></div>
+        <div class="item"><span>Bảo trì</span><b id="dMaintenance">Đang theo dõi</b></div>
+        <div class="item"><span>Work Order</span><b>—</b></div>
       </div>
 
-
       <div class="tabs">
-
-        <button
-          class="tab active"
-          data-tab="elevators"
-          type="button">
-          Thang máy
-        </button>
-
-        <button
-          class="tab"
-          data-tab="contracts"
-          type="button">
-          Hợp đồng
-        </button>
-
-        <button
-          class="tab"
-          data-tab="maintenance"
-          type="button">
-          Bảo trì
-        </button>
-
-        <button
-          class="tab"
-          data-tab="workorders"
-          type="button">
-          Work Order
-        </button>
-
+        <button class="tab active" data-tab="elevators" type="button">Thang máy</button>
+        <button class="tab" data-tab="contracts" type="button">Hợp đồng</button>
+        <button class="tab" data-tab="maintenance" type="button">Bảo trì</button>
+        <button class="tab" data-tab="workorders" type="button">Work Order</button>
       </div>
 
       <div class="list" id="dList"></div>
-
     </div>
-
   </aside>
-
 </div>
 
-
-<!-- CREATE BUILDING -->
 <div class="modal" id="modal">
-
   <section class="modal-box">
-
     <div class="modal-head">
       <h2>Thêm tòa nhà</h2>
       <button class="close" id="closeModal" type="button">×</button>
     </div>
 
-
     <form id="buildingForm">
-
       <div class="modal-body">
 
         <p class="form-title">Thông tin tòa nhà</p>
 
         <div class="form-grid">
-
           <div class="field full">
             <label for="buildingName">Tên tòa nhà *</label>
-
-            <input
-              id="buildingName"
-              required
-              placeholder="Nhập tên tòa nhà">
+            <input id="buildingName" required placeholder="Nhập tên tòa nhà">
           </div>
 
-
           <div class="field">
-
             <label for="customer">Khách hàng *</label>
-
-            <select id="customer" required>
-              <option value="">Đang tải khách hàng...</option>
-            </select>
-
-            <div class="form-help">
-              Khách hàng được lấy trực tiếp từ Firebase DEV.
-            </div>
-
+            <select id="customer" required><option value="">Đang tải khách hàng...</option></select>
+            <div class="form-help">Khách hàng được lấy trực tiếp từ Firebase DEV.</div>
           </div>
 
-
           <div class="field">
-
             <label for="buildingType">Loại công trình</label>
-
             <select id="buildingType">
-
               <option value="apartment">Chung cư</option>
               <option value="office">Văn phòng</option>
               <option value="factory">Nhà máy</option>
@@ -1078,144 +217,76 @@
               <option value="house">Nhà riêng</option>
               <option value="hospital">Bệnh viện</option>
               <option value="other">Khác</option>
-
             </select>
-
           </div>
 
-
           <div class="field full">
-
             <label for="address">Địa chỉ</label>
-
-            <input
-              id="address"
-              placeholder="Địa chỉ tòa nhà">
-
+            <input id="address" placeholder="Địa chỉ tòa nhà">
           </div>
 
-
           <div class="field">
-
             <label for="province">Tỉnh / Thành phố</label>
-
-            <input
-              id="province"
-              placeholder="Ví dụ: Hải Phòng">
-
+            <input id="province" placeholder="Ví dụ: Hải Phòng">
           </div>
-
 
           <div class="field">
-
             <label for="district">Quận / Huyện</label>
-
-            <input
-              id="district"
-              placeholder="Ví dụ: Lê Chân">
-
+            <input id="district" placeholder="Ví dụ: Lê Chân">
           </div>
-
 
           <div class="field full">
-
             <label>📍 Vị trí công trình</label>
-
             <div class="location-box">
               <div class="location-status" id="locationStatus">
                 <span class="location-dot"></span>
-                <div>
-                  <b>Chưa ghim vị trí</b>
-                  <small>Hãy lấy GPS hiện tại hoặc chọn trên bản đồ.</small>
-                </div>
+                <div><b>Chưa ghim vị trí</b><small>Hãy lấy GPS hiện tại hoặc chọn trên bản đồ.</small></div>
               </div>
 
               <div class="location-actions">
-                <button class="location-button" id="useCurrentLocation" type="button">
-                  📍 Lấy vị trí hiện tại
-                </button>
-                <button class="location-button secondary-location" id="chooseMapLocation" type="button">
-                  🗺 Chọn trên bản đồ
-                </button>
+                <button class="location-button" id="useCurrentLocation" type="button">📍 Lấy vị trí hiện tại</button>
+                <button class="location-button secondary-location" id="chooseMapLocation" type="button">🗺 Chọn trên bản đồ</button>
               </div>
 
               <div class="location-coordinates" id="locationCoordinates"></div>
             </div>
-
           </div>
 
-
           <div class="field">
-
             <label for="manager">Người phụ trách</label>
-
-            <input
-              id="manager"
-              placeholder="Nhân sự phụ trách">
-
+            <input id="manager" placeholder="Nhân sự phụ trách">
           </div>
-
 
           <div class="field">
-
             <label for="phone">Số điện thoại liên hệ</label>
-
-            <input
-              id="phone"
-              placeholder="Số điện thoại">
-
+            <input id="phone" placeholder="Số điện thoại">
           </div>
-
 
           <div class="field full">
-
             <label for="note">Ghi chú</label>
-
-            <textarea
-              id="note"
-              placeholder="Thông tin bổ sung..."></textarea>
-
+            <textarea id="note" placeholder="Thông tin bổ sung..."></textarea>
           </div>
-
         </div>
-
       </div>
-
 
       <div class="modal-foot">
-
-        <button
-          class="secondary"
-          id="cancel"
-          type="button">
-          Hủy
-        </button>
-
-        <button
-          class="primary"
-          id="saveBuilding"
-          type="submit">
-          Lưu tòa nhà
-        </button>
-
+        <button class="secondary" id="cancel" type="button">Hủy</button>
+        <button class="primary" id="saveBuilding" type="submit">Lưu tòa nhà</button>
       </div>
-
     </form>
-
   </section>
-
 </div>
 
+<!-- Shared navigation V1.5 -->
+<script src="js/ui/navigation.js"></script>
 
 <script type="module">
-
 import {
   createBuilding,
   getBuildings,
   getElevators,
   getCustomers
 } from "./js/core/firestore-v1.js";
-
 
 const $ = id => document.getElementById(id);
 
@@ -1225,15 +296,7 @@ let customers = [];
 let currentBuilding = null;
 let selectedLocation = null;
 
-
-/* --------------------------------
-   HELPERS
--------------------------------- */
-
-function safe(value){
-  return String(value ?? "").trim();
-}
-
+function safe(value){ return String(value ?? "").trim(); }
 
 function escapeHtml(value){
   return String(value ?? "")
@@ -1244,180 +307,93 @@ function escapeHtml(value){
     .replaceAll("'","&#039;");
 }
 
-
 function customerName(customerId){
-  const customer = customers.find(
-    item => item.id === customerId
-  );
-
+  const customer = customers.find(item => item.id === customerId);
   return customer?.name || "Chưa xác định";
 }
 
-
 function addressText(address){
   if (!address) return "—";
-
-  if (typeof address === "string") {
-    return address || "—";
-  }
-
-  return [
-    address.detail,
-    address.district,
-    address.province
-  ]
-    .filter(Boolean)
-    .join(", ") || "—";
+  if (typeof address === "string") return address || "—";
+  return [address.detail,address.district,address.province].filter(Boolean).join(", ") || "—";
 }
 
-
 function buildingTypeLabel(type){
-  const map = {
-    apartment:"Chung cư",
-    office:"Văn phòng",
-    factory:"Nhà máy",
-    hotel:"Khách sạn",
-    house:"Nhà riêng",
-    hospital:"Bệnh viện",
-    other:"Khác"
-  };
-
+  const map = {apartment:"Chung cư",office:"Văn phòng",factory:"Nhà máy",hotel:"Khách sạn",house:"Nhà riêng",hospital:"Bệnh viện",other:"Khác"};
   return map[type] || type || "Khác";
 }
 
-
 function statusLabel(status){
-
   const map = {
     active:["Đang hoạt động","active"],
     care:["Cần chăm sóc","care"],
     inactive:["Ngừng hoạt động","inactive"]
   };
-
   const item = map[status] || map.inactive;
-
-  return `
-    <span class="status ${item[1]}">
-      ${item[0]}
-    </span>
-  `;
+  return `<span class="status ${item[1]}">${item[0]}</span>`;
 }
-
 
 function elevatorsForBuilding(buildingId){
-
-  return elevators.filter(
-    elevator => elevator.buildingId === buildingId
-  );
+  return elevators.filter(elevator => elevator.buildingId === buildingId);
 }
 
-
 function managerName(building){
-
-  if (building?.manager?.name) {
-    return building.manager.name;
-  }
-
-  if (typeof building?.manager === "string") {
-    return building.manager;
-  }
-
+  if (building?.manager?.name) return building.manager.name;
+  if (typeof building?.manager === "string") return building.manager;
   return "Chưa phân công";
 }
 
-
-function managerPhone(building){
-
-  if (building?.manager?.phone) {
-    return building.manager.phone;
-  }
-
-  return "";
-}
-
-
 function normalizeLocation(location){
   if (!location) return null;
-
   const lat = Number(location.lat);
   const lng = Number(location.lng);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return null;
-  }
-
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return {
     lat,
     lng,
-    accuracy: Number.isFinite(Number(location.accuracy))
-      ? Number(location.accuracy)
-      : null,
+    accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
     source: location.source || "map"
   };
 }
 
-
 function formatCoordinates(location){
   const item = normalizeLocation(location);
   if (!item) return "";
-
-  const accuracy = item.accuracy
-    ? ` · ±${Math.round(item.accuracy)} m`
-    : "";
-
+  const accuracy = item.accuracy ? ` · ±${Math.round(item.accuracy)} m` : "";
   return `${item.lat.toFixed(6)}, ${item.lng.toFixed(6)}${accuracy}`;
 }
-
 
 function googleMapsUrl(location){
   const item = normalizeLocation(location);
   if (!item) return "#";
-
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.lat},${item.lng}`)}`;
 }
-
 
 function updateLocationUI(){
   const status = $("locationStatus");
   const coordinates = $("locationCoordinates");
-
   if (!status || !coordinates) return;
 
   const item = normalizeLocation(selectedLocation);
 
   if (!item){
     status.classList.remove("ready");
-    status.innerHTML = `
-      <span class="location-dot"></span>
-      <div>
-        <b>Chưa ghim vị trí</b>
-        <small>Hãy lấy GPS hiện tại hoặc chọn trên bản đồ.</small>
-      </div>
-    `;
+    status.innerHTML = `<span class="location-dot"></span><div><b>Chưa ghim vị trí</b><small>Hãy lấy GPS hiện tại hoặc chọn trên bản đồ.</small></div>`;
     coordinates.className = "location-coordinates";
     coordinates.textContent = "";
     return;
   }
 
   status.classList.add("ready");
-  status.innerHTML = `
-    <span class="location-dot"></span>
-    <div>
-      <b>Đã ghim vị trí</b>
-      <small>Nguồn: ${item.source === "gps" ? "GPS thiết bị" : "Chọn trên bản đồ"}</small>
-    </div>
-  `;
-
+  status.innerHTML = `<span class="location-dot"></span><div><b>Đã ghim vị trí</b><small>Nguồn: ${item.source === "gps" ? "GPS thiết bị" : "Chọn trên bản đồ"}</small></div>`;
   coordinates.className = "location-coordinates show";
   coordinates.textContent = formatCoordinates(item);
 }
-
 
 function resetLocation(){
   selectedLocation = null;
   updateLocationUI();
 }
-
 
 function setLocationFromPosition(position){
   selectedLocation = {
@@ -1426,1043 +402,365 @@ function setLocationFromPosition(position){
     accuracy: position.coords.accuracy,
     source: "gps"
   };
-
   updateLocationUI();
 }
 
-
 function requestCurrentLocation(){
   if (!navigator.geolocation){
-    showNotice("Thiết bị/trình duyệt không hỗ trợ GPS.", "error");
+    showNotice("Thiết bị/trình duyệt không hỗ trợ GPS.","error");
     return;
   }
 
-  showNotice("Đang lấy vị trí hiện tại...", "info");
+  showNotice("Đang lấy vị trí hiện tại...","info");
 
   navigator.geolocation.getCurrentPosition(
     position => {
       setLocationFromPosition(position);
-      showNotice("Đã lấy vị trí hiện tại.", "success");
+      showNotice("Đã lấy vị trí hiện tại.","success");
     },
     error => {
       console.error("GEOLOCATION ERROR:", error);
-
       const messages = {
-        1: "Bạn chưa cấp quyền vị trí cho trình duyệt.",
-        2: "Không xác định được vị trí hiện tại.",
-        3: "Lấy vị trí quá lâu. Vui lòng thử lại."
+        1:"Bạn chưa cấp quyền vị trí cho trình duyệt.",
+        2:"Không xác định được vị trí hiện tại.",
+        3:"Lấy vị trí quá lâu. Vui lòng thử lại."
       };
-
-      showNotice(
-        messages[error.code] || "Không thể lấy vị trí hiện tại.",
-        "error"
-      );
+      showNotice(messages[error.code] || "Không thể lấy vị trí hiện tại.","error");
     },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
-    }
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
-
 
 function chooseMapLocation(){
   if (!selectedLocation){
-    showNotice(
-      "Bản đồ chọn điểm sẽ được mở ở bước tiếp theo. Hiện tại hãy dùng 'Lấy vị trí hiện tại' để ghim GPS.",
-      "info"
-    );
+    showNotice("Bản đồ chọn điểm sẽ được mở ở bước tiếp theo. Hiện tại hãy dùng 'Lấy vị trí hiện tại' để ghim GPS.","info");
     return;
   }
-
-  showNotice(
-    "Đã có vị trí. Bản đồ chọn điểm thủ công sẽ được hoàn thiện ở bước Map UI.",
-    "info"
-  );
+  showNotice("Đã có vị trí. Bản đồ chọn điểm thủ công sẽ được hoàn thiện ở bước Map UI.","info");
 }
-
-
-/* --------------------------------
-   NOTICE
--------------------------------- */
 
 function showNotice(message,type="info"){
-
   const notice = $("notice");
-
   notice.textContent = message;
   notice.className = `notice show ${type}`;
-
 }
-
 
 function hideNotice(){
-
   const notice = $("notice");
-
   notice.textContent = "";
   notice.className = "notice";
-
 }
 
-
-/* --------------------------------
-   KPI
--------------------------------- */
-
 function renderKpis(){
-
   const total = buildings.length;
-
-  const active = buildings.filter(
-    building => building.status === "active"
-  ).length;
-
-  const care = buildings.filter(
-    building => building.status === "care"
-  ).length;
-
+  const active = buildings.filter(building => building.status === "active").length;
+  const care = buildings.filter(building => building.status === "care").length;
   $("kpiTotal").textContent = total;
   $("kpiActive").textContent = active;
   $("kpiCare").textContent = care;
   $("kpiElevators").textContent = elevators.length;
-
 }
 
-
-/* --------------------------------
-   FILTER
--------------------------------- */
-
 function filteredBuildings(){
-
-  const q = $("search")
-    .value
-    .trim()
-    .toLowerCase();
-
+  const q = $("search").value.trim().toLowerCase();
   const status = $("status").value;
 
   return buildings.filter(building => {
-
-    const customer = customerName(
-      building.customerId
-    );
-
-    const text = [
-      building.name,
-      customer,
-      addressText(building.address),
-      managerName(building)
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    const matchQuery =
-      !q || text.includes(q);
-
-    const matchStatus =
-      status === "all" ||
-      building.status === status;
-
-    return matchQuery && matchStatus;
-
+    const customer = customerName(building.customerId);
+    const text = [building.name,customer,addressText(building.address),managerName(building)].join(" ").toLowerCase();
+    return (!q || text.includes(q)) && (status === "all" || building.status === status);
   });
-
 }
-
-
-/* --------------------------------
-   RENDER TABLE
--------------------------------- */
 
 function render(){
-
   renderKpis();
-
   const list = filteredBuildings();
-
-  $("count").textContent =
-    `${list.length} tòa nhà`;
-
+  $("count").textContent = `${list.length} tòa nhà`;
 
   if (!list.length){
-
-    $("tbody").innerHTML = `
-      <tr>
-        <td colspan="7">
-          <div class="loading-row">
-            Chưa có tòa nhà trong Firebase.
-          </div>
-        </td>
-      </tr>
-    `;
-
-  } else {
-
-    $("tbody").innerHTML =
-      list.map(building => {
-
-        const customer =
-          customerName(building.customerId);
-
-        const buildingElevators =
-          elevatorsForBuilding(building.id);
-
-        return `
-          <tr>
-
-            <td>
-              <div class="name">
-                ${escapeHtml(building.name)}
-              </div>
-
-              <div class="id">
-                ${escapeHtml(building.id)}
-              </div>
-            </td>
-
-
-            <td>
-              ${escapeHtml(customer)}
-            </td>
-
-
-            <td>
-              ${escapeHtml(
-                addressText(building.address)
-              )}
-            </td>
-
-
-            <td>
-              ${buildingElevators.length}
-            </td>
-
-
-            <td>
-              ${escapeHtml(
-                managerName(building)
-              )}
-            </td>
-
-
-            <td>
-              ${statusLabel(building.status)}
-            </td>
-
-
-            <td>
-              <button
-                class="action"
-                data-view="${escapeHtml(building.id)}"
-                type="button">
-                Xem
-              </button>
-            </td>
-
-          </tr>
-        `;
-
-      }).join("");
-
+    $("tbody").innerHTML = `<tr><td colspan="7"><div class="loading-row">Chưa có tòa nhà trong Firebase.</div></td></tr>`;
+    $("mobileList").innerHTML = `<div class="loading-row">Chưa có tòa nhà trong Firebase.</div>`;
+    return;
   }
 
+  $("tbody").innerHTML = list.map(building => {
+    const customer = customerName(building.customerId);
+    const buildingElevators = elevatorsForBuilding(building.id);
+    return `<tr>
+      <td><div class="name">${escapeHtml(building.name)}</div><div class="id">${escapeHtml(building.id)}</div></td>
+      <td>${escapeHtml(customer)}</td>
+      <td>${escapeHtml(addressText(building.address))}</td>
+      <td>${buildingElevators.length}</td>
+      <td>${escapeHtml(managerName(building))}</td>
+      <td>${statusLabel(building.status)}</td>
+      <td><button class="action" data-view="${escapeHtml(building.id)}" type="button">Xem</button></td>
+    </tr>`;
+  }).join("");
 
-  if (!list.length){
-
-    $("mobileList").innerHTML = `
-      <div class="loading-row">
-        Chưa có tòa nhà trong Firebase.
+  $("mobileList").innerHTML = list.map(building => {
+    const customer = customerName(building.customerId);
+    const buildingElevators = elevatorsForBuilding(building.id);
+    return `<article class="building-item">
+      <div class="building-top">
+        <div><div class="name">${escapeHtml(building.name)}</div><div class="id">${escapeHtml(building.id)}</div></div>
+        ${statusLabel(building.status)}
       </div>
-    `;
-
-  } else {
-
-    $("mobileList").innerHTML =
-      list.map(building => {
-
-        const customer =
-          customerName(building.customerId);
-
-        const buildingElevators =
-          elevatorsForBuilding(building.id);
-
-        return `
-          <article class="building-item">
-
-            <div class="building-top">
-
-              <div>
-
-                <div class="name">
-                  ${escapeHtml(building.name)}
-                </div>
-
-                <div class="id">
-                  ${escapeHtml(building.id)}
-                </div>
-
-              </div>
-
-              ${statusLabel(building.status)}
-
-            </div>
-
-
-            <div class="building-contact">
-
-              ${escapeHtml(customer)}
-              <br>
-
-              ${escapeHtml(
-                addressText(building.address)
-              )}
-              <br>
-
-              Phụ trách:
-              ${escapeHtml(
-                managerName(building)
-              )}
-
-            </div>
-
-
-            <div class="stats">
-
-              <div class="stat">
-                <b>${buildingElevators.length}</b>
-                <span>THANG MÁY</span>
-              </div>
-
-              <div class="stat">
-                <b>—</b>
-                <span>HỢP ĐỒNG</span>
-              </div>
-
-              <div class="stat">
-                <b>—</b>
-                <span>WORK ORDER</span>
-              </div>
-
-            </div>
-
-
-            <div class="bottom">
-
-              <span class="muted">
-                ${escapeHtml(
-                  buildingTypeLabel(
-                    building.type
-                  )
-                )}
-              </span>
-
-              <button
-                class="action"
-                data-view="${escapeHtml(building.id)}"
-                type="button">
-                Xem hồ sơ
-              </button>
-
-            </div>
-
-          </article>
-        `;
-
-      }).join("");
-
-  }
-
+      <div class="building-contact">${escapeHtml(customer)}<br>${escapeHtml(addressText(building.address))}<br>Phụ trách: ${escapeHtml(managerName(building))}</div>
+      <div class="stats">
+        <div class="stat"><b>${buildingElevators.length}</b><span>THANG MÁY</span></div>
+        <div class="stat"><b>—</b><span>HỢP ĐỒNG</span></div>
+        <div class="stat"><b>—</b><span>WORK ORDER</span></div>
+      </div>
+      <div class="bottom">
+        <span class="muted">${escapeHtml(buildingTypeLabel(building.type))}</span>
+        <button class="action" data-view="${escapeHtml(building.id)}" type="button">Xem hồ sơ</button>
+      </div>
+    </article>`;
+  }).join("");
 }
 
-
-/* --------------------------------
-   CUSTOMER OPTIONS
--------------------------------- */
-
 function renderCustomerOptions(){
-
   const select = $("customer");
 
   if (!customers.length){
-
-    select.innerHTML = `
-      <option value="">
-        Chưa có khách hàng
-      </option>
-    `;
-
+    select.innerHTML = `<option value="">Chưa có khách hàng</option>`;
     return;
-
   }
 
-
-  select.innerHTML = `
-    <option value="">
-      Chọn khách hàng
-    </option>
-
-    ${
-      customers
-        .map(customer => `
-          <option value="${escapeHtml(customer.id)}">
-            ${escapeHtml(customer.name)}
-          </option>
-        `)
-        .join("")
-    }
-  `;
-
+  select.innerHTML = `<option value="">Chọn khách hàng</option>${
+    customers.map(customer => `<option value="${escapeHtml(customer.id)}">${escapeHtml(customer.name)}</option>`).join("")
+  }`;
 }
 
-
-/* --------------------------------
-   LOAD FIRESTORE
--------------------------------- */
-
 async function loadData(){
-
   hideNotice();
 
-  $("tbody").innerHTML = `
-    <tr>
-      <td colspan="7">
-        <div class="loading-row">
-          Đang tải dữ liệu từ Firebase...
-        </div>
-      </td>
-    </tr>
-  `;
-
+  $("tbody").innerHTML = `<tr><td colspan="7"><div class="loading-row">Đang tải dữ liệu từ Firebase...</div></td></tr>`;
 
   try {
-
-    const [
-      customerData,
-      buildingData,
-      elevatorData
-    ] = await Promise.all([
-      getCustomers(),
-      getBuildings(),
-      getElevators()
+    const [customerData,buildingData,elevatorData] = await Promise.all([
+      getCustomers(),getBuildings(),getElevators()
     ]);
-
 
     customers = customerData || [];
     buildings = buildingData || [];
     elevators = elevatorData || [];
 
-
     renderCustomerOptions();
     render();
 
-
-    $("footerSource").textContent =
-      `Dữ liệu Firebase DEV — ${buildings.length} tòa nhà.`;
-
-    showNotice(
-      `Đã kết nối Firestore. ${buildings.length} tòa nhà.`,
-      "success"
-    );
-
-
+    $("footerSource").textContent = `Dữ liệu Firebase DEV — ${buildings.length} tòa nhà.`;
+    showNotice(`Đã kết nối Firestore. ${buildings.length} tòa nhà.`,"success");
   } catch(error){
-
-    console.error(
-      "BUILDING FIRESTORE ERROR:",
-      error
-    );
-
-
+    console.error("BUILDING FIRESTORE ERROR:",error);
     customers = [];
     buildings = [];
     elevators = [];
-
-
     renderCustomerOptions();
     render();
-
-
-    $("footerSource").textContent =
-      "Firebase DEV — lỗi kết nối Firestore.";
-
-    showNotice(
-      `Không thể tải dữ liệu Firebase: ${
-        error?.message || "UNKNOWN_ERROR"
-      }`,
-      "error"
-    );
-
+    $("footerSource").textContent = "Firebase DEV — lỗi kết nối Firestore.";
+    showNotice(`Không thể tải dữ liệu Firebase: ${error?.message || "UNKNOWN_ERROR"}`,"error");
   }
-
 }
 
-
-/* --------------------------------
-   BUILDING PROFILE
--------------------------------- */
-
 async function openDetail(id){
-
-  const building =
-    buildings.find(item => item.id === id);
-
+  const building = buildings.find(item => item.id === id);
   if (!building) return;
 
   currentBuilding = building;
+  const customer = customerName(building.customerId);
+  const buildingElevators = elevatorsForBuilding(building.id);
 
-
-  const customer =
-    customerName(building.customerId);
-
-  const buildingElevators =
-    elevatorsForBuilding(building.id);
-
-
-  $("dName").textContent =
-    building.name || "—";
-
-  $("dId").textContent =
-    building.id || "—";
-
-  $("dStatus").innerHTML =
-    statusLabel(building.status);
-
-  $("dCustomer").textContent =
-    customer;
-
-  $("dAddress").textContent =
-    addressText(building.address);
-
-  $("dManager").textContent =
-    managerName(building);
-
-  $("dType").textContent =
-    buildingTypeLabel(building.type);
-
-  $("dElevators").textContent =
-    buildingElevators.length;
+  $("dName").textContent = building.name || "—";
+  $("dId").textContent = building.id || "—";
+  $("dStatus").innerHTML = statusLabel(building.status);
+  $("dCustomer").textContent = customer;
+  $("dAddress").textContent = addressText(building.address);
+  $("dManager").textContent = managerName(building);
+  $("dType").textContent = buildingTypeLabel(building.type);
+  $("dElevators").textContent = buildingElevators.length;
 
   renderLocationProfile(building.location);
-
-
   setTab("elevators");
 
   $("backdrop").classList.add("show");
-
   document.body.style.overflow = "hidden";
-
 }
-
-
-/* --------------------------------
-   LOCATION PROFILE
--------------------------------- */
 
 function renderLocationProfile(location){
   const container = $("dLocation");
   const item = normalizeLocation(location);
-
   if (!container) return;
 
   if (!item){
-    container.innerHTML = `
-      <div class="location-profile-empty">
-        Chưa có vị trí được ghim.
-      </div>
-    `;
+    container.innerHTML = `<div class="location-profile-empty">Chưa có vị trí được ghim.</div>`;
     return;
   }
 
-  container.innerHTML = `
-    <div class="location-profile-card">
-      <div class="location-profile-title">
-        📍 ${escapeHtml(formatCoordinates(item))}
-      </div>
-
-      <div class="location-profile-meta">
-        Nguồn: ${item.source === "gps" ? "GPS thiết bị" : "Chọn trên bản đồ"}
-      </div>
-
-      <div class="location-profile-actions">
-        <a
-          class="action"
-          href="${escapeHtml(googleMapsUrl(item))}"
-          target="_blank"
-          rel="noopener">
-          Mở bản đồ
-        </a>
-
-        <a
-          class="action"
-          href="${escapeHtml(googleMapsUrl(item))}"
-          target="_blank"
-          rel="noopener">
-          Chỉ đường
-        </a>
-      </div>
+  container.innerHTML = `<div class="location-profile-card">
+    <div class="location-profile-title">📍 ${escapeHtml(formatCoordinates(item))}</div>
+    <div class="location-profile-meta">Nguồn: ${item.source === "gps" ? "GPS thiết bị" : "Chọn trên bản đồ"}</div>
+    <div class="location-profile-actions">
+      <a class="action" href="${escapeHtml(googleMapsUrl(item))}" target="_blank" rel="noopener">Mở bản đồ</a>
+      <a class="action" href="${escapeHtml(googleMapsUrl(item))}" target="_blank" rel="noopener">Chỉ đường</a>
     </div>
-  `;
+  </div>`;
 }
-
-
-/* --------------------------------
-   CLOSE PROFILE
--------------------------------- */
 
 function closeDetail(){
-
   $("backdrop").classList.remove("show");
-
   document.body.style.overflow = "";
-
   currentBuilding = null;
-
 }
 
-
-/* --------------------------------
-   PROFILE TABS
--------------------------------- */
-
 function setTab(tab){
-
-  document
-    .querySelectorAll(".tab")
-    .forEach(button => {
-
-      button.classList.toggle(
-        "active",
-        button.dataset.tab === tab
-      );
-
-    });
-
+  document.querySelectorAll(".tab").forEach(button => {
+    button.classList.toggle("active",button.dataset.tab === tab);
+  });
 
   if (!currentBuilding) return;
 
-
-  const buildingElevators =
-    elevatorsForBuilding(
-      currentBuilding.id
-    );
-
+  const buildingElevators = elevatorsForBuilding(currentBuilding.id);
 
   if (tab === "elevators"){
-
     if (!buildingElevators.length){
-
-      $("dList").innerHTML = `
-        <div class="empty">
-          Chưa có thang máy liên kết với tòa nhà này.
-        </div>
-      `;
-
+      $("dList").innerHTML = `<div class="empty">Chưa có thang máy liên kết với tòa nhà này.</div>`;
       return;
-
     }
 
+    $("dList").innerHTML = buildingElevators.map(elevator => {
+      const machine = elevator.technical?.machine?.brand || "—";
+      const controller = elevator.technical?.controller?.brand || "—";
 
-    $("dList").innerHTML =
-      buildingElevators
-        .map(elevator => {
-
-          const machine =
-            elevator.technical?.machine?.brand ||
-            "—";
-
-          const controller =
-            elevator.technical?.controller?.brand ||
-            "—";
-
-          return `
-            <div class="row">
-
-              <div>
-
-                <b>
-                  ${escapeHtml(
-                    elevator.name || "Thang máy"
-                  )}
-                </b>
-
-                <div
-                  style="margin-top:4px;color:#666;font-size:10px;font-family:monospace">
-                  ${escapeHtml(
-                    elevator.id
-                  )}
-                </div>
-
-              </div>
-
-              <span>
-                ${escapeHtml(machine)}
-                ·
-                ${escapeHtml(controller)}
-              </span>
-
-            </div>
-          `;
-
-        })
-        .join("");
+      return `<div class="row">
+        <div>
+          <b>${escapeHtml(elevator.name || "Thang máy")}</b>
+          <div style="margin-top:4px;color:#666;font-size:10px;font-family:monospace">${escapeHtml(elevator.id)}</div>
+        </div>
+        <span>${escapeHtml(machine)} · ${escapeHtml(controller)}</span>
+      </div>`;
+    }).join("");
 
     return;
-
   }
-
 
   const placeholders = {
-
-    contracts: [
-      [
-        "Hợp đồng",
-        "Chưa kết nối module Hợp đồng"
-      ]
-    ],
-
-    maintenance: [
-      [
-        "Bảo trì",
-        "Chưa kết nối module Bảo trì"
-      ]
-    ],
-
-    workorders: [
-      [
-        "Work Order",
-        "Chưa kết nối module Work Order"
-      ]
-    ]
-
+    contracts:[["Hợp đồng","Chưa kết nối module Hợp đồng"]],
+    maintenance:[["Bảo trì","Chưa kết nối module Bảo trì"]],
+    workorders:[["Work Order","Chưa kết nối module Work Order"]]
   };
 
-
-  const rows =
-    placeholders[tab] || [];
-
-
-  $("dList").innerHTML =
-    rows
-      .map(row => `
-        <div class="row">
-          <b>${escapeHtml(row[0])}</b>
-          <span>${escapeHtml(row[1])}</span>
-        </div>
-      `)
-      .join("");
-
+  $("dList").innerHTML = (placeholders[tab] || []).map(row => `
+    <div class="row"><b>${escapeHtml(row[0])}</b><span>${escapeHtml(row[1])}</span></div>
+  `).join("");
 }
-
-
-/* --------------------------------
-   CREATE BUILDING MODAL
--------------------------------- */
 
 function openModal(){
-
   if (!customers.length){
-
-    showNotice(
-      "Chưa có khách hàng trong Firebase. Hãy tạo Customer trước.",
-      "error"
-    );
-
+    showNotice("Chưa có khách hàng trong Firebase. Hãy tạo Customer trước.","error");
     return;
-
   }
 
-
   resetLocation();
-
   $("modal").classList.add("show");
-
   document.body.style.overflow = "hidden";
-
-
-  setTimeout(
-    () => $("buildingName").focus(),
-    40
-  );
-
+  setTimeout(() => $("buildingName").focus(),40);
 }
-
 
 function closeModal(){
-
   $("modal").classList.remove("show");
-
   document.body.style.overflow = "";
-
   $("buildingForm").reset();
   resetLocation();
-
 }
 
-
-/* --------------------------------
-   CREATE BUILDING
--------------------------------- */
-
 async function handleCreateBuilding(event){
-
   event.preventDefault();
 
-  const button =
-    $("saveBuilding");
-
-  const name =
-    safe($("buildingName").value);
-
-  const customerId =
-    $("customer").value;
+  const button = $("saveBuilding");
+  const name = safe($("buildingName").value);
+  const customerId = $("customer").value;
 
   if (!name){
-
-    showNotice(
-      "Vui lòng nhập tên tòa nhà.",
-      "error"
-    );
-
+    showNotice("Vui lòng nhập tên tòa nhà.","error");
     return;
-
   }
-
 
   if (!customerId){
-
-    showNotice(
-      "Vui lòng chọn khách hàng.",
-      "error"
-    );
-
+    showNotice("Vui lòng chọn khách hàng.","error");
     return;
-
   }
-
 
   button.disabled = true;
   button.textContent = "Đang lưu...";
 
-
   try {
-
-    const created =
-      await createBuilding({
-
-        name,
-
-        customerId,
-
-        type:
-          $("buildingType").value ||
-          "other",
-
-        address: {
-
-          province:
-            safe($("province").value),
-
-          district:
-            safe($("district").value),
-
-          detail:
-            safe($("address").value)
-
-        },
-
-        location: normalizeLocation(selectedLocation),
-
-        manager: {
-
-          name:
-            safe($("manager").value),
-
-          phone:
-            safe($("phone").value)
-
-        },
-
-        status: "active"
-
-      });
-
+    const created = await createBuilding({
+      name,
+      customerId,
+      type:$("buildingType").value || "other",
+      address:{
+        province:safe($("province").value),
+        district:safe($("district").value),
+        detail:safe($("address").value)
+      },
+      location:normalizeLocation(selectedLocation),
+      manager:{
+        name:safe($("manager").value),
+        phone:safe($("phone").value)
+      },
+      status:"active"
+    });
 
     closeModal();
-
-
-    showNotice(
-      `Đã tạo tòa nhà "${created.name}". Firebase Auto ID: ${created.id}`,
-      "success"
-    );
-
-
+    showNotice(`Đã tạo tòa nhà "${created.name}". Firebase Auto ID: ${created.id}`,"success");
     await loadData();
-
-
   } catch(error){
-
-    console.error(
-      "CREATE BUILDING ERROR:",
-      error
-    );
-
-
-    showNotice(
-      `Không thể tạo tòa nhà: ${
-        error?.message || "UNKNOWN_ERROR"
-      }`,
-      "error"
-    );
-
+    console.error("CREATE BUILDING ERROR:",error);
+    showNotice(`Không thể tạo tòa nhà: ${error?.message || "UNKNOWN_ERROR"}`,"error");
   } finally {
-
     button.disabled = false;
     button.textContent = "Lưu tòa nhà";
-
   }
-
 }
 
+$("addButton").addEventListener("click",openModal);
+$("closeDetail").addEventListener("click",closeDetail);
 
-/* --------------------------------
-   EVENTS
--------------------------------- */
+$("backdrop").addEventListener("click",event => {
+  if (event.target === $("backdrop")) closeDetail();
+});
 
-$("addButton").addEventListener(
-  "click",
-  openModal
-);
+$("closeModal").addEventListener("click",closeModal);
+$("cancel").addEventListener("click",closeModal);
 
+$("modal").addEventListener("click",event => {
+  if (event.target === $("modal")) closeModal();
+});
 
-$("closeDetail").addEventListener(
-  "click",
-  closeDetail
-);
+document.addEventListener("click",event => {
+  const button = event.target.closest("[data-view]");
+  if (button) openDetail(button.dataset.view);
+});
 
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click",() => setTab(button.dataset.tab));
+});
 
-$("backdrop").addEventListener(
-  "click",
-  event => {
+$("search").addEventListener("input",render);
+$("status").addEventListener("change",render);
+$("useCurrentLocation").addEventListener("click",requestCurrentLocation);
+$("chooseMapLocation").addEventListener("click",chooseMapLocation);
+$("buildingForm").addEventListener("submit",handleCreateBuilding);
 
-    if (event.target === $("backdrop")){
-      closeDetail();
-    }
-
+document.addEventListener("keydown",event => {
+  if (event.key === "Escape"){
+    closeDetail();
+    closeModal();
   }
-);
-
-
-$("closeModal").addEventListener(
-  "click",
-  closeModal
-);
-
-
-$("cancel").addEventListener(
-  "click",
-  closeModal
-);
-
-
-$("modal").addEventListener(
-  "click",
-  event => {
-
-    if (event.target === $("modal")){
-      closeModal();
-    }
-
-  }
-);
-
-
-document.addEventListener(
-  "click",
-  event => {
-
-    const button =
-      event.target.closest("[data-view]");
-
-    if (button){
-
-      openDetail(
-        button.dataset.view
-      );
-
-    }
-
-  }
-);
-
-
-document
-  .querySelectorAll(".tab")
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => setTab(
-        button.dataset.tab
-      )
-    );
-
-  });
-
-
-$("search").addEventListener(
-  "input",
-  render
-);
-
-
-$("status").addEventListener(
-  "change",
-  render
-);
-
-
-$("useCurrentLocation").addEventListener(
-  "click",
-  requestCurrentLocation
-);
-
-
-$("chooseMapLocation").addEventListener(
-  "click",
-  chooseMapLocation
-);
-
-
-$("buildingForm").addEventListener(
-  "submit",
-  handleCreateBuilding
-);
-
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (event.key === "Escape"){
-
-      closeDetail();
-      closeModal();
-
-    }
-
-  }
-);
-
-
-/* --------------------------------
-   INIT
--------------------------------- */
+});
 
 loadData();
-
 </script>
 
 </body>
