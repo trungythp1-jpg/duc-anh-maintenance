@@ -16,13 +16,21 @@ import { db } from "./firebase.js";
  * ĐỨC ANH MAINTENANCE
  * FIRESTORE DATA LAYER
  *
- * Nguyên tắc:
- * - Mã thang máy là định danh tài sản lâu dài.
- * - 1 hợp đồng chỉ gắn với 1 thang máy và 1 tòa nhà.
- * - Customer -> Building -> Elevator là quan hệ chính.
- * - Không xóa cứng dữ liệu vận hành; ưu tiên status/active.
- * - Các module tương lai đã được khai báo collection từ đầu
- *   để hạn chế phải đổi cấu trúc Firebase về sau.
+ * NGUYÊN TẮC HỆ THỐNG — KHÓA
+ *
+ * - Mã thang máy là định danh tài sản lâu dài, tối thiểu 10 năm.
+ * - Mã thang không thay đổi theo hợp đồng, khách hàng hoặc đơn vị bảo trì.
+ * - 1 hợp đồng gắn với 1 khách hàng, 1 tòa nhà và 1 thang máy.
+ * - Quan hệ chính: Customer -> Building -> Elevator.
+ * - Hết bảo hành/bảo trì miễn phí, khách hàng có thể không tiếp tục
+ *   ký với Đức Anh và chuyển sang đơn vị khác.
+ * - Đức Anh có thể tiếp nhận bảo trì thang máy do đơn vị khác lắp đặt.
+ * - Lịch sử sở hữu/dịch vụ của thang phải có thể tiếp tục quản lý,
+ *   không làm mất định danh tài sản khi thay đổi khách hàng hoặc đơn vị.
+ * - Không xóa cứng dữ liệu vận hành; ưu tiên status/active và lịch sử.
+ * - Contracts lưu trực tiếp Firestore, không dùng localStorage làm nguồn dữ liệu.
+ * - Các module tương lai đã được khai báo collection từ đầu để hạn chế
+ *   phải đổi cấu trúc Firebase về sau.
  */
 
 export const COLLECTIONS = {
@@ -86,24 +94,14 @@ export async function createCustomer(data) {
     email: data.email || "",
     taxCode: data.taxCode || "",
     address: data.address || "",
-    contactPerson: data.contactPerson || {
-      name: "",
-      phone: ""
-    },
+    contactPerson: data.contactPerson || { name: "", phone: "" },
     status: data.status || "active",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 
-  const ref = await addDoc(
-    collection(db, COLLECTIONS.CUSTOMERS),
-    customer
-  );
-
-  return {
-    id: ref.id,
-    ...customer
-  };
+  const ref = await addDoc(collection(db, COLLECTIONS.CUSTOMERS), customer);
+  return { id: ref.id, ...customer };
 }
 
 export async function getCustomer(customerId) {
@@ -115,16 +113,11 @@ export async function getCustomer(customerId) {
 
   if (!snapshot.exists()) return null;
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data()
-  };
+  return { id: snapshot.id, ...snapshot.data() };
 }
 
 export async function getCustomers() {
-  const snapshot = await getDocs(
-    collection(db, COLLECTIONS.CUSTOMERS)
-  );
+  const snapshot = await getDocs(collection(db, COLLECTIONS.CUSTOMERS));
 
   return snapshot.docs.map(item => ({
     id: item.id,
@@ -178,10 +171,7 @@ export async function createBuilding(data) {
     building
   );
 
-  return {
-    id: ref.id,
-    ...building
-  };
+  return { id: ref.id, ...building };
 }
 
 export async function getBuilding(buildingId) {
@@ -193,10 +183,7 @@ export async function getBuilding(buildingId) {
 
   if (!snapshot.exists()) return null;
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data()
-  };
+  return { id: snapshot.id, ...snapshot.data() };
 }
 
 export async function getBuildings() {
@@ -234,15 +221,8 @@ export async function updateBuilding(buildingId, data) {
     updatedAt: serverTimestamp()
   };
 
-  if (
-    Object.prototype.hasOwnProperty.call(
-      data,
-      "location"
-    )
-  ) {
-    payload.location = normalizeLocation(
-      data.location
-    );
+  if (Object.prototype.hasOwnProperty.call(data, "location")) {
+    payload.location = normalizeLocation(data.location);
   }
 
   await updateDoc(
@@ -262,9 +242,7 @@ export async function createElevator(data) {
   requireValue(data.buildingId, "buildingId");
   requireValue(data.customerId, "customerId");
 
-  const building = await getBuilding(
-    data.buildingId
-  );
+  const building = await getBuilding(data.buildingId);
 
   if (!building) {
     throw new Error("Không tìm thấy tòa nhà.");
@@ -287,29 +265,18 @@ export async function createElevator(data) {
     status: data.status || "active",
 
     technical: {
-      capacityKg:
-        data.technical?.capacityKg || null,
-
-      speed:
-        data.technical?.speed || null,
-
-      stops:
-        data.technical?.stops || null,
+      capacityKg: data.technical?.capacityKg || null,
+      speed: data.technical?.speed || null,
+      stops: data.technical?.stops || null,
 
       machine: {
-        brand:
-          data.technical?.machine?.brand || "",
-
-        model:
-          data.technical?.machine?.model || ""
+        brand: data.technical?.machine?.brand || "",
+        model: data.technical?.machine?.model || ""
       },
 
       controller: {
-        brand:
-          data.technical?.controller?.brand || "",
-
-        model:
-          data.technical?.controller?.model || ""
+        brand: data.technical?.controller?.brand || "",
+        model: data.technical?.controller?.model || ""
       },
 
       installationYear:
@@ -330,10 +297,7 @@ export async function createElevator(data) {
     elevator
   );
 
-  return {
-    id: ref.id,
-    ...elevator
-  };
+  return { id: ref.id, ...elevator };
 }
 
 export async function getElevator(elevatorId) {
@@ -345,10 +309,7 @@ export async function getElevator(elevatorId) {
 
   if (!snapshot.exists()) return null;
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data()
-  };
+  return { id: snapshot.id, ...snapshot.data() };
 }
 
 export async function getElevators() {
@@ -394,10 +355,7 @@ export async function getElevatorsByCustomer(customerId) {
   }));
 }
 
-export async function updateElevator(
-  elevatorId,
-  data
-) {
+export async function updateElevator(elevatorId, data) {
   requireValue(elevatorId, "elevatorId");
 
   await updateDoc(
@@ -428,40 +386,27 @@ export async function createElevatorRelationship(data) {
     relationType: data.relationType,
     startAt: data.startAt || null,
     endAt: data.endAt || null,
-
     isCurrent:
       typeof data.isCurrent === "boolean"
         ? data.isCurrent
         : true,
-
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 
   const ref = await addDoc(
-    collection(
-      db,
-      COLLECTIONS.ELEVATOR_RELATIONSHIPS
-    ),
+    collection(db, COLLECTIONS.ELEVATOR_RELATIONSHIPS),
     relationship
   );
 
-  return {
-    id: ref.id,
-    ...relationship
-  };
+  return { id: ref.id, ...relationship };
 }
 
-export async function getElevatorRelationships(
-  elevatorId
-) {
+export async function getElevatorRelationships(elevatorId) {
   requireValue(elevatorId, "elevatorId");
 
   const q = query(
-    collection(
-      db,
-      COLLECTIONS.ELEVATOR_RELATIONSHIPS
-    ),
+    collection(db, COLLECTIONS.ELEVATOR_RELATIONSHIPS),
     where("elevatorId", "==", elevatorId)
   );
 
@@ -478,96 +423,104 @@ export async function getElevatorRelationships(
 ========================= */
 
 /*
- * Tạo hợp đồng mới.
+ * Hợp đồng lưu trực tiếp tại:
+ *   Firestore -> contracts
+ *
+ * Không sử dụng localStorage làm nguồn dữ liệu hợp đồng.
  *
  * Quan hệ bắt buộc:
+ *   Contract -> Customer -> Building -> Elevator
  *
- * Customer
- *    ↓
- * Building
- *    ↓
- * Elevator
+ * Khi tạo/sửa hợp đồng, hệ thống kiểm tra:
+ *   - customer tồn tại
+ *   - building tồn tại
+ *   - elevator tồn tại
+ *   - building thuộc customer
+ *   - elevator thuộc building
+ *   - elevator thuộc customer
  *
- * Hợp đồng lưu trực tiếp vào:
- *
- * contracts/{firestoreDocumentId}
+ * Điều này giữ nguyên chuỗi dữ liệu:
+ * Khách hàng -> Tòa nhà -> Thang máy -> Hợp đồng
  */
 
-export async function createContract(data) {
-  requireValue(data.code, "Mã hợp đồng");
-  requireValue(data.name, "Tên hợp đồng");
+async function validateContractReferences(data) {
   requireValue(data.customerId, "customerId");
   requireValue(data.buildingId, "buildingId");
   requireValue(data.elevatorId, "elevatorId");
 
-  /*
-   * Kiểm tra tòa nhà tồn tại
-   * và thuộc đúng khách hàng.
-   */
-  const building = await getBuilding(
-    data.buildingId
-  );
+  const [customer, building, elevator] = await Promise.all([
+    getCustomer(data.customerId),
+    getBuilding(data.buildingId),
+    getElevator(data.elevatorId)
+  ]);
 
-  if (!building) {
-    throw new Error(
-      "Không tìm thấy tòa nhà được chọn."
-    );
+  if (!customer) {
+    throw new Error("Không tìm thấy khách hàng.");
   }
 
-  if (
-    String(building.customerId) !==
-    String(data.customerId)
-  ) {
+  if (!building) {
+    throw new Error("Không tìm thấy tòa nhà.");
+  }
+
+  if (!elevator) {
+    throw new Error("Không tìm thấy thang máy.");
+  }
+
+  if (String(building.customerId) !== String(customer.id)) {
     throw new Error(
       "Tòa nhà không thuộc khách hàng đã chọn."
     );
   }
 
-  /*
-   * Kiểm tra thang máy tồn tại
-   * và thuộc đúng tòa nhà / khách hàng.
-   */
-  const elevator = await getElevator(
-    data.elevatorId
-  );
-
-  if (!elevator) {
-    throw new Error(
-      "Không tìm thấy thang máy được chọn."
-    );
-  }
-
-  if (
-    String(elevator.buildingId) !==
-    String(data.buildingId)
-  ) {
+  if (String(elevator.buildingId) !== String(building.id)) {
     throw new Error(
       "Thang máy không thuộc tòa nhà đã chọn."
     );
   }
 
   if (
-    String(elevator.customerId) !==
-    String(data.customerId)
+    elevator.customerId &&
+    String(elevator.customerId) !== String(customer.id)
   ) {
     throw new Error(
       "Thang máy không thuộc khách hàng đã chọn."
     );
   }
 
-  const contract = {
-    code: String(data.code).trim(),
+  return {
+    customer,
+    building,
+    elevator
+  };
+}
 
+function normalizeContractData(data, references) {
+  const { customer, building, elevator } = references;
+
+  requireValue(data.code, "Mã hợp đồng");
+  requireValue(data.name, "Tên hợp đồng");
+
+  return {
+    code: String(data.code).trim(),
     name: String(data.name).trim(),
 
-    customerId: data.customerId,
-    customerName: data.customerName || "",
+    customerId: customer.id,
+    customerName:
+      data.customerName ||
+      customer.name ||
+      "",
 
-    buildingId: data.buildingId,
-    buildingName: data.buildingName || "",
+    buildingId: building.id,
+    buildingName:
+      data.buildingName ||
+      building.name ||
+      "",
 
-    elevatorId: data.elevatorId,
-    elevatorName: data.elevatorName || "",
+    elevatorId: elevator.id,
+    elevatorName:
+      data.elevatorName ||
+      elevator.name ||
+      "",
 
     status: data.status || "active",
 
@@ -576,10 +529,7 @@ export async function createContract(data) {
     endDate: data.endDate || "",
 
     contractValue:
-      data.contractValue !== undefined &&
-      data.contractValue !== ""
-        ? Number(data.contractValue)
-        : 0,
+      data.contractValue ?? "",
 
     warrantyEnabled:
       data.warrantyEnabled || "yes",
@@ -609,17 +559,21 @@ export async function createContract(data) {
       data.maintenanceOwner || "",
 
     paidValue:
-      data.paidValue !== undefined &&
-      data.paidValue !== ""
-        ? Number(data.paidValue)
-        : 0,
+      data.paidValue ?? "",
 
     paymentDue:
       data.paymentDue || "",
 
     note:
-      data.note || "",
+      data.note || ""
+  };
+}
 
+export async function createContract(data) {
+  const references = await validateContractReferences(data);
+
+  const contract = {
+    ...normalizeContractData(data, references),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
@@ -635,9 +589,21 @@ export async function createContract(data) {
   };
 }
 
-/*
- * Lấy toàn bộ hợp đồng.
- */
+export async function getContract(contractId) {
+  requireValue(contractId, "contractId");
+
+  const snapshot = await getDoc(
+    doc(db, COLLECTIONS.CONTRACTS, contractId)
+  );
+
+  if (!snapshot.exists()) return null;
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data()
+  };
+}
+
 export async function getContracts() {
   const snapshot = await getDocs(
     collection(db, COLLECTIONS.CONTRACTS)
@@ -649,159 +615,24 @@ export async function getContracts() {
   }));
 }
 
-/*
- * Lấy một hợp đồng theo Firestore document ID.
- */
-export async function getContract(
-  contractId
-) {
-  requireValue(
-    contractId,
-    "contractId"
-  );
+export async function updateContract(contractId, data) {
+  requireValue(contractId, "contractId");
 
-  const snapshot = await getDoc(
-    doc(
-      db,
-      COLLECTIONS.CONTRACTS,
-      contractId
-    )
-  );
+  const existing = await getContract(contractId);
 
-  if (!snapshot.exists()) {
-    return null;
+  if (!existing) {
+    throw new Error("Không tìm thấy hợp đồng.");
   }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data()
-  };
-}
-
-/*
- * Cập nhật hợp đồng.
- *
- * Không cho phép thay đổi:
- * - id
- * - createdAt
- *
- * updatedAt luôn được cập nhật.
- */
-export async function updateContract(
-  contractId,
-  data
-) {
-  requireValue(
-    contractId,
-    "contractId"
-  );
-
-  /*
-   * Nếu người dùng thay đổi customer/building/elevator,
-   * kiểm tra lại quan hệ trước khi ghi.
-   */
-  if (
-    data.customerId ||
-    data.buildingId ||
-    data.elevatorId
-  ) {
-    const current =
-      await getContract(contractId);
-
-    if (!current) {
-      throw new Error(
-        "Không tìm thấy hợp đồng cần cập nhật."
-      );
-    }
-
-    const customerId =
-      data.customerId ||
-      current.customerId;
-
-    const buildingId =
-      data.buildingId ||
-      current.buildingId;
-
-    const elevatorId =
-      data.elevatorId ||
-      current.elevatorId;
-
-    const building =
-      await getBuilding(buildingId);
-
-    if (!building) {
-      throw new Error(
-        "Không tìm thấy tòa nhà."
-      );
-    }
-
-    if (
-      String(building.customerId) !==
-      String(customerId)
-    ) {
-      throw new Error(
-        "Tòa nhà không thuộc khách hàng đã chọn."
-      );
-    }
-
-    const elevator =
-      await getElevator(elevatorId);
-
-    if (!elevator) {
-      throw new Error(
-        "Không tìm thấy thang máy."
-      );
-    }
-
-    if (
-      String(elevator.buildingId) !==
-      String(buildingId)
-    ) {
-      throw new Error(
-        "Thang máy không thuộc tòa nhà đã chọn."
-      );
-    }
-
-    if (
-      String(elevator.customerId) !==
-      String(customerId)
-    ) {
-      throw new Error(
-        "Thang máy không thuộc khách hàng đã chọn."
-      );
-    }
-  }
+  const references = await validateContractReferences(data);
 
   const payload = {
-    ...data,
+    ...normalizeContractData(data, references),
     updatedAt: serverTimestamp()
   };
 
-  delete payload.id;
-  delete payload.createdAt;
-
-  if (
-    payload.contractValue !== undefined &&
-    payload.contractValue !== ""
-  ) {
-    payload.contractValue =
-      Number(payload.contractValue);
-  }
-
-  if (
-    payload.paidValue !== undefined &&
-    payload.paidValue !== ""
-  ) {
-    payload.paidValue =
-      Number(payload.paidValue);
-  }
-
   await updateDoc(
-    doc(
-      db,
-      COLLECTIONS.CONTRACTS,
-      contractId
-    ),
+    doc(db, COLLECTIONS.CONTRACTS, contractId),
     payload
   );
 
@@ -813,14 +644,8 @@ export async function updateContract(
    DÙNG CHO MODULE TƯƠNG LAI
 ========================= */
 
-export async function createRecord(
-  collectionName,
-  data
-) {
-  requireValue(
-    collectionName,
-    "collectionName"
-  );
+export async function createRecord(collectionName, data) {
+  requireValue(collectionName, "collectionName");
 
   const payload = {
     ...data,
@@ -839,31 +664,15 @@ export async function createRecord(
   };
 }
 
-export async function getRecord(
-  collectionName,
-  recordId
-) {
-  requireValue(
-    collectionName,
-    "collectionName"
-  );
-
-  requireValue(
-    recordId,
-    "recordId"
-  );
+export async function getRecord(collectionName, recordId) {
+  requireValue(collectionName, "collectionName");
+  requireValue(recordId, "recordId");
 
   const snapshot = await getDoc(
-    doc(
-      db,
-      collectionName,
-      recordId
-    )
+    doc(db, collectionName, recordId)
   );
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+  if (!snapshot.exists()) return null;
 
   return {
     id: snapshot.id,
@@ -871,13 +680,8 @@ export async function getRecord(
   };
 }
 
-export async function getRecords(
-  collectionName
-) {
-  requireValue(
-    collectionName,
-    "collectionName"
-  );
+export async function getRecords(collectionName) {
+  requireValue(collectionName, "collectionName");
 
   const snapshot = await getDocs(
     collection(db, collectionName)
@@ -894,30 +698,16 @@ export async function updateRecord(
   recordId,
   data
 ) {
-  requireValue(
-    collectionName,
-    "collectionName"
-  );
-
-  requireValue(
-    recordId,
-    "recordId"
-  );
+  requireValue(collectionName, "collectionName");
+  requireValue(recordId, "recordId");
 
   await updateDoc(
-    doc(
-      db,
-      collectionName,
-      recordId
-    ),
+    doc(db, collectionName, recordId),
     {
       ...data,
       updatedAt: serverTimestamp()
     }
   );
 
-  return getRecord(
-    collectionName,
-    recordId
-  );
+  return getRecord(collectionName, recordId);
 }
