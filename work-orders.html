@@ -1,1 +1,292 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Đức Anh Maintenance — work orders</title><link rel="stylesheet" href="css/main.css"><link rel="stylesheet" href="css/mobile.css"></head><body><header class="app-header"><div class="brand">Đức Anh Maintenance</div></header><main class="page"><h1>work orders</h1><div class="card">DEV V1.0 module scaffold.</div></main></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Work Order — Đức Anh Maintenance</title>
+<style>
+:root{
+  --bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;
+  --gold2:#f0ca76;--border:#3b3428;--text:#eee9df;--muted:#aaa49a;
+  --ok:#70d89f;--danger:#ff8176;--blue:#8fb8ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh;background:radial-gradient(circle at 80% -10%,rgba(214,168,79,.1),transparent 30%),#090909}
+main{max-width:1450px;margin:auto;padding:24px 16px 70px}
+h1{margin:0;color:var(--gold2);font-size:30px}
+.sub{color:var(--muted);margin-top:5px}
+.head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:20px}
+.btn{border:1px solid var(--border);background:#151512;color:var(--text);border-radius:10px;padding:11px 15px;font:inherit;cursor:pointer;min-height:46px}
+.btn.primary{background:linear-gradient(#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}
+.btn:disabled{opacity:.5}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}
+.kpi{background:linear-gradient(#151512,#10100e);border:1px solid var(--border);border-radius:14px;padding:16px}
+.kpi b{display:block;font-size:12px;color:var(--gold2);margin-bottom:5px}
+.kpi strong{font-size:28px}
+.toolbar,.card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
+.toolbar{padding:14px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:15px}
+label{display:block;font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:6px}
+input,select,textarea{width:100%;background:#171714;color:var(--text);border:1px solid #4a4438;border-radius:9px;padding:11px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(214,168,79,.1)}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+th,td{padding:12px;border-bottom:1px solid #292722;text-align:left;vertical-align:top}
+th{background:#171714;color:var(--gold2);font-size:12px;text-transform:uppercase}
+tr:hover td{background:#161613}
+.muted{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#28261f;font-size:12px}
+.badge.ok{color:var(--ok);background:rgba(112,216,159,.12)}
+.badge.blue{color:var(--blue);background:rgba(143,184,255,.12)}
+.badge.gold{color:var(--gold2);background:rgba(214,168,79,.13)}
+.badge.red{color:var(--danger);background:rgba(255,129,118,.12)}
+.empty{padding:45px;text-align:center;color:var(--muted)}
+.status{padding:10px 0;color:var(--muted)}
+.status.error{color:var(--danger)}
+.status.ok{color:var(--ok)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:12px;z-index:100}
+.modal.show{display:flex}
+.box{width:min(1000px,100%);max-height:94vh;overflow:auto;background:#10100e;border:1px solid #80652e;border-radius:16px}
+.modal-head{position:sticky;top:0;background:#171714;border-bottom:1px solid var(--gold);padding:15px 18px;display:flex;justify-content:space-between;z-index:2}
+.modal-head h2{margin:0;color:var(--gold2);font-size:21px}
+.close{border:0;background:none;color:var(--gold2);font-size:28px}
+.body{padding:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.ref{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#151512;border:1px solid var(--border);padding:12px;border-radius:12px;margin-bottom:15px}
+.ref small{display:block;color:var(--muted);margin-bottom:3px}
+.ref strong{color:var(--text)}
+.actions{position:sticky;bottom:0;background:#10100e;border-top:1px solid var(--gold);padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:flex-end;gap:10px}
+.actions .btn{min-height:52px;min-width:120px}
+.actions .primary{min-width:150px}
+.err{color:var(--danger);margin-top:8px;display:none}
+.err.show{display:block}
+@media(max-width:850px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.ref{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){
+  main{padding:16px 12px 50px}.head{flex-direction:column}.toolbar{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}
+  .modal{align-items:flex-end;padding:0}.box{height:100dvh;max-height:100dvh;border-radius:16px 16px 0 0}
+  .body{padding:14px 13px 120px}.ref{grid-template-columns:1fr}
+  .actions{justify-content:stretch}.actions .btn{flex:1;min-width:0}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div>
+      <h1>Phiếu công việc</h1>
+      <div class="sub">Quản lý công việc phát sinh từ Phiếu bảo trì.</div>
+    </div>
+    <button class="btn primary" id="newBtn">＋ Tạo Work Order</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><b>TỔNG WORK ORDER</b><strong id="kTotal">0</strong></div>
+    <div class="kpi"><b>ĐANG XỬ LÝ</b><strong id="kProgress">0</strong></div>
+    <div class="kpi"><b>HOÀN THÀNH</b><strong id="kDone">0</strong></div>
+    <div class="kpi"><b>KHẨN CẤP</b><strong id="kUrgent">0</strong></div>
+  </div>
+
+  <div class="toolbar">
+    <div><label>Tìm kiếm</label><input id="search" placeholder="WO, PBM, khách hàng, tòa nhà, thang..."></div>
+    <div><label>Trạng thái</label><select id="filterStatus"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+    <div><label>Ưu tiên</label><select id="filterPriority"><option value="">Tất cả</option><option value="low">Thấp</option><option value="normal">Bình thường</option><option value="high">Cao</option><option value="urgent">Khẩn cấp</option></select></div>
+  </div>
+
+  <div id="status" class="status">Đang tải dữ liệu…</div>
+  <div class="card"><div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Work Order</th><th>PBM / Khách hàng</th><th>Thang máy</th><th>Công việc</th><th>Ưu tiên</th><th>Trạng thái</th><th>Phân công</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div></div>
+</main>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="modal-head"><h2 id="modalTitle">Tạo Work Order</h2><button class="close" id="closeBtn">×</button></div>
+    <form id="form">
+      <div class="body">
+        <div class="ref" id="refBox">
+          <div><small>Phiếu bảo trì</small><strong id="refPbm">—</strong></div>
+          <div><small>Khách hàng</small><strong id="refCustomer">—</strong></div>
+          <div><small>Tòa nhà</small><strong id="refBuilding">—</strong></div>
+          <div><small>Thang máy</small><strong id="refElevator">—</strong></div>
+        </div>
+        <div class="grid">
+          <div class="full"><label>Phiếu bảo trì *</label><select id="maintenanceId" required></select></div>
+          <div><label>Loại công việc *</label><select id="type"><option value="MAINTENANCE">Bảo trì</option><option value="BREAKDOWN">Sự cố</option><option value="REPAIR">Sửa chữa</option><option value="INSPECTION">Kiểm tra</option></select></div>
+          <div><label>Ưu tiên *</label><select id="priority"><option value="low">Thấp</option><option value="normal" selected>Bình thường</option><option value="high">Cao</option><option value="urgent">Khẩn cấp</option></select></div>
+          <div class="full"><label>Tiêu đề công việc *</label><input id="issueTitle" required placeholder="Ví dụ: Xử lý tiếng kêu bất thường tại máy kéo"></div>
+          <div class="full"><label>Mô tả vấn đề *</label><textarea id="problemDescription" rows="4" required placeholder="Mô tả hiện tượng, vị trí, mức độ..."></textarea></div>
+          <div><label>Trạng thái</label><select id="statusField"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+          <div><label>Kỹ thuật viên</label><input id="technicianName" placeholder="Tạm thời nhập tên — module KTV sẽ liên kết sau"></div>
+          <div><label>Ngày mở</label><input id="openedDate" type="date"></div>
+          <div><label>Hạn xử lý</label><input id="dueDate" type="date"></div>
+          <div class="full"><label>Nguyên nhân</label><textarea id="cause" rows="3"></textarea></div>
+          <div class="full"><label>Biện pháp xử lý</label><textarea id="resolution" rows="3"></textarea></div>
+          <div><label>Chi phí nhân công</label><input id="laborCost" type="number" min="0" step="1000" value="0"></div>
+          <div><label>Chi phí vật tư</label><input id="materialCost" type="number" min="0" step="1000" value="0"></div>
+          <div><label>Tổng chi phí</label><input id="totalCost" type="number" min="0" step="1000" value="0"></div>
+          <div class="full"><label>Ghi chú</label><textarea id="note" rows="3"></textarea></div>
+        </div>
+        <div id="err" class="err"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="cancelBtn">Hủy</button>
+        <button type="submit" class="btn primary" id="saveBtn">Lưu Work Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import {
+  getMaintenances,
+  getWorkOrders,
+  createWorkOrder,
+  updateWorkOrder
+} from "./js/core/firestore-v1.js?v=wo1";
+
+const $ = id => document.getElementById(id);
+let maintenances = [];
+let workOrders = [];
+let editingId = "";
+
+const statusText = {
+  draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",
+  waiting_parts:"Chờ vật tư",completed:"Hoàn thành",cancelled:"Đã hủy"
+};
+const priorityText = {low:"Thấp",normal:"Bình thường",high:"Cao",urgent:"Khẩn cấp"};
+const typeText = {MAINTENANCE:"Bảo trì",BREAKDOWN:"Sự cố",REPAIR:"Sửa chữa",INSPECTION:"Kiểm tra"};
+
+function esc(v){
+  return String(v ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+function badgeStatus(v){
+  const c=v==="completed"?"ok":v==="in_progress"||v==="assigned"?"blue":v==="cancelled"?"red":"gold";
+  return `<span class="badge ${c}">${esc(statusText[v]||v)}</span>`;
+}
+function badgePriority(v){
+  const c=v==="urgent"?"red":v==="high"?"gold":"";
+  return `<span class="badge ${c}">${esc(priorityText[v]||v)}</span>`;
+}
+
+function render(){
+  const q=$("search").value.trim().toLowerCase();
+  const fs=$("filterStatus").value, fp=$("filterPriority").value;
+  const rows=workOrders.filter(w=>{
+    const hay=[w.workOrderNo,w.maintenanceTicketNo,w.customerName,w.buildingName,w.elevatorName,w.issueTitle,w.problemDescription].join(" ").toLowerCase();
+    return (!q||hay.includes(q))&&(!fs||w.status===fs)&&(!fp||w.priority===fp);
+  });
+  $("kTotal").textContent=workOrders.length;
+  $("kProgress").textContent=workOrders.filter(w=>["assigned","in_progress","waiting_parts"].includes(w.status)).length;
+  $("kDone").textContent=workOrders.filter(w=>w.status==="completed").length;
+  $("kUrgent").textContent=workOrders.filter(w=>w.priority==="urgent").length;
+  $("rows").innerHTML=rows.length?rows.map(w=>`
+    <tr>
+      <td><strong style="color:var(--gold2)">${esc(w.workOrderNo)}</strong><div class="muted">${esc(typeText[w.type]||w.type)}</div></td>
+      <td><strong>${esc(w.maintenanceTicketNo)}</strong><div>${esc(w.customerName)}</div><div class="muted">${esc(w.buildingName)}</div></td>
+      <td><strong>${esc(w.elevatorName)}</strong><div class="muted">${esc(w.elevatorAssetCode)}</div></td>
+      <td><strong>${esc(w.issueTitle)}</strong><div class="muted">${esc(w.problemDescription).slice(0,120)}</div></td>
+      <td>${badgePriority(w.priority)}</td>
+      <td>${badgeStatus(w.status)}</td>
+      <td>${esc(w.assignedTechnicianName||"Chưa phân công")}</td>
+      <td><button class="btn" data-open="${esc(w.id)}">Mở</button></td>
+    </tr>`).join(""):`<tr><td colspan="9" class="empty">Chưa có Work Order.</td></tr>`;
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openEdit(b.dataset.open));
+}
+
+function fillMaintenanceSelect(selected=""){
+  $("maintenanceId").innerHTML='<option value="">Chọn phiếu bảo trì</option>'+
+    maintenances.map(m=>`<option value="${esc(m.id)}" ${m.id===selected?"selected":""}>${esc(m.ticketNo||m.id)} — ${esc(m.customerName)} — ${esc(m.elevatorName)} — Kỳ ${esc(m.periodNumber||"")}</option>`).join("");
+  updateReference();
+}
+
+function updateReference(){
+  const m=maintenances.find(x=>x.id===$("maintenanceId").value);
+  $("refPbm").textContent=m?.ticketNo||"—";
+  $("refCustomer").textContent=m?.customerName||"—";
+  $("refBuilding").textContent=m?.buildingName||"—";
+  $("refElevator").textContent=m?.elevatorName||"—";
+}
+
+function resetForm(){
+  editingId="";
+  $("modalTitle").textContent="Tạo Work Order";
+  $("form").reset();
+  $("openedDate").value=new Date().toISOString().slice(0,10);
+  $("statusField").value="draft";
+  $("priority").value="normal";
+  $("type").value="MAINTENANCE";
+  $("laborCost").value=0;$("materialCost").value=0;$("totalCost").value=0;
+  $("err").className="err";$("err").textContent="";
+  fillMaintenanceSelect("");
+}
+
+function openNew(){
+  resetForm();$("modal").classList.add("show");
+}
+function openEdit(id){
+  const w=workOrders.find(x=>x.id===id); if(!w)return;
+  editingId=id;
+  $("modalTitle").textContent=`Work Order ${w.workOrderNo}`;
+  fillMaintenanceSelect(w.maintenanceId);
+  $("type").value=w.type||"MAINTENANCE";$("priority").value=w.priority||"normal";
+  $("issueTitle").value=w.issueTitle||"";$("problemDescription").value=w.problemDescription||"";
+  $("statusField").value=w.status||"draft";$("technicianName").value=w.assignedTechnicianName||"";
+  $("openedDate").value=w.openedDate||"";$("dueDate").value=w.dueDate||"";
+  $("cause").value=w.cause||"";$("resolution").value=w.resolution||"";
+  $("laborCost").value=w.laborCost||0;$("materialCost").value=w.materialCost||0;$("totalCost").value=w.totalCost||0;
+  $("note").value=w.note||"";$("err").className="err";$("err").textContent="";
+  $("modal").classList.add("show");
+}
+function close(){ $("modal").classList.remove("show"); }
+
+$("newBtn").onclick=openNew;$("closeBtn").onclick=close;$("cancelBtn").onclick=close;
+$("maintenanceId").onchange=updateReference;
+["search","filterStatus","filterPriority"].forEach(id=>$(id).oninput=render);
+
+$("form").onsubmit=async e=>{
+  e.preventDefault();
+  $("saveBtn").disabled=true;$("saveBtn").textContent="Đang lưu…";
+  $("err").className="err";$("err").textContent="";
+  try{
+    const data={
+      maintenanceId:$("maintenanceId").value,
+      type:$("type").value,priority:$("priority").value,status:$("statusField").value,
+      issueTitle:$("issueTitle").value,problemDescription:$("problemDescription").value,
+      assignedTechnicianName:$("technicianName").value,openedDate:$("openedDate").value,dueDate:$("dueDate").value,
+      cause:$("cause").value,resolution:$("resolution").value,
+      laborCost:Number($("laborCost").value||0),materialCost:Number($("materialCost").value||0),
+      totalCost:Number($("totalCost").value||0),note:$("note").value
+    };
+    if(!data.maintenanceId)throw new Error("Phiếu bảo trì là bắt buộc.");
+    if(!data.issueTitle.trim())throw new Error("Tiêu đề công việc là bắt buộc.");
+    if(!data.problemDescription.trim())throw new Error("Mô tả vấn đề là bắt buộc.");
+    if(editingId) await updateWorkOrder(editingId,data); else await createWorkOrder(data);
+    close(); await load(); $("status").className="status ok"; $("status").textContent="Đã lưu Work Order.";
+  }catch(err){
+    $("err").className="err show";$("err").textContent=err?.message||String(err);
+  }finally{
+    $("saveBtn").disabled=false;$("saveBtn").textContent="Lưu Work Order";
+  }
+};
+
+async function load(){
+  $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
+  try{
+    [maintenances,workOrders]=await Promise.all([getMaintenances(),getWorkOrders()]);
+    maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
+    workOrders.sort((a,b)=>String(b.createdAt?.toMillis?.()||0)-String(a.createdAt?.toMillis?.()||0));
+    render();$("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
+  }catch(err){
+    $("status").className="status error";$("status").textContent=err?.message||String(err);
+  }
+}
+load();
+</script>
+</body>
+</html>
