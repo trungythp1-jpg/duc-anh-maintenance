@@ -16,20 +16,13 @@ import { db } from "./firebase.js";
  * ĐỨC ANH MAINTENANCE
  * FIRESTORE DATA LAYER
  *
- * CONTRACT MODULE — FIXED BASELINE
- *
- * NGUYÊN TẮC KHÓA:
- *
- * - Mã thang máy là định danh tài sản lâu dài, tối thiểu 10 năm.
- * - Mã thang không thay đổi theo hợp đồng, khách hàng hoặc đơn vị bảo trì.
- * - 1 hợp đồng gắn với 1 khách hàng, 1 tòa nhà và 1 thang máy.
- * - Quan hệ chính: Customer -> Building -> Elevator.
- * - Hết bảo hành/bảo trì miễn phí, khách hàng có thể không tiếp tục
- *   ký với Đức Anh và chuyển sang đơn vị khác.
- * - Đức Anh có thể tiếp nhận bảo trì thang máy do đơn vị khác lắp đặt.
- * - Không xóa cứng dữ liệu vận hành.
- * - Contracts lưu trực tiếp Firestore collection "contracts".
- * - Không dùng localStorage làm nguồn dữ liệu hợp đồng.
+ * Nguyên tắc:
+ * - Mã thang máy là định danh tài sản lâu dài.
+ * - 1 hợp đồng chỉ gắn với 1 thang máy và 1 tòa nhà.
+ * - Customer -> Building -> Elevator là quan hệ chính.
+ * - Không xóa cứng dữ liệu vận hành; ưu tiên status/active.
+ * - Các module tương lai đã được khai báo collection từ đầu
+ *   để hạn chế phải đổi cấu trúc Firebase về sau.
  */
 
 export const COLLECTIONS = {
@@ -38,13 +31,7 @@ export const COLLECTIONS = {
   ELEVATORS: "elevators",
   ELEVATOR_RELATIONSHIPS: "elevatorRelationships",
 
-  /*
-   * QUAN TRỌNG:
-   * contracts.html đang dùng collection này.
-   * Không đổi thành serviceContracts hoặc maintenanceAgreements.
-   */
   CONTRACTS: "contracts",
-
   MAINTENANCE: "maintenance",
   WORK_ORDERS: "workOrders",
   TECHNICIANS: "technicians",
@@ -424,210 +411,8 @@ export async function getElevatorRelationships(elevatorId) {
 }
 
 /* =========================
-   CONTRACTS
-========================= */
-
-async function validateContractReferences(data) {
-  requireValue(data.customerId, "customerId");
-  requireValue(data.buildingId, "buildingId");
-  requireValue(data.elevatorId, "elevatorId");
-
-  const [customer, building, elevator] = await Promise.all([
-    getCustomer(data.customerId),
-    getBuilding(data.buildingId),
-    getElevator(data.elevatorId)
-  ]);
-
-  if (!customer) {
-    throw new Error("Không tìm thấy khách hàng.");
-  }
-
-  if (!building) {
-    throw new Error("Không tìm thấy tòa nhà.");
-  }
-
-  if (!elevator) {
-    throw new Error("Không tìm thấy thang máy.");
-  }
-
-  if (String(building.customerId) !== String(customer.id)) {
-    throw new Error(
-      "Tòa nhà không thuộc khách hàng đã chọn."
-    );
-  }
-
-  if (String(elevator.buildingId) !== String(building.id)) {
-    throw new Error(
-      "Thang máy không thuộc tòa nhà đã chọn."
-    );
-  }
-
-  /*
-   * KHÔNG kiểm tra elevator.customerId ở đây.
-   *
-   * Lý do:
-   * Thang máy là tài sản lâu dài.
-   * Khách hàng / đơn vị dịch vụ có thể thay đổi theo thời gian.
-   * Quan hệ lịch sử phải được quản lý bằng elevatorRelationships.
-   *
-   * Hợp đồng hiện tại vẫn bắt buộc:
-   * Customer -> Building -> Elevator.
-   */
-
-  return {
-    customer,
-    building,
-    elevator
-  };
-}
-
-function normalizeContractData(data, references) {
-  const { customer, building, elevator } = references;
-
-  requireValue(data.code, "Mã hợp đồng");
-  requireValue(data.name, "Tên hợp đồng");
-
-  return {
-    code: String(data.code).trim(),
-    name: String(data.name).trim(),
-
-    customerId: customer.id,
-    customerName:
-      data.customerName ||
-      customer.name ||
-      "",
-
-    buildingId: building.id,
-    buildingName:
-      data.buildingName ||
-      building.name ||
-      "",
-
-    elevatorId: elevator.id,
-    elevatorName:
-      data.elevatorName ||
-      elevator.name ||
-      "",
-
-    status: data.status || "active",
-
-    signedDate: data.signedDate || "",
-    startDate: data.startDate || "",
-    endDate: data.endDate || "",
-
-    contractValue:
-      data.contractValue ?? "",
-
-    warrantyEnabled:
-      data.warrantyEnabled || "yes",
-
-    warrantyPeriod:
-      data.warrantyPeriod || "",
-
-    warrantyStart:
-      data.warrantyStart || "",
-
-    warrantyEnd:
-      data.warrantyEnd || "",
-
-    warrantyNote:
-      data.warrantyNote || "",
-
-    maintenanceEnabled:
-      data.maintenanceEnabled || "yes",
-
-    maintenanceType:
-      data.maintenanceType || "paid",
-
-    maintenanceCycle:
-      data.maintenanceCycle || "monthly",
-
-    maintenanceOwner:
-      data.maintenanceOwner || "",
-
-    paidValue:
-      data.paidValue ?? "",
-
-    paymentDue:
-      data.paymentDue || "",
-
-    note:
-      data.note || ""
-  };
-}
-
-export async function createContract(data) {
-  const references = await validateContractReferences(data);
-
-  const contract = {
-    ...normalizeContractData(data, references),
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
-
-  const ref = await addDoc(
-    collection(db, COLLECTIONS.CONTRACTS),
-    contract
-  );
-
-  return {
-    id: ref.id,
-    ...contract
-  };
-}
-
-export async function getContract(contractId) {
-  requireValue(contractId, "contractId");
-
-  const snapshot = await getDoc(
-    doc(db, COLLECTIONS.CONTRACTS, contractId)
-  );
-
-  if (!snapshot.exists()) return null;
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data()
-  };
-}
-
-export async function getContracts() {
-  const snapshot = await getDocs(
-    collection(db, COLLECTIONS.CONTRACTS)
-  );
-
-  return snapshot.docs.map(item => ({
-    id: item.id,
-    ...item.data()
-  }));
-}
-
-export async function updateContract(contractId, data) {
-  requireValue(contractId, "contractId");
-
-  const existing = await getContract(contractId);
-
-  if (!existing) {
-    throw new Error("Không tìm thấy hợp đồng.");
-  }
-
-  const references = await validateContractReferences(data);
-
-  const payload = {
-    ...normalizeContractData(data, references),
-    updatedAt: serverTimestamp()
-  };
-
-  await updateDoc(
-    doc(db, COLLECTIONS.CONTRACTS, contractId),
-    payload
-  );
-
-  return getContract(contractId);
-}
-
-/* =========================
    GENERIC HELPERS
+   DÙNG CHO MODULE TƯƠNG LAI
 ========================= */
 
 export async function createRecord(collectionName, data) {
@@ -696,4 +481,205 @@ export async function updateRecord(
   );
 
   return getRecord(collectionName, recordId);
+}
+
+/* =========================
+   CONTRACTS
+========================= */
+
+export async function createContract(data) {
+  requireValue(data.code, "Mã hợp đồng");
+  requireValue(data.name, "Tên hợp đồng");
+  requireValue(data.customerId, "Khách hàng");
+  requireValue(data.buildingId, "Tòa nhà");
+  requireValue(data.elevatorId, "Thang máy");
+
+  const [building, elevator] = await Promise.all([
+    getBuilding(data.buildingId),
+    getElevator(data.elevatorId)
+  ]);
+
+  if (!building) {
+    throw new Error("Không tìm thấy tòa nhà.");
+  }
+
+  if (!elevator) {
+    throw new Error("Không tìm thấy thang máy.");
+  }
+
+  if (String(building.customerId) !== String(data.customerId)) {
+    throw new Error("Tòa nhà không thuộc khách hàng đã chọn.");
+  }
+
+  if (String(elevator.buildingId) !== String(data.buildingId)) {
+    throw new Error("Thang máy không thuộc tòa nhà đã chọn.");
+  }
+
+  const contract = {
+    code: data.code.trim(),
+    name: data.name.trim(),
+
+    customerId: String(data.customerId),
+    customerName: data.customerName || "",
+
+    buildingId: String(data.buildingId),
+    buildingName: data.buildingName || "",
+
+    elevatorId: String(data.elevatorId),
+    elevatorName: data.elevatorName || "",
+
+    status: data.status || "active",
+
+    signedDate: data.signedDate || "",
+    startDate: data.startDate || "",
+    contractDurationMonths: [12, 24, 36].includes(
+      Number(data.contractDurationMonths)
+    )
+      ? Number(data.contractDurationMonths)
+      : 0,
+    endDate: data.endDate || "",
+
+    contractValue: Number(data.contractValue || 0),
+
+    warrantyEnabled: data.warrantyEnabled || "yes",
+    warrantyPeriod: data.warrantyPeriod || "",
+    warrantyStart: data.warrantyStart || "",
+    warrantyEnd: data.warrantyEnd || "",
+    warrantyNote: data.warrantyNote || "",
+
+    maintenanceEnabled: data.maintenanceEnabled || "yes",
+    maintenanceType: data.maintenanceType || "paid",
+    maintenanceCycle: data.maintenanceCycle || "monthly",
+    maintenanceOwner: data.maintenanceOwner || "",
+    maintenanceTotal: Math.max(
+      0,
+      Number(data.maintenanceTotal || 0)
+    ),
+    maintenanceCompleted: Math.max(
+      0,
+      Number(data.maintenanceCompleted || 0)
+    ),
+    maintenanceRemaining: Math.max(
+      0,
+      Number(data.maintenanceRemaining || 0)
+    ),
+
+    paidValue: Number(data.paidValue || 0),
+    paymentDue: data.paymentDue || "",
+    note: data.note || ""
+  };
+
+  const ref = await addDoc(
+    collection(db, COLLECTIONS.CONTRACTS),
+    {
+      ...contract,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  return {
+    id: ref.id,
+    ...contract
+  };
+}
+
+export async function getContract(contractId) {
+  requireValue(contractId, "contractId");
+
+  const snapshot = await getDoc(
+    doc(db, COLLECTIONS.CONTRACTS, contractId)
+  );
+
+  if (!snapshot.exists()) return null;
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data()
+  };
+}
+
+export async function getContracts() {
+  const snapshot = await getDocs(
+    collection(db, COLLECTIONS.CONTRACTS)
+  );
+
+  return snapshot.docs.map(item => ({
+    id: item.id,
+    ...item.data()
+  }));
+}
+
+export async function updateContract(contractId, data) {
+  requireValue(contractId, "contractId");
+  requireValue(data.code, "Mã hợp đồng");
+  requireValue(data.name, "Tên hợp đồng");
+  requireValue(data.customerId, "Khách hàng");
+  requireValue(data.buildingId, "Tòa nhà");
+  requireValue(data.elevatorId, "Thang máy");
+
+  const [building, elevator] = await Promise.all([
+    getBuilding(data.buildingId),
+    getElevator(data.elevatorId)
+  ]);
+
+  if (!building) {
+    throw new Error("Không tìm thấy tòa nhà.");
+  }
+
+  if (!elevator) {
+    throw new Error("Không tìm thấy thang máy.");
+  }
+
+  if (String(building.customerId) !== String(data.customerId)) {
+    throw new Error("Tòa nhà không thuộc khách hàng đã chọn.");
+  }
+
+  if (String(elevator.buildingId) !== String(data.buildingId)) {
+    throw new Error("Thang máy không thuộc tòa nhà đã chọn.");
+  }
+
+  const payload = {
+    code: data.code.trim(),
+    name: data.name.trim(),
+    customerId: String(data.customerId),
+    customerName: data.customerName || "",
+    buildingId: String(data.buildingId),
+    buildingName: data.buildingName || "",
+    elevatorId: String(data.elevatorId),
+    elevatorName: data.elevatorName || "",
+    status: data.status || "active",
+    signedDate: data.signedDate || "",
+    startDate: data.startDate || "",
+    contractDurationMonths: [12, 24, 36].includes(
+      Number(data.contractDurationMonths)
+    )
+      ? Number(data.contractDurationMonths)
+      : 0,
+    endDate: data.endDate || "",
+    contractValue: Number(data.contractValue || 0),
+    warrantyEnabled: data.warrantyEnabled || "yes",
+    warrantyPeriod: data.warrantyPeriod || "",
+    warrantyStart: data.warrantyStart || "",
+    warrantyEnd: data.warrantyEnd || "",
+    warrantyNote: data.warrantyNote || "",
+    maintenanceEnabled: data.maintenanceEnabled || "yes",
+    maintenanceType: data.maintenanceType || "paid",
+    maintenanceCycle: data.maintenanceCycle || "monthly",
+    maintenanceOwner: data.maintenanceOwner || "",
+    maintenanceTotal: Math.max(0, Number(data.maintenanceTotal || 0)),
+    maintenanceCompleted: Math.max(0, Number(data.maintenanceCompleted || 0)),
+    maintenanceRemaining: Math.max(0, Number(data.maintenanceRemaining || 0)),
+    paidValue: Number(data.paidValue || 0),
+    paymentDue: data.paymentDue || "",
+    note: data.note || "",
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(
+    doc(db, COLLECTIONS.CONTRACTS, contractId),
+    payload
+  );
+
+  return getContract(contractId);
 }
