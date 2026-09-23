@@ -195,9 +195,8 @@ body{
   border:1px solid var(--da-gold-soft)!important;
   border-radius:16px;
   width:min(1050px,100%);
-  max-height:calc(100dvh - 28px);
+  max-height:94vh;
   overflow:auto;
-  -webkit-overflow-scrolling:touch;
   box-shadow:0 24px 80px rgba(0,0,0,.62),0 0 0 1px rgba(214,168,79,.08)
 }
 .modal-head{
@@ -213,7 +212,7 @@ body{
   border:0;background:none;font-size:28px;cursor:pointer;
   color:var(--da-gold-light)!important
 }
-.modal-body{padding:18px 18px 24px}
+.modal-body{padding:18px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .full{grid-column:1/-1}
 .section{
@@ -244,11 +243,10 @@ body{
 .check-row input{accent-color:var(--da-gold)}
 .actions{
   display:flex;justify-content:flex-end;gap:8px;
-  padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  padding:14px 18px;
   border-top:1px solid var(--da-border-gold)!important;
   position:sticky;bottom:0;
-  background:#10100e!important;
-  z-index:3
+  background:#10100e!important
 }
 .form-error{color:#ff8176!important;font-size:13px;margin-top:8px;display:none}
 .form-error.show{display:block}
@@ -278,12 +276,6 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
   .check-row label{grid-column:1/-1}
 }
 @media(max-width:520px){
-  .modal{padding:0;align-items:flex-end}
-  .modal-box{width:100%;max-height:100dvh;border-radius:16px 16px 0 0}
-  .modal-head{padding:14px 16px}
-  .modal-body{padding:16px 14px 28px}
-  .actions{padding:12px 14px calc(12px + env(safe-area-inset-bottom, 0px));gap:10px}
-  .actions .btn{flex:1;min-height:48px;font-size:16px}
   .toolbar{grid-template-columns:1fr}
   .kpis{grid-template-columns:1fr 1fr}
   .ref-box{grid-template-columns:1fr}
@@ -350,6 +342,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
           <div class="field"><label for="completedDate">Ngày hoàn thành</label><input id="completedDate" type="date"></div>
           <div class="field"><label for="status">Trạng thái *</label><select id="status"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
           <div class="field"><label for="technicianId">Kỹ thuật viên</label><select id="technicianId"><option value="">Chưa phân công</option></select></div>
+          <div class="field"><label for="assignmentReason">Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
           <div class="field"><label for="condition">Tình trạng thang</label><select id="condition"><option value="">Chọn</option><option value="normal">Bình thường</option><option value="warning">Có dấu hiệu cần theo dõi</option><option value="issue">Có lỗi / cần xử lý</option></select></div>
           <div class="field full"><label for="result">Kết quả bảo trì</label><textarea id="result" placeholder="Nội dung kiểm tra, vệ sinh, điều chỉnh, thay thế…"></textarea></div>
         </div>
@@ -367,6 +360,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
+import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js?v=5";
 import { getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
@@ -379,7 +373,7 @@ const checklistItems=[
   ["cabin","Cabin / nút bấm / hiển thị"],["landing","Cửa tầng / khóa cửa"],["shaft","Giếng thang / ray dẫn hướng"],["pit","Hố pit / thiết bị an toàn"],["safety","Thiết bị an toàn / cảnh báo"],["cleaning","Vệ sinh / bôi trơn / điều chỉnh"]
 ];
 let customers=[],buildings=[],elevators=[],contracts=[],maintenances=[],technicians=[];
-let editingId=null,authUser=null;
+let editingId=null,authUser=null,currentProfile=null;
 
 function parseDate(v){if(!v)return null;const d=new Date(`${v}T00:00:00`);return Number.isNaN(d.getTime())?null:d}
 function addMonths(date,months){const d=new Date(date),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+months);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return d}
@@ -419,6 +413,41 @@ function renderContracts(selected=""){
   const eid=$("elevatorId").value;const list=contracts.filter(c=>String(c.elevatorId)===String(eid)&&contractEnabled(c));
   $("contractId").innerHTML='<option value="">Chọn hợp đồng</option>'+list.map(c=>`<option value="${esc(c.id)}">${esc(c.code||c.id)} — ${esc(c.name||"")} · ${esc(c.maintenanceCycle||"")}</option>`).join("");$("contractId").disabled=!eid;$("contractId").value=selected;
 }
+function currentRole(){
+  return String(currentProfile?.role||"").trim().toUpperCase();
+}
+function canManageTechnicianAssignment(){
+  return ["ADMIN","MANAGER"].includes(currentRole());
+}
+function currentActorName(){
+  return String(currentProfile?.name||authUser?.displayName||authUser?.email||authUser?.uid||"").trim();
+}
+function applyAssignmentPermission(){
+  const el=$("technicianId");
+  if(!el)return;
+  const allowed=canManageTechnicianAssignment();
+  el.disabled=!allowed;
+  $("assignmentReason").disabled=!allowed;
+  if(!allowed){
+    $("assignmentReason").value="";
+  }
+}
+async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
+  await addDoc(collection(db,"auditLogs"),{
+    action:fromTechnicianId?"TECHNICIAN_REASSIGNED":"TECHNICIAN_ASSIGNED",
+    entityType,
+    entityId,
+    fromTechnicianId:fromTechnicianId||"",
+    fromTechnicianName:fromTechnicianName||"",
+    toTechnicianId:toTechnicianId||"",
+    toTechnicianName:toTechnicianName||"",
+    reason:String(reason||"").trim()||"Phân công ban đầu",
+    performedByUid:authUser?.uid||"",
+    performedByName:currentActorName(),
+    createdAt:serverTimestamp()
+  });
+}
+
 function technicianOptionLabel(t){
   return `${t.technicianId||t.id||""} — ${t.name||"Chưa có tên"}`;
 }
@@ -447,6 +476,7 @@ function renderTechnicians(selectedId=""){
       return `<option value="${esc(id)}"${disabled}>${esc(technicianOptionLabel(t)+suffix)}</option>`;
     }).join("");
   $("technicianId").value=selected;
+  applyAssignmentPermission();
 }
 function selectedTechnician(){
   const id=String($("technicianId").value||"");
@@ -471,10 +501,11 @@ function badge(status){return `<span class="badge ${esc(status)}">${esc(statusTe
 function render(){const list=filtered();$("rows").innerHTML=list.map(m=>{const woNo=m.latestWorkOrderNo||"";const woStatus=m.latestWorkOrderStatus||"";const woHtml=woNo?`<div><strong style="color:var(--da-gold-light)">${esc(woNo)}</strong><span class="muted">${esc(statusText[woStatus]||woStatus||"—")}</span></div>`:'<span class="muted">Chưa có</span>';return `<tr><td><button class="link-btn" data-edit="${esc(m.id)}"><strong>${esc(m.ticketNo||"—")}</strong><span>${esc(m.technicianName||"Chưa phân công")}</span></button></td><td><strong>${esc(m.customerName||nameOf(customers,m.customerId))}</strong><span class="muted">${esc(m.buildingName||nameOf(buildings,m.buildingId))}</span></td><td><strong>${esc(m.elevatorName||nameOf(elevators,m.elevatorId))}</strong><span class="muted">${esc(m.elevatorAssetCode||"")}</span></td><td><strong>${esc(m.contractCode||"—")}</strong><span class="muted">Kỳ ${esc(m.periodNumber||"—")}</span></td><td>${esc(fmtDate(m.scheduledDate))}</td><td>${badge(m.status)}</td><td>${m.issueFound?'<span class="badge issue">Cần xử lý</span>':'<span class="badge done">Bình thường</span>'}</td><td>${woHtml}</td><td><button class="btn" data-edit="${esc(m.id)}" type="button">Mở</button></td></tr>`}).join("");$("empty").style.display=list.length?"none":"block";$("kpiTotal").textContent=maintenances.length;$("kpiProgress").textContent=maintenances.filter(x=>["assigned","in_progress"].includes(x.status)).length;$("kpiDone").textContent=maintenances.filter(x=>x.status==="completed").length;$("kpiIssue").textContent=maintenances.filter(x=>x.issueFound).length;renderYears()}
 function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
 
-function resetForm(){editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("")}
+function resetForm(){
+  $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("")}
 function openModal(){ $("modal").classList.add("show");document.body.style.overflow="hidden" }
 function closeModal(){ $("modal").classList.remove("show");document.body.style.overflow="";resetForm() }
-async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal()}
+async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("assignmentReason").value="";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal()}
 
 $("customerId").addEventListener("change",()=>{renderBuildings();renderElevators();renderContracts();renderPeriods();syncRefBox()});
 $("buildingId").addEventListener("change",()=>{renderElevators();renderContracts();renderPeriods();syncRefBox()});
@@ -485,7 +516,43 @@ $("periodNumber").addEventListener("change",setScheduledFromPeriod);
 $("rows").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit)});
 $("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn").addEventListener("click",closeModal);$("cancelBtn").addEventListener("click",closeModal);$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal()});
 
-$("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:selectedTechnician()?.technicianId||selectedTechnician()?.id||"",technicianName:selectedTechnician()?.name||"",checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{if(editingId){await updateMaintenance(editingId,payload)}else{await createMaintenance(payload)}const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
+$("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;
+const selectedTech=selectedTechnician();
+const newTechnicianId=selectedTech?.technicianId||selectedTech?.id||"";
+const newTechnicianName=selectedTech?.name||"";
+const existingMaintenance=editingId?maintenances.find(x=>x.id===editingId):null;
+const oldTechnicianId=existingMaintenance?.technicianId||"";
+const oldTechnicianName=existingMaintenance?.technicianName||"";
+if(!canManageTechnicianAssignment() && editingId && newTechnicianId!==oldTechnicianId){
+  setError("Bạn không có quyền phân công hoặc thay đổi kỹ thuật viên.");
+  return;
+}
+const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
+const assignmentReason=$("assignmentReason").value.trim();
+if(assignmentChanged && editingId && !assignmentReason){
+  setError("Khi thay đổi kỹ thuật viên phải nhập lý do.");
+  return;
+}
+const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{if(editingId){
+  await updateMaintenance(editingId,payload);
+}else{
+  await createMaintenance(payload);
+}
+if(assignmentChanged && (newTechnicianId || oldTechnicianId)){
+  const auditEntityId=editingId;
+  if(auditEntityId){
+    await writeTechnicianAssignmentAudit({
+      entityType:"maintenance",
+      entityId:auditEntityId,
+      fromTechnicianId:oldTechnicianId,
+      fromTechnicianName:oldTechnicianName,
+      toTechnicianId:newTechnicianId,
+      toTechnicianName:newTechnicianName,
+      reason:assignmentReason
+    });
+  }
+}
+const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
 
 async function runPermissionDiagnostics(user){
   const panel=$("permissionPanel"), list=$("permissionList"), userEl=$("diagUser");
@@ -500,7 +567,7 @@ async function runPermissionDiagnostics(user){
     catch(err){const code=err?.code||"unknown";const msg=err?.message||String(err);checks.push({name,ok:false,detail:`${code}: ${msg}`});return null}
   }
 
-  const profile=await check("users/{uid} · role",async()=>{const snap=await getDoc(doc(db,"users",user.uid));if(!snap.exists())throw new Error("Không tồn tại users/{uid}");const role=snap.data()?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;return snap.data()});
+  const profile=await check("users/{uid} · role",async()=>{const snap=await getDoc(doc(db,"users",user.uid));if(!snap.exists())throw new Error("Không tồn tại users/{uid}");const role=snap.data()?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;currentProfile=snap.data();return currentProfile});
   const c=await check("customers",getCustomers);
   const b=await check("buildings",getBuildings);
   const e=await check("elevators",getElevators);
