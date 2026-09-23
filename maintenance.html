@@ -566,24 +566,23 @@ if(assignmentChanged && editingId && !assignmentReason){
   setError("Khi thay đổi kỹ thuật viên phải nhập lý do.");
   return;
 }
-const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{if(editingId){
+const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
+if(editingId){
   await updateMaintenance(editingId,payload);
 }else{
-  await createMaintenance(payload);
+  const created=await createMaintenance(payload);
+  savedMaintenanceId=created?.id||"";
 }
-if(assignmentChanged && (newTechnicianId || oldTechnicianId)){
-  const auditEntityId=editingId;
-  if(auditEntityId){
-    await writeTechnicianAssignmentAudit({
-      entityType:"maintenance",
-      entityId:auditEntityId,
-      fromTechnicianId:oldTechnicianId,
-      fromTechnicianName:oldTechnicianName,
-      toTechnicianId:newTechnicianId,
-      toTechnicianName:newTechnicianName,
-      reason:assignmentReason
-    });
-  }
+if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenanceId){
+  await writeTechnicianAssignmentAudit({
+    entityType:"maintenance",
+    entityId:savedMaintenanceId,
+    fromTechnicianId:oldTechnicianId,
+    fromTechnicianName:oldTechnicianName,
+    toTechnicianId:newTechnicianId,
+    toTechnicianName:newTechnicianName,
+    reason:assignmentReason
+  });
 }
 const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
 
