@@ -7,8 +7,8 @@ import {
   updateDoc,
   query,
   where,
-  serverTimestamp,
-  runTransaction
+  runTransaction,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 import { db } from "./firebase.js";
@@ -627,107 +627,66 @@ export async function updateContract(contractId, data) {
   return getContract(contractId);
 }
 
-
 /* =========================
    MAINTENANCE / PHIẾU BẢO TRÌ
-   V1 — REFERENCE CHAIN LOCKED
 ========================= */
-
-/*
- * Quy tắc khóa:
- * - Phiếu bảo trì tham chiếu Customer -> Building -> Elevator.
- * - Không nhập lại tên khách hàng/tòa nhà/thang như dữ liệu gốc.
- * - Hợp đồng bảo trì được tham chiếu theo elevatorId.
- * - Số phiếu tự cấp tuần tự, duy nhất, không cho người dùng sửa.
- * - Không xóa cứng phiếu vận hành.
- *
- * Lưu ý:
- * Counter dùng transaction để tránh cấp trùng số khi nhiều người
- * tạo phiếu đồng thời. Firestore Rules phải cho phép vùng counter
- * được triển khai ở bước khóa Rules của hệ thống.
- */
 
 const MAINTENANCE_COUNTER_ID = "maintenanceTicket";
 
-function normalizeMaintenanceStatus(value) {
-  const allowed = [
-    "draft",
-    "assigned",
-    "in_progress",
-    "completed",
-    "needs_work_order",
-    "cancelled"
-  ];
-
+function normalizeMaintenanceStatus(value){
+  const allowed = ["draft","assigned","in_progress","completed","cancelled"];
   return allowed.includes(value) ? value : "draft";
 }
 
-function normalizeMaintenanceCycle(value) {
-  const allowed = ["monthly", "bi_monthly", "quarterly"];
-  return allowed.includes(value) ? value : "monthly";
-}
-
-async function validateMaintenanceReferences(data) {
+async function validateMaintenanceReferences(data){
   requireValue(data.customerId, "customerId");
   requireValue(data.buildingId, "buildingId");
   requireValue(data.elevatorId, "elevatorId");
+  requireValue(data.contractId, "contractId");
 
-  const [customer, building, elevator] = await Promise.all([
+  const [customer, building, elevator, contract] = await Promise.all([
     getCustomer(data.customerId),
     getBuilding(data.buildingId),
-    getElevator(data.elevatorId)
+    getElevator(data.elevatorId),
+    getContract(data.contractId)
   ]);
 
-  if (!customer) {
-    throw new Error("Không tìm thấy khách hàng.");
-  }
+  if(!customer) throw new Error("Không tìm thấy khách hàng.");
+  if(!building) throw new Error("Không tìm thấy tòa nhà.");
+  if(!elevator) throw new Error("Không tìm thấy thang máy.");
+  if(!contract) throw new Error("Không tìm thấy hợp đồng.");
 
-  if (!building) {
-    throw new Error("Không tìm thấy tòa nhà.");
-  }
-
-  if (!elevator) {
-    throw new Error("Không tìm thấy thang máy.");
-  }
-
-  if (String(building.customerId) !== String(customer.id)) {
+  if(String(building.customerId) !== String(customer.id)){
     throw new Error("Tòa nhà không thuộc khách hàng đã chọn.");
   }
-
-  if (String(elevator.buildingId) !== String(building.id)) {
+  if(String(elevator.buildingId) !== String(building.id)){
     throw new Error("Thang máy không thuộc tòa nhà đã chọn.");
   }
+  if(String(contract.customerId) !== String(customer.id) ||
+     String(contract.buildingId) !== String(building.id) ||
+     String(contract.elevatorId) !== String(elevator.id)){
+    throw new Error("Hợp đồng không thuộc đúng Customer → Building → Elevator đã chọn.");
+  }
+  if(!(contract.maintenanceEnabled === "yes" || contract.maintenanceEnabled === true || contract.maintenanceEnabled === "true")){
+    throw new Error("Hợp đồng này không áp dụng bảo trì.");
+  }
 
-  return { customer, building, elevator };
+  return { customer, building, elevator, contract };
 }
 
-async function allocateMaintenanceTicketNo() {
-  const counterRef = doc(
-    db,
-    "settings",
-    "sequences",
-    "counters",
-    MAINTENANCE_COUNTER_ID
-  );
+async function allocateMaintenanceTicketNo(){
+  const counterRef = doc(db, COLLECTIONS.SETTINGS, MAINTENANCE_COUNTER_ID);
 
   const nextNumber = await runTransaction(db, async transaction => {
-    const snap = await transaction.get(counterRef);
-
-    const current = snap.exists()
-      ? Number(snap.data()?.lastNumber || 0)
-      : 0;
-
+    const snapshot = await transaction.get(counterRef);
+    const current = snapshot.exists() ? Number(snapshot.data().lastNumber || 0) : 0;
     const next = current + 1;
 
-    transaction.set(
-      counterRef,
-      {
-        lastNumber: next,
-        prefix: "PBM-",
-        updatedAt: serverTimestamp()
-      },
-      { merge: true }
-    );
+    transaction.set(counterRef, {
+      lastNumber: next,
+      prefix: "PBM-",
+      updatedAt: serverTimestamp()
+    }, { merge: true });
 
     return next;
   });
@@ -735,167 +694,93 @@ async function allocateMaintenanceTicketNo() {
   return `PBM-${String(nextNumber).padStart(6, "0")}`;
 }
 
-export async function getMaintenance(maintenanceId) {
+export async function getMaintenance(maintenanceId){
   requireValue(maintenanceId, "maintenanceId");
-
-  const snapshot = await getDoc(
-    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId)
-  );
-
-  if (!snapshot.exists()) return null;
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data()
-  };
+  const snapshot = await getDoc(doc(db, COLLECTIONS.MAINTENANCE, maintenanceId));
+  if(!snapshot.exists()) return null;
+  return { id:snapshot.id, ...snapshot.data() };
 }
 
-export async function getMaintenances() {
-  const snapshot = await getDocs(
-    collection(db, COLLECTIONS.MAINTENANCE)
-  );
-
-  return snapshot.docs.map(item => ({
-    id: item.id,
-    ...item.data()
-  }));
+export async function getMaintenances(){
+  const snapshot = await getDocs(collection(db, COLLECTIONS.MAINTENANCE));
+  return snapshot.docs.map(item => ({ id:item.id, ...item.data() }));
 }
 
-export async function getMaintenancesByElevator(elevatorId) {
+export async function getMaintenancesByElevator(elevatorId){
   requireValue(elevatorId, "elevatorId");
-
-  const q = query(
-    collection(db, COLLECTIONS.MAINTENANCE),
-    where("elevatorId", "==", elevatorId)
-  );
-
+  const q = query(collection(db, COLLECTIONS.MAINTENANCE), where("elevatorId", "==", elevatorId));
   const snapshot = await getDocs(q);
-
-  return snapshot.docs.map(item => ({
-    id: item.id,
-    ...item.data()
-  }));
+  return snapshot.docs.map(item => ({ id:item.id, ...item.data() }));
 }
 
-export async function createMaintenance(data) {
+export async function createMaintenance(data){
   const references = await validateMaintenanceReferences(data);
-
-  const {
-    customer,
-    building,
-    elevator
-  } = references;
-
   const ticketNo = await allocateMaintenanceTicketNo();
+  const status = normalizeMaintenanceStatus(data.status);
 
   const maintenance = {
     ticketNo,
-
-    customerId: customer.id,
-    customerName: customer.name || "",
-
-    buildingId: building.id,
-    buildingName: building.name || "",
-
-    elevatorId: elevator.id,
-    elevatorName: elevator.name || "",
-    elevatorAssetCode: elevator.assetCode || "",
-
-    contractId: data.contractId || "",
-    contractCode: data.contractCode || "",
-
+    customerId: references.customer.id,
+    customerName: references.customer.name || "",
+    buildingId: references.building.id,
+    buildingName: references.building.name || "",
+    elevatorId: references.elevator.id,
+    elevatorName: references.elevator.name || "",
+    elevatorAssetCode: references.elevator.assetCode || "",
+    contractId: references.contract.id,
+    contractCode: references.contract.code || "",
+    periodNumber: Number(data.periodNumber || 0) || null,
     scheduledDate: data.scheduledDate || "",
-    completedDate: data.completedDate || "",
-
-    status: normalizeMaintenanceStatus(data.status),
-
+    completedDate: status === "completed" ? (data.completedDate || new Date().toISOString().slice(0,10)) : (data.completedDate || ""),
+    status,
     technicianId: data.technicianId || "",
     technicianName: data.technicianName || "",
-
-    checklist: Array.isArray(data.checklist)
-      ? data.checklist
-      : [],
-
+    checklist: Array.isArray(data.checklist) ? data.checklist : [],
     condition: data.condition || "",
     result: data.result || "",
     issueFound: Boolean(data.issueFound),
-
     note: data.note || "",
-
     source: data.source || "maintenance_module",
-
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 
-  const ref = await addDoc(
-    collection(db, COLLECTIONS.MAINTENANCE),
-    maintenance
-  );
-
-  return {
-    id: ref.id,
-    ...maintenance
-  };
+  const ref = await addDoc(collection(db, COLLECTIONS.MAINTENANCE), maintenance);
+  return { id:ref.id, ...maintenance };
 }
 
-export async function updateMaintenance(maintenanceId, data) {
+export async function updateMaintenance(maintenanceId, data){
   requireValue(maintenanceId, "maintenanceId");
-
   const existing = await getMaintenance(maintenanceId);
-
-  if (!existing) {
-    throw new Error("Không tìm thấy phiếu bảo trì.");
-  }
+  if(!existing) throw new Error("Không tìm thấy phiếu bảo trì.");
 
   const references = await validateMaintenanceReferences(data);
-
-  const {
-    customer,
-    building,
-    elevator
-  } = references;
-
+  const status = normalizeMaintenanceStatus(data.status);
   const payload = {
-    customerId: customer.id,
-    customerName: customer.name || "",
-
-    buildingId: building.id,
-    buildingName: building.name || "",
-
-    elevatorId: elevator.id,
-    elevatorName: elevator.name || "",
-    elevatorAssetCode: elevator.assetCode || "",
-
-    contractId: data.contractId || "",
-    contractCode: data.contractCode || "",
-
+    customerId: references.customer.id,
+    customerName: references.customer.name || "",
+    buildingId: references.building.id,
+    buildingName: references.building.name || "",
+    elevatorId: references.elevator.id,
+    elevatorName: references.elevator.name || "",
+    elevatorAssetCode: references.elevator.assetCode || "",
+    contractId: references.contract.id,
+    contractCode: references.contract.code || "",
+    periodNumber: Number(data.periodNumber || existing.periodNumber || 0) || null,
     scheduledDate: data.scheduledDate || "",
-    completedDate: data.completedDate || "",
-
-    status: normalizeMaintenanceStatus(data.status),
-
+    completedDate: status === "completed" ? (data.completedDate || existing.completedDate || new Date().toISOString().slice(0,10)) : (data.completedDate || ""),
+    status,
     technicianId: data.technicianId || "",
     technicianName: data.technicianName || "",
-
-    checklist: Array.isArray(data.checklist)
-      ? data.checklist
-      : existing.checklist || [],
-
+    checklist: Array.isArray(data.checklist) ? data.checklist : (existing.checklist || []),
     condition: data.condition || "",
     result: data.result || "",
     issueFound: Boolean(data.issueFound),
-
     note: data.note || "",
-
     updatedAt: serverTimestamp()
   };
 
-  await updateDoc(
-    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
-    payload
-  );
-
+  await updateDoc(doc(db, COLLECTIONS.MAINTENANCE, maintenanceId), payload);
   return getMaintenance(maintenanceId);
 }
 
