@@ -248,6 +248,12 @@ body{
   position:sticky;bottom:0;
   background:#10100e!important
 }
+.audit-history{display:grid;gap:8px}
+.audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
+.audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.audit-action{color:var(--da-gold-light)!important;font-weight:700;font-size:13px}.audit-time{color:var(--da-muted)!important;font-size:11px}
+.audit-meta{margin-top:5px;font-size:12px;color:var(--da-text)!important;line-height:1.55}.audit-meta span{color:var(--da-muted)!important}
+.audit-empty{color:var(--da-muted)!important;font-size:12px;padding:8px 0}
 .form-error{color:#ff8176!important;font-size:13px;margin-top:8px;display:none}
 .form-error.show{display:block}
 
@@ -349,6 +355,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 
         <div class="section"><h3>CHECKLIST BẢO TRÌ</h3><div class="checklist" id="checklist"></div></div>
         <div class="section"><div class="field"><label><input id="issueFound" type="checkbox"> Có vấn đề cần xử lý tiếp</label></div><div class="field" style="margin-top:10px"><label for="note">Ghi chú</label><textarea id="note" placeholder="Ghi chú thêm…"></textarea></div></div>
+        <div class="section"><h3>LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
         <div class="form-error" id="formError"></div>
       </div>
       <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
@@ -358,7 +365,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 
 <script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js?v=5";
@@ -448,6 +455,30 @@ async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicia
   });
 }
 
+function formatAuditTime(value){
+  if(!value)return "—";
+  try{const d=value?.toDate?value.toDate():new Date(value);return Number.isNaN(d.getTime())?"—":d.toLocaleString("vi-VN");}catch(e){return "—"}
+}
+async function loadAssignmentHistory(entityId){
+  const box=$("assignmentHistory");
+  if(!box)return;
+  if(!entityId){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
+  box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
+  try{
+    const snap=await getDocs(collection(db,"auditLogs"));
+    const items=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(x=>String(x.entityType||"")==="maintenance"&&String(x.entityId||"")===String(entityId))
+      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa});
+    if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
+    box.innerHTML=items.map(x=>{
+      const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
+      const from=x.fromTechnicianName||"Chưa phân công";
+      const to=x.toTechnicianName||"Chưa phân công";
+      return `<div class="audit-item"><div class="audit-top"><div class="audit-action">${esc(action)}</div><div class="audit-time">${esc(formatAuditTime(x.createdAt))}</div></div><div class="audit-meta"><span>Từ:</span> ${esc(from)}<br><span>Sang:</span> ${esc(to)}<br><span>Người thực hiện:</span> ${esc(x.performedByName||x.performedByUid||"—")}<br><span>Lý do:</span> ${esc(x.reason||"—")}</div></div>`;
+    }).join("");
+  }catch(err){console.error(err);box.innerHTML='<div class="audit-empty">Không thể tải lịch sử phân công.</div>'}
+}
+
 function technicianOptionLabel(t){
   return `${t.technicianId||t.id||""} — ${t.name||"Chưa có tên"}`;
 }
@@ -502,10 +533,12 @@ function render(){const list=filtered();$("rows").innerHTML=list.map(m=>{const w
 function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
 
 function resetForm(){
+  $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
   $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("")}
 function openModal(){ $("modal").classList.add("show");document.body.style.overflow="hidden" }
 function closeModal(){ $("modal").classList.remove("show");document.body.style.overflow="";resetForm() }
 async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("assignmentReason").value="";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal()}
+  loadAssignmentHistory(editingId);
 
 $("customerId").addEventListener("change",()=>{renderBuildings();renderElevators();renderContracts();renderPeriods();syncRefBox()});
 $("buildingId").addEventListener("change",()=>{renderElevators();renderContracts();renderPeriods();syncRefBox()});
