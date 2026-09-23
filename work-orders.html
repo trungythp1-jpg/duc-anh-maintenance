@@ -125,6 +125,7 @@ tr:hover td{background:#161613}
           <div><label>Kỹ thuật viên</label><input id="technicianName" placeholder="Tạm thời nhập tên — module KTV sẽ liên kết sau"></div>
           <div><label>Ngày mở</label><input id="openedDate" type="date"></div>
           <div><label>Hạn xử lý</label><input id="dueDate" type="date"></div>
+          <div><label>Ngày hoàn thành</label><input id="completedDate" type="date"></div>
           <div class="full"><label>Nguyên nhân</label><textarea id="cause" rows="3"></textarea></div>
           <div class="full"><label>Biện pháp xử lý</label><textarea id="resolution" rows="3"></textarea></div>
           <div><label>Chi phí nhân công</label><input id="laborCost" type="number" min="0" step="1000" value="0"></div>
@@ -132,6 +133,7 @@ tr:hover td{background:#161613}
           <div><label>Tổng chi phí</label><input id="totalCost" type="number" min="0" step="1000" value="0"></div>
           <div class="full"><label>Ghi chú</label><textarea id="note" rows="3"></textarea></div>
         </div>
+        <div id="workflowHint" class="muted" style="margin-top:10px"></div>
         <div id="err" class="err"></div>
       </div>
       <div class="actions">
@@ -148,7 +150,7 @@ import {
   getWorkOrders,
   createWorkOrder,
   updateWorkOrder
-} from "./js/core/firestore-v1.js?v=wo1";
+} from "./js/core/firestore-v1.js?v=wo1.1";
 
 const $ = id => document.getElementById(id);
 let maintenances = [];
@@ -213,6 +215,21 @@ function updateReference(){
   $("refElevator").textContent=m?.elevatorName||"—";
 }
 
+function updateWorkflowHint(){
+  const status=$("statusField").value;
+  const tech=$("technicianName").value.trim();
+  const hints={
+    draft:"Nháp: chưa giao kỹ thuật viên.",
+    assigned:"Đã phân công: cần có kỹ thuật viên.",
+    in_progress:"Đang xử lý: cần có kỹ thuật viên.",
+    waiting_parts:"Chờ vật tư: cần có kỹ thuật viên.",
+    completed:"Hoàn thành: bắt buộc kỹ thuật viên + biện pháp xử lý + ngày hoàn thành.",
+    cancelled:"Đã hủy: Work Order dừng xử lý."
+  };
+  $("workflowHint").textContent=hints[status]||"";
+  $("completedDate").disabled=status!=="completed";
+}
+
 function resetForm(){
   editingId="";
   $("modalTitle").textContent="Tạo Work Order";
@@ -222,6 +239,8 @@ function resetForm(){
   $("priority").value="normal";
   $("type").value="MAINTENANCE";
   $("laborCost").value=0;$("materialCost").value=0;$("totalCost").value=0;
+  $("completedDate").value="";
+  updateWorkflowHint();
   $("err").className="err";$("err").textContent="";
   fillMaintenanceSelect("");
 }
@@ -238,15 +257,20 @@ function openEdit(id){
   $("issueTitle").value=w.issueTitle||"";$("problemDescription").value=w.problemDescription||"";
   $("statusField").value=w.status||"draft";$("technicianName").value=w.assignedTechnicianName||"";
   $("openedDate").value=w.openedDate||"";$("dueDate").value=w.dueDate||"";
+  $("completedDate").value=w.completedDate||"";
   $("cause").value=w.cause||"";$("resolution").value=w.resolution||"";
   $("laborCost").value=w.laborCost||0;$("materialCost").value=w.materialCost||0;$("totalCost").value=w.totalCost||0;
-  $("note").value=w.note||"";$("err").className="err";$("err").textContent="";
+  $("note").value=w.note||"";
+  updateWorkflowHint();
+  $("err").className="err";$("err").textContent="";
   $("modal").classList.add("show");
 }
 function close(){ $("modal").classList.remove("show"); }
 
 $("newBtn").onclick=openNew;$("closeBtn").onclick=close;$("cancelBtn").onclick=close;
 $("maintenanceId").onchange=updateReference;
+$("statusField").onchange=updateWorkflowHint;
+$("technicianName").oninput=updateWorkflowHint;
 ["search","filterStatus","filterPriority"].forEach(id=>$(id).oninput=render);
 
 $("form").onsubmit=async e=>{
@@ -259,6 +283,7 @@ $("form").onsubmit=async e=>{
       type:$("type").value,priority:$("priority").value,status:$("statusField").value,
       issueTitle:$("issueTitle").value,problemDescription:$("problemDescription").value,
       assignedTechnicianName:$("technicianName").value,openedDate:$("openedDate").value,dueDate:$("dueDate").value,
+      completedDate:$("completedDate").value,
       cause:$("cause").value,resolution:$("resolution").value,
       laborCost:Number($("laborCost").value||0),materialCost:Number($("materialCost").value||0),
       totalCost:Number($("totalCost").value||0),note:$("note").value
@@ -266,6 +291,16 @@ $("form").onsubmit=async e=>{
     if(!data.maintenanceId)throw new Error("Phiếu bảo trì là bắt buộc.");
     if(!data.issueTitle.trim())throw new Error("Tiêu đề công việc là bắt buộc.");
     if(!data.problemDescription.trim())throw new Error("Mô tả vấn đề là bắt buộc.");
+
+    if(["assigned","in_progress","waiting_parts","completed"].includes(data.status) && !data.assignedTechnicianName.trim()){
+      throw new Error("Trạng thái này bắt buộc phải có kỹ thuật viên.");
+    }
+
+    if(data.status==="completed"){
+      if(!data.resolution.trim())throw new Error("Muốn hoàn thành phải nhập Biện pháp xử lý.");
+      if(!data.completedDate)throw new Error("Muốn hoàn thành phải có Ngày hoàn thành.");
+    }
+
     if(editingId) await updateWorkOrder(editingId,data); else await createWorkOrder(data);
     close(); await load(); $("status").className="status ok"; $("status").textContent="Đã lưu Work Order.";
   }catch(err){
