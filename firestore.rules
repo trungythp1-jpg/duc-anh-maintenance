@@ -3,66 +3,113 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    /*
+     * ĐỨC ANH MAINTENANCE — DEV FIRESTORE RULES
+     *
+     * Mục tiêu:
+     * - Tài khoản đã đăng nhập mới được truy cập hệ thống.
+     * - Role được đọc từ users/{uid}.role.
+     * - Chấp nhận cả role viết HOA và viết thường để tránh lỗi
+     *   ADMIN/admin, MANAGER/manager...
+     * - Module Hợp đồng sử dụng collection: contracts
+     * - Không cho xóa dữ liệu vận hành.
+     */
+
     function signedIn() {
       return request.auth != null;
     }
 
-    function role() {
+    function userDoc() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      );
+    }
+
+    function hasUserDoc() {
       return signedIn()
-        ? get(
-            /databases/$(database)/documents/users/$(request.auth.uid)
-          ).data.role
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        );
+    }
+
+    function userRole() {
+      return hasUserDoc()
+        ? userDoc().data.role
         : null;
     }
 
     function isAdmin() {
-      return role() == 'ADMIN';
+      return signedIn()
+        && userRole() in ['ADMIN', 'admin'];
     }
 
     function isManager() {
-      return role() == 'MANAGER';
+      return signedIn()
+        && userRole() in ['MANAGER', 'manager'];
     }
 
     function isDirector() {
-      return role() == 'DIRECTOR';
+      return signedIn()
+        && userRole() in ['DIRECTOR', 'director'];
     }
 
     function isCSKH() {
-      return role() == 'CUSTOMER_SERVICE';
+      return signedIn()
+        && userRole() in [
+          'CUSTOMER_SERVICE',
+          'customer_service',
+          'CSKH',
+          'cskh'
+        ];
     }
 
     function isTechnician() {
-      return role() == 'TECHNICIAN';
+      return signedIn()
+        && userRole() in ['TECHNICIAN', 'technician'];
     }
 
     function isWarehouse() {
-      return role() == 'WAREHOUSE';
-    }
-
-    function isManagement() {
-      return isAdmin() || isManager() || isDirector();
+      return signedIn()
+        && userRole() in ['WAREHOUSE', 'warehouse'];
     }
 
     function isServiceStaff() {
       return isAdmin()
         || isManager()
-        || isTechnician()
+        || isDirector()
         || isCSKH()
-        || isDirector();
+        || isTechnician();
     }
 
-    match /users/{userId} {
-      allow read: if signedIn()
-        && (isManagement() || request.auth.uid == userId);
 
+    // =========================================================
+    // USERS
+    // =========================================================
+
+    match /users/{userId} {
+
+      // User được đọc hồ sơ của chính mình.
+      // Management/Admin được đọc toàn bộ user.
+      allow read: if signedIn()
+        && (
+          request.auth.uid == userId
+          || isAdmin()
+          || isManager()
+          || isDirector()
+        );
+
+      // Chỉ Admin được tạo user.
       allow create: if isAdmin();
 
+      // Admin được sửa user.
+      // User thường chỉ được sửa các thông tin cá nhân cơ bản.
       allow update: if isAdmin()
         || (
           signedIn()
           && request.auth.uid == userId
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly([
+              'name',
               'displayName',
               'phone',
               'photoUrl',
@@ -70,53 +117,16 @@ service cloud.firestore {
             ])
         );
 
+      // Không xóa user.
       allow delete: if false;
     }
 
-    match /companySettings/{companyId} {
-      allow read: if signedIn();
-      allow create, update: if isAdmin();
-      allow delete: if false;
-    }
+
+    // =========================================================
+    // CUSTOMERS
+    // =========================================================
 
     match /customers/{customerId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isCSKH();
-      allow delete: if false;
-    }
-
-    match /buildings/{buildingId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isCSKH();
-      allow delete: if false;
-    }
-
-    match /elevators/{elevatorId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager();
-      allow delete: if false;
-    }
-
-    match /elevatorRelationships/{relationshipId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager();
-      allow delete: if false;
-    }
-
-    /*
-     * QUAN TRỌNG:
-     *
-     * contracts.html và firestore-v1.js dùng collection:
-     *     contracts
-     *
-     * Rules cũ KHÔNG có match /contracts/{contractId}
-     * nên Firestore rơi xuống DEFAULT DENY và báo:
-     *     Missing or insufficient permissions.
-     *
-     * Thêm đúng collection này, không đổi sang
-     * serviceContracts hoặc maintenanceAgreements.
-     */
-    match /contracts/{contractId} {
       allow read: if isServiceStaff();
 
       allow create, update: if isAdmin()
@@ -126,161 +136,267 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    match /serviceAreas/{areaId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager();
-      allow delete: if false;
-    }
 
-    match /serviceContracts/{contractId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isCSKH();
-      allow delete: if false;
-    }
+    // =========================================================
+    // BUILDINGS
+    // =========================================================
 
-    match /maintenanceAgreements/{agreementId} {
+    match /buildings/{buildingId} {
       allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isCSKH();
-      allow delete: if false;
-    }
 
-    match /maintenanceSchedules/{scheduleId} {
-      allow read: if isServiceStaff();
       allow create, update: if isAdmin()
         || isManager()
-        || isCSKH()
-        || isTechnician();
+        || isCSKH();
+
       allow delete: if false;
     }
 
-    match /checklistTemplates/{templateId} {
+
+    // =========================================================
+    // ELEVATORS
+    // =========================================================
+
+    match /elevators/{elevatorId} {
       allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
       allow delete: if false;
     }
+
+
+    // =========================================================
+    // ELEVATOR RELATIONSHIPS
+    // =========================================================
+
+    match /elevatorRelationships/{relationshipId} {
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // CONTRACTS — HỢP ĐỒNG
+    //
+    // contracts.html và firestore-v1.js dùng:
+    // collection(db, "contracts")
+    // =========================================================
+
+    match /contracts/{contractId} {
+
+      // Administrator/Management/CSKH/Technician được xem.
+      allow read: if isServiceStaff();
+
+      // Chỉ Admin, Manager, CSKH được tạo/sửa.
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      // Không xóa hợp đồng.
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // MAINTENANCE
+    // =========================================================
+
+    match /maintenance/{maintenanceId} {
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isTechnician();
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // WORK ORDERS
+    // =========================================================
 
     match /workOrders/{workOrderId} {
       allow read: if isServiceStaff();
-      allow create: if false;
-      allow update: if false;
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isTechnician();
+
       allow delete: if false;
     }
 
-    match /workOrderMaintenanceLocks/{lockId} {
-      allow read: if isManagement();
-      allow create, update, delete: if false;
-    }
 
-    match /incidents/{incidentId} {
+    // =========================================================
+    // TECHNICIANS
+    // =========================================================
+
+    match /technicians/{technicianId} {
       allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isTechnician();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
       allow delete: if false;
     }
 
-    match /repairs/{repairId} {
+
+    // =========================================================
+    // KPI
+    // =========================================================
+
+    match /kpi/{kpiId} {
       allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isTechnician();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
       allow delete: if false;
     }
 
-    match /parts/{partId} {
+
+    // =========================================================
+    // DOCUMENTS
+    // =========================================================
+
+    match /documents/{documentId} {
       allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isWarehouse();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
       allow delete: if false;
     }
 
-    match /technicianAssignments/{assignmentId} {
-      allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager();
-      allow delete: if false;
-    }
 
-    match /assignmentChanges/{changeId} {
-      allow read: if isManagement();
-      allow create: if isAdmin() || isManager();
+    // =========================================================
+    // AUDIT LOGS
+    // =========================================================
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin()
+        || isManager()
+        || isDirector();
+
+      allow create: if isServiceStaff();
+
       allow update, delete: if false;
     }
 
-    match /kpiPeriods/{periodId} {
-      allow read: if isManagement() || isTechnician();
-      allow create, update: if isAdmin() || isManager();
+
+    // =========================================================
+    // SETTINGS
+    // =========================================================
+
+    match /settings/{settingId} {
+      allow read: if isServiceStaff();
+
+      // Bộ đếm số phiếu PBM phải được cập nhật atomically bằng transaction.
+      // Chỉ tài khoản có quyền tạo/sửa phiếu bảo trì được cập nhật đúng document này.
+      allow create, update: if (settingId == 'maintenanceTicket' && (isAdmin() || isManager() || isTechnician()))
+        || isAdmin();
+
       allow delete: if false;
     }
 
-    match /kpiTargets/{targetId} {
-      allow read: if isManagement() || isTechnician();
-      allow create, update: if false;
-      allow delete: if false;
-    }
 
-    match /kpiActivities/{activityId} {
-      allow read: if isManagement() || isTechnician();
-      allow create, update, delete: if false;
-    }
+    // =========================================================
+    // NOTIFICATIONS
+    // =========================================================
 
     match /notifications/{notificationId} {
-      allow read: if signedIn()
-        && (resource.data.userId == request.auth.uid || isManagement());
-      allow create, update: if false;
-      allow delete: if false;
-    }
-
-    match /notificationRules/{ruleId} {
-      allow read: if isManagement();
-      allow create, update: if isAdmin() || isManager();
-      allow delete: if false;
-    }
-
-    match /notificationLogs/{logId} {
-      allow read: if isManagement();
-      allow create, update, delete: if false;
-    }
-
-    match /customerNotificationPreferences/{customerId} {
       allow read: if isServiceStaff();
-      allow create, update: if isAdmin() || isManager() || isCSKH();
+
+      allow create: if isServiceStaff();
+
+      allow update: if isServiceStaff();
+
       allow delete: if false;
     }
 
-    match /customerPortalSessions/{sessionId} {
-      allow read: if signedIn()
-        && (isManagement() || resource.data.userId == request.auth.uid);
-      allow create, update: if false;
-      allow delete: if false;
-    }
 
-    match /customerConfirmations/{confirmationId} {
+    // =========================================================
+    // SERVICE AREAS
+    // =========================================================
+
+    match /serviceAreas/{areaId} {
       allow read: if isServiceStaff();
-      allow create, update: if false;
+
+      allow create, update: if isAdmin()
+        || isManager();
+
       allow delete: if false;
     }
 
-    match /confirmationLocks/{workOrderId} {
-      allow read: if isManagement();
-      allow create, update, delete: if false;
-    }
 
-    match /importJobs/{importJobId} {
-      allow read: if isManagement();
-      allow create, update: if isAdmin() || isManager();
+    // =========================================================
+    // MAINTENANCE SCHEDULES
+    // =========================================================
+
+    match /maintenanceSchedules/{scheduleId} {
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isTechnician();
+
       allow delete: if false;
     }
 
-    match /activityLogs/{logId} {
-      allow read: if isManagement();
-      allow create, update, delete: if false;
-    }
 
-    match /codeAdjustmentRequests/{requestId} {
-      allow read: if isManagement();
-      allow create, update: if isAdmin() || isManager();
+    // =========================================================
+    // CHECKLIST TEMPLATES
+    // =========================================================
+
+    match /checklistTemplates/{templateId} {
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager();
+
       allow delete: if false;
     }
 
-    match /systemCounters/{counterId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if false;
+
+    // =========================================================
+    // SERVICE CONTRACTS — GIỮ TƯƠNG THÍCH DỮ LIỆU CŨ
+    // =========================================================
+
+    match /serviceContracts/{contractId} {
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
     }
+
+
+    // =========================================================
+    // MAINTENANCE AGREEMENTS — GIỮ TƯƠNG THÍCH DỮ LIỆU CŨ
+    // =========================================================
+
+    match /maintenanceAgreements/{agreementId} {
+      allow read: if isServiceStaff();
+
+      allow create, update: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // DEFAULT DENY
+    // =========================================================
 
     match /{document=**} {
       allow read, write: if false;
