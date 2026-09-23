@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Đức Anh Maintenance — Phiếu bảo trì</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/mobile.css">
+<style>
+:root{--da-border:#e7e7e7;--da-muted:#6b7280;--da-bg:#f7f7f7;--da-danger:#b42318;--da-ok:#067647}
+.page{max-width:1400px;margin:0 auto;padding:24px 18px 60px}
+.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+.page-head h1{margin:0 0 6px;font-size:28px}.muted{color:var(--da-muted)}
+.btn{border:1px solid #d8d8d8;background:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font:inherit}.btn.primary{background:#111;color:#fff;border-color:#111}.btn:disabled{opacity:.55;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.kpi{background:#fff;border:1px solid var(--da-border);border-radius:14px;padding:16px}.kpi .label{font-size:13px;color:var(--da-muted)}.kpi .value{font-size:26px;font-weight:700;margin-top:5px}
+.toolbar{background:#fff;border:1px solid var(--da-border);border-radius:14px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:13px;font-weight:600}.field input,.field select,.field textarea{width:100%;box-sizing:border-box;border:1px solid #d8d8d8;border-radius:9px;padding:10px 11px;background:#fff;font:inherit}.field textarea{min-height:88px;resize:vertical}.field input[readonly],.field select:disabled{background:#f5f5f5}
+.card{background:#fff;border:1px solid var(--da-border);border-radius:14px;overflow:hidden}.table-wrap{overflow:auto}.data-table{width:100%;border-collapse:collapse;min-width:1050px}.data-table th,.data-table td{padding:12px 13px;border-bottom:1px solid #eee;text-align:left;vertical-align:top;font-size:14px}.data-table th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#666;background:#fafafa}.data-table tr:last-child td{border-bottom:0}.link-btn{border:0;background:none;padding:0;cursor:pointer;font:inherit;text-align:left}.link-btn strong{display:block}.link-btn span{display:block;color:#777;font-size:12px;margin-top:2px}
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:600;background:#f0f0f0}.badge.done{background:#e9f8ef;color:#067647}.badge.progress{background:#eef4ff;color:#175cd3}.badge.assigned{background:#f4f3ff;color:#6941c6}.badge.cancelled{background:#fff0ed;color:#b42318}.badge.draft{background:#f2f4f7;color:#475467}.badge.issue{background:#fff7e6;color:#9a6700}
+.empty{padding:42px;text-align:center;color:#777}.statusline{padding:10px 14px;font-size:13px;color:#666}.statusline.error{color:var(--da-danger)}.statusline.ok{color:var(--da-ok)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:14px;z-index:1000}.modal.show{display:flex}.modal-box{background:#fff;border-radius:16px;width:min(1050px,100%);max-height:94vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.22)}.modal-head{position:sticky;top:0;background:#fff;border-bottom:1px solid #eee;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;z-index:2}.modal-head h2{margin:0;font-size:20px}.close{border:0;background:none;font-size:25px;cursor:pointer}.modal-body{padding:18px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.full{grid-column:1/-1}.section{border-top:1px solid #eee;margin-top:18px;padding-top:18px}.section h3{font-size:14px;margin:0 0 12px}.ref-box{background:#f8fafc;border:1px solid #e4e7ec;border-radius:12px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.ref-box small{display:block;color:#777;margin-bottom:3px}.ref-box strong{font-size:14px}.checklist{display:grid;gap:8px}.check-row{display:grid;grid-template-columns:1.4fr repeat(4,auto);gap:8px;align-items:center;border:1px solid #eee;border-radius:9px;padding:9px}.check-row label{font-size:13px}.check-row input{accent-color:#111}.actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #eee;position:sticky;bottom:0;background:#fff}.form-error{color:var(--da-danger);font-size:13px;margin-top:8px;display:none}.form-error.show{display:block}
+.auth-gate{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:2000}.auth-gate.hidden{display:none}.auth-box{text-align:center;padding:30px}.auth-box h2{margin-bottom:8px}
+@media(max-width:850px){.kpis{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}.ref-box{grid-template-columns:1fr 1fr}.page-head{flex-direction:column}.check-row{grid-template-columns:1fr 1fr 1fr 1fr 1fr}.check-row label{grid-column:1/-1}}
+@media(max-width:520px){.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.ref-box{grid-template-columns:1fr}.page{padding:16px 12px 40px}}
+</style>
+</head>
+<body>
+<div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
+<header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
+<main class="page">
+  <div class="page-head">
+    <div><h1>Phiếu bảo trì</h1><div class="muted">Ghi nhận công việc bảo trì thực tế từ Hợp đồng → Lịch bảo trì.</div></div>
+    <button class="btn primary" id="addBtn" type="button">+ Tạo phiếu bảo trì</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Tổng phiếu</div><div class="value" id="kpiTotal">0</div></div>
+    <div class="kpi"><div class="label">Đang xử lý</div><div class="value" id="kpiProgress">0</div></div>
+    <div class="kpi"><div class="label">Đã hoàn thành</div><div class="value" id="kpiDone">0</div></div>
+    <div class="kpi"><div class="label">Có vấn đề</div><div class="value" id="kpiIssue">0</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="field"><label for="search">Tìm kiếm</label><input id="search" placeholder="PBM, khách hàng, tòa nhà, thang, hợp đồng…"></div>
+    <div class="field"><label for="statusFilter">Trạng thái</label><select id="statusFilter"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+    <div class="field"><label for="yearFilter">Năm</label><select id="yearFilter"><option value="">Tất cả năm</option></select></div>
+    <div class="field"><label for="issueFilter">Kết quả</label><select id="issueFilter"><option value="">Tất cả</option><option value="yes">Có vấn đề</option><option value="no">Không vấn đề</option></select></div>
+  </div>
+
+  <div class="card">
+    <div class="statusline" id="pageStatus">Đang tải…</div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Phiếu</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Hợp đồng / Kỳ</th><th>Lịch</th><th>Trạng thái</th><th>Kết quả</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="empty" id="empty">Chưa có phiếu bảo trì.</div>
+  </div>
+</main>
+
+<div class="modal" id="modal">
+  <section class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><h2 id="modalTitle">Tạo phiếu bảo trì</h2><button class="close" id="closeBtn" type="button">×</button></div>
+    <form id="form">
+      <div class="modal-body">
+        <div class="ref-box">
+          <div><small>Số phiếu</small><strong id="ticketPreview">Tự động cấp khi lưu</strong></div>
+          <div><small>Khách hàng</small><strong id="refCustomer">—</strong></div>
+          <div><small>Tòa nhà</small><strong id="refBuilding">—</strong></div>
+          <div><small>Thang máy</small><strong id="refElevator">—</strong></div>
+        </div>
+
+        <div class="grid">
+          <div class="field"><label for="customerId">Khách hàng *</label><select id="customerId" required><option value="">Chọn khách hàng</option></select></div>
+          <div class="field"><label for="buildingId">Tòa nhà *</label><select id="buildingId" required disabled><option value="">Chọn tòa nhà</option></select></div>
+          <div class="field"><label for="elevatorId">Thang máy *</label><select id="elevatorId" required disabled><option value="">Chọn thang máy</option></select></div>
+          <div class="field"><label for="contractId">Hợp đồng bảo trì *</label><select id="contractId" required disabled><option value="">Chọn hợp đồng</option></select></div>
+          <div class="field"><label for="periodNumber">Kỳ bảo trì</label><select id="periodNumber" disabled><option value="">Chọn kỳ từ lịch</option></select></div>
+          <div class="field"><label for="scheduledDate">Ngày dự kiến *</label><input id="scheduledDate" type="date" required></div>
+          <div class="field"><label for="completedDate">Ngày hoàn thành</label><input id="completedDate" type="date"></div>
+          <div class="field"><label for="status">Trạng thái *</label><select id="status"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+          <div class="field"><label for="technicianName">Kỹ thuật viên</label><input id="technicianName" placeholder="Tạm thời nhập tên — sẽ liên kết module KTV sau"></div>
+          <div class="field"><label for="condition">Tình trạng thang</label><select id="condition"><option value="">Chọn</option><option value="normal">Bình thường</option><option value="warning">Có dấu hiệu cần theo dõi</option><option value="issue">Có lỗi / cần xử lý</option></select></div>
+          <div class="field full"><label for="result">Kết quả bảo trì</label><textarea id="result" placeholder="Nội dung kiểm tra, vệ sinh, điều chỉnh, thay thế…"></textarea></div>
+        </div>
+
+        <div class="section"><h3>CHECKLIST BẢO TRÌ</h3><div class="checklist" id="checklist"></div></div>
+        <div class="section"><div class="field"><label><input id="issueFound" type="checkbox"> Có vấn đề cần xử lý tiếp</label></div><div class="field" style="margin-top:10px"><label for="note">Ghi chú</label><textarea id="note" placeholder="Ghi chú thêm…"></textarea></div></div>
+        <div class="form-error" id="formError"></div>
+      </div>
+      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
+    </form>
+  </section>
+</div>
+
+<script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { auth } from "./js/core/firebase.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js";
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+const cycleMonths={monthly:1,bi_monthly:2,quarterly:3};
+const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang thực hiện",completed:"Hoàn thành",cancelled:"Đã hủy"};
+const checklistItems=[
+  ["machine_room","Phòng máy / tủ điều khiển"],["machine","Máy kéo / máy kéo không hộp số"],["controller","Tủ điện / điều khiển"],["brake","Phanh / bộ cứu hộ"],
+  ["cabin","Cabin / nút bấm / hiển thị"],["landing","Cửa tầng / khóa cửa"],["shaft","Giếng thang / ray dẫn hướng"],["pit","Hố pit / thiết bị an toàn"],["safety","Thiết bị an toàn / cảnh báo"],["cleaning","Vệ sinh / bôi trơn / điều chỉnh"]
+];
+let customers=[],buildings=[],elevators=[],contracts=[],maintenances=[];
+let editingId=null,authUser=null;
+
+function parseDate(v){if(!v)return null;const d=new Date(`${v}T00:00:00`);return Number.isNaN(d.getTime())?null:d}
+function addMonths(date,months){const d=new Date(date),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+months);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return d}
+function isoDate(d){return d?d.toISOString().slice(0,10):""}
+function fmtDate(v){const d=parseDate(v);return d?d.toLocaleDateString("vi-VN"):"—"}
+function contractEnabled(c){return c?.maintenanceEnabled==="yes"||c?.maintenanceEnabled===true||c?.maintenanceEnabled==="true"}
+function nameOf(list,id){return list.find(x=>String(x.id)===String(id))?.name||"—"}
+function elevatorLabel(e){return e?`${e.name||e.id}${e.assetCode?` · ${e.assetCode}`:""}`:"—"}
+function setError(msg){$("formError").textContent=msg||"";$("formError").classList.toggle("show",Boolean(msg))}
+function setStatus(msg,type=""){const el=$("pageStatus");el.textContent=msg;el.className=`statusline ${type}`}
+
+function renderChecklist(values=[]){
+  const map=new Map((Array.isArray(values)?values:[]).map(x=>[x.key,x.status]));
+  $("checklist").innerHTML=checklistItems.map(([key,label])=>{
+    const val=map.get(key)||"";
+    return `<div class="check-row"><label>${esc(label)}</label>${["pass","fail","action","na"].map(s=>`<label><input type="radio" name="check_${esc(key)}" value="${s}" ${val===s?"checked":""}> ${s==="pass"?"Đạt":s==="fail"?"Không đạt":s==="action"?"Cần xử lý":"N/A"}</label>`).join("")}</div>`;
+  }).join("");
+}
+function readChecklist(){return checklistItems.map(([key])=>{const checked=document.querySelector(`input[name="check_${key}"]:checked`);return {key,status:checked?.value||""};}).filter(x=>x.status)}
+
+function resetRefs(){
+  $("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>';$("buildingId").disabled=true;
+  $("elevatorId").innerHTML='<option value="">Chọn thang máy</option>';$("elevatorId").disabled=true;
+  $("contractId").innerHTML='<option value="">Chọn hợp đồng</option>';$("contractId").disabled=true;
+  $("periodNumber").innerHTML='<option value="">Chọn kỳ từ lịch</option>';$("periodNumber").disabled=true;
+}
+function renderCustomers(selected=""){$("customerId").innerHTML='<option value="">Chọn khách hàng</option>'+customers.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","vi")).map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join("");$("customerId").value=selected}
+function renderBuildings(selected=""){
+  const cid=$("customerId").value;const list=buildings.filter(x=>String(x.customerId)===String(cid));
+  $("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>'+list.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join("");$("buildingId").disabled=!cid;$("buildingId").value=selected;
+}
+function renderElevators(selected=""){
+  const bid=$("buildingId").value;const list=elevators.filter(x=>String(x.buildingId)===String(bid));
+  $("elevatorId").innerHTML='<option value="">Chọn thang máy</option>'+list.map(x=>`<option value="${esc(x.id)}">${esc(elevatorLabel(x))}</option>`).join("");$("elevatorId").disabled=!bid;$("elevatorId").value=selected;
+}
+function renderContracts(selected=""){
+  const eid=$("elevatorId").value;const list=contracts.filter(c=>String(c.elevatorId)===String(eid)&&contractEnabled(c));
+  $("contractId").innerHTML='<option value="">Chọn hợp đồng</option>'+list.map(c=>`<option value="${esc(c.id)}">${esc(c.code||c.id)} — ${esc(c.name||"")} · ${esc(c.maintenanceCycle||"")}</option>`).join("");$("contractId").disabled=!eid;$("contractId").value=selected;
+}
+function buildPeriods(c){
+  const months=cycleMonths[c?.maintenanceCycle],start=parseDate(c?.startDate),end=parseDate(c?.endDate);if(!months||!start||!end)return [];
+  const result=[];let date=new Date(start),period=1;
+  while(date<=end){const existing=maintenances.find(m=>String(m.contractId)===String(c.id)&&Number(m.periodNumber||0)===period);result.push({period,date:isoDate(date),maintenance:existing||null});date=addMonths(date,months);period++}
+  return result;
+}
+function renderPeriods(selected=""){
+  const cid=$("contractId").value,c=contracts.find(x=>String(x.id)===String(cid));const periods=buildPeriods(c);
+  $("periodNumber").innerHTML='<option value="">Chọn kỳ từ lịch</option>'+periods.map(p=>`<option value="${p.period}" data-date="${p.date}">Kỳ ${p.period} — ${fmtDate(p.date)}${p.maintenance?.status==="completed"?" · đã hoàn thành":""}</option>`).join("");$("periodNumber").disabled=!cid||!periods.length;$("periodNumber").value=selected||"";
+}
+function syncRefBox(){const c=customers.find(x=>String(x.id)===String($("customerId").value));const b=buildings.find(x=>String(x.id)===String($("buildingId").value));const e=elevators.find(x=>String(x.id)===String($("elevatorId").value));$("refCustomer").textContent=c?.name||"—";$("refBuilding").textContent=b?.name||"—";$("refElevator").textContent=elevatorLabel(e)}
+function setScheduledFromPeriod(){const opt=$("periodNumber").selectedOptions[0];if(opt?.dataset.date)$("scheduledDate").value=opt.dataset.date}
+
+function filtered(){const q=$("search").value.trim().toLowerCase(),sf=$("statusFilter").value,yf=$("yearFilter").value,ifv=$("issueFilter").value;return maintenances.filter(m=>{const hay=[m.ticketNo,m.customerName,m.buildingName,m.elevatorName,m.elevatorAssetCode,m.contractCode,m.note].join(" ").toLowerCase();if(q&&!hay.includes(q))return false;if(sf&&m.status!==sf)return false;if(yf&&String((m.scheduledDate||"").slice(0,4))!==yf)return false;if(ifv==="yes"&&!m.issueFound)return false;if(ifv==="no"&&m.issueFound)return false;return true}).sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")))}
+function badge(status){return `<span class="badge ${esc(status)}">${esc(statusText[status]||status||"—")}</span>`}
+function render(){const list=filtered();$("rows").innerHTML=list.map(m=>`<tr><td><button class="link-btn" data-edit="${esc(m.id)}"><strong>${esc(m.ticketNo||"—")}</strong><span>${esc(m.technicianName||"Chưa phân công")}</span></button></td><td><strong>${esc(m.customerName||nameOf(customers,m.customerId))}</strong><span class="muted">${esc(m.buildingName||nameOf(buildings,m.buildingId))}</span></td><td><strong>${esc(m.elevatorName||nameOf(elevators,m.elevatorId))}</strong><span class="muted">${esc(m.elevatorAssetCode||"")}</span></td><td><strong>${esc(m.contractCode||"—")}</strong><span class="muted">Kỳ ${esc(m.periodNumber||"—")}</span></td><td>${esc(fmtDate(m.scheduledDate))}</td><td>${badge(m.status)}</td><td>${m.issueFound?'<span class="badge issue">Cần xử lý</span>':'<span class="badge done">Bình thường</span>'}</td><td><button class="btn" data-edit="${esc(m.id)}" type="button">Mở</button></td></tr>`).join("");$("empty").style.display=list.length?"none":"block";$("kpiTotal").textContent=maintenances.length;$("kpiProgress").textContent=maintenances.filter(x=>["assigned","in_progress"].includes(x.status)).length;$("kpiDone").textContent=maintenances.filter(x=>x.status==="completed").length;$("kpiIssue").textContent=maintenances.filter(x=>x.issueFound).length;renderYears()}
+function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
+
+function resetForm(){editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();syncRefBox();renderChecklist();setError("")}
+function openModal(){ $("modal").classList.add("show");document.body.style.overflow="hidden" }
+function closeModal(){ $("modal").classList.remove("show");document.body.style.overflow="";resetForm() }
+async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";$("technicianName").value=m.technicianName||"";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal()}
+
+$("customerId").addEventListener("change",()=>{renderBuildings();renderElevators();renderContracts();renderPeriods();syncRefBox()});
+$("buildingId").addEventListener("change",()=>{renderElevators();renderContracts();renderPeriods();syncRefBox()});
+$("elevatorId").addEventListener("change",()=>{renderContracts();renderPeriods();syncRefBox()});
+$("contractId").addEventListener("change",()=>{renderPeriods();const c=contracts.find(x=>String(x.id)===String($("contractId").value));if(c?.maintenanceOwner&&!$("technicianName").value)$("technicianName").value=c.maintenanceOwner});
+$("periodNumber").addEventListener("change",setScheduledFromPeriod);
+["search","statusFilter","yearFilter","issueFilter"].forEach(id=>$(id).addEventListener("input",render));
+$("rows").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit)});
+$("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn").addEventListener("click",closeModal);$("cancelBtn").addEventListener("click",closeModal);$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal()});
+
+$("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:"",technicianName:$("technicianName").value.trim(),checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{if(editingId){await updateMaintenance(editingId,payload)}else{await createMaintenance(payload)}const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
+
+async function loadData(){setStatus("Đang tải dữ liệu…");const results=await Promise.all([getCustomers(),getBuildings(),getElevators(),getContracts(),getMaintenances()]);customers=results[0]||[];buildings=results[1]||[];elevators=results[2]||[];contracts=results[3]||[];maintenances=results[4]||[];renderCustomers();render();setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì`,"")}
+
+onAuthStateChanged(auth,async user=>{authUser=user||null;if(!user){$("authGate").classList.remove("hidden");setStatus("Chưa đăng nhập","error");return}try{await loadData();$("authGate").classList.add("hidden")}catch(err){console.error(err);setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");$("authGate").classList.add("hidden")}});
+renderChecklist();
+</script>
+</body>
+</html>
