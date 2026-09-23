@@ -86,9 +86,10 @@ body{
   background:#111!important;
   color:var(--da-text)!important;
   width:min(940px,100%);
-  max-height:92vh;
+  max-height:calc(100dvh - 32px);
   overflow:auto;
   border-radius:18px;
+  box-sizing:border-box;
   padding:24px;
   border:1px solid #303030;
   box-shadow:0 24px 80px rgba(0,0,0,.65);
@@ -152,6 +153,15 @@ body{
   opacity:.55;
   cursor:not-allowed;
 }
+.form-group input[readonly].calculated-field{
+  background:#101d15!important;
+  border-color:#244b33!important;
+  color:#79d39a!important;
+  font-weight:800;
+}
+.form-group input[readonly]{
+  cursor:default;
+}
 .form-group textarea{min-height:100px;resize:vertical}
 
 .section-title{
@@ -187,14 +197,13 @@ body{
   position:sticky;
   bottom:0;
   width:100%;
-  min-height:76px;
-  padding:14px 0 calc(14px + env(safe-area-inset-bottom));
+  min-height:72px;
+  padding:12px 0 14px;
   margin-bottom:0;
   background:#111!important;
-  z-index:50;
+  z-index:100;
   border-top:1px solid #242424;
   box-sizing:border-box;
-  isolation:isolate;
 }
 
 .modal-foot .primary-button,
@@ -219,7 +228,7 @@ body{
 
 @supports (padding-bottom: env(safe-area-inset-bottom)){
   .modal-foot{
-    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    padding-bottom:max(14px, env(safe-area-inset-bottom));
   }
 }
 
@@ -235,6 +244,20 @@ body{
 }
 .form-error.show{display:block}
 
+/* iOS Safari: keep the modal and its action bar inside the dynamic viewport. */
+@supports (height: 100dvh){
+  .modal-backdrop{
+    min-height:100dvh;
+    padding:12px;
+    box-sizing:border-box;
+    align-items:flex-start;
+  }
+
+  .contract-modal{
+    max-height:calc(100dvh - 24px);
+  }
+}
+
 @media(max-width:700px){
   .contract-page{padding:18px}
   .contract-toolbar{align-items:flex-start;flex-direction:column}
@@ -242,29 +265,35 @@ body{
   .contract-table{min-width:900px}
   .table-wrap{overflow:auto}
   .form-group.full,.section-title,.reference-status,.form-error{grid-column:auto}
-  .contract-modal{padding:18px;border-radius:15px}
+  .contract-modal{
+    width:100%;
+    max-height:calc(100dvh - 24px);
+    padding:18px;
+    border-radius:15px;
+  }
   .modal-head{top:-18px}
   .modal-foot{
-  bottom:0;
-  width:100%;
-  min-height:76px;
-  margin-bottom:0;
-  padding:14px 0 calc(14px + env(safe-area-inset-bottom));
-  justify-content:flex-end;
-  align-items:center;
-  background:#111!important;
-}
+    bottom:0;
+    width:100%;
+    min-height:72px;
+    margin-bottom:0;
+    padding:12px 0 14px;
+    justify-content:flex-end;
+    align-items:center;
+    background:#111!important;
+    z-index:100;
+  }
 
-.modal-foot .primary-button,
-.modal-foot .secondary-button{
-  width:auto!important;
-  min-width:120px!important;
-  max-width:calc(50% - 5px)!important;
-  height:48px!important;
-  min-height:48px!important;
-  max-height:48px!important;
-  padding:0 14px!important;
-}
+  .modal-foot .primary-button,
+  .modal-foot .secondary-button{
+    width:auto!important;
+    min-width:120px!important;
+    max-width:calc(50% - 5px)!important;
+    height:48px!important;
+    min-height:48px!important;
+    max-height:48px!important;
+    padding:0 14px!important;
+  }
 }
 </style>
 </head>
@@ -407,13 +436,23 @@ body{
         </div>
 
         <div class="form-group">
-          <label for="startDate">Ngày bắt đầu</label>
+          <label for="startDate">Ngày hiệu lực</label>
           <input id="startDate" type="date">
         </div>
 
         <div class="form-group">
+          <label for="contractDurationMonths">Thời hạn hợp đồng</label>
+          <select id="contractDurationMonths">
+            <option value="">Chọn thời hạn</option>
+            <option value="12">1 năm</option>
+            <option value="24">2 năm</option>
+            <option value="36">3 năm</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="endDate">Ngày kết thúc</label>
-          <input id="endDate" type="date">
+          <input id="endDate" type="date" readonly>
         </div>
 
         <div class="form-group">
@@ -475,8 +514,22 @@ body{
             <option value="monthly">1 tháng/lần</option>
             <option value="bi_monthly">2 tháng/lần</option>
             <option value="quarterly">3 tháng/lần</option>
-            <option value="custom">Khác</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceTotal">Tổng số lần bảo trì</label>
+          <input id="maintenanceTotal" class="calculated-field" type="number" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceCompleted">Số lần đã làm</label>
+          <input id="maintenanceCompleted" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceRemaining">Số lần còn lại</label>
+          <input id="maintenanceRemaining" class="calculated-field" type="number" readonly>
         </div>
 
         <div class="form-group">
@@ -580,6 +633,154 @@ function buildingName(id){
 function elevatorName(id){
   return elevators.find(x=>String(x.id)===String(id))?.name || "Không xác định";
 }
+
+/* =========================================================
+   CONTRACT DURATION + MAINTENANCE CALCULATOR
+========================================================= */
+
+const CYCLE_MONTHS = {
+  monthly: 1,
+  bi_monthly: 2,
+  quarterly: 3
+};
+
+function parseDateInput(value){
+  if(!value) return null;
+
+  const parts=String(value).split("-").map(Number);
+
+  if(parts.length!==3 || parts.some(x=>!Number.isFinite(x))){
+    return null;
+  }
+
+  const date=new Date(parts[0],parts[1]-1,parts[2]);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateInput(date){
+  if(!(date instanceof Date) || Number.isNaN(date.getTime())){
+    return "";
+  }
+
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,"0");
+  const d=String(date.getDate()).padStart(2,"0");
+
+  return `${y}-${m}-${d}`;
+}
+
+function addMonths(date, months){
+  const result=new Date(date.getTime());
+  const originalDay=result.getDate();
+
+  result.setDate(1);
+  result.setMonth(result.getMonth()+Number(months));
+
+  const lastDay=new Date(
+    result.getFullYear(),
+    result.getMonth()+1,
+    0
+  ).getDate();
+
+  result.setDate(Math.min(originalDay,lastDay));
+
+  return result;
+}
+
+function calculateEndDate(){
+  const start=parseDateInput($("startDate").value);
+  const months=Number($("contractDurationMonths").value);
+
+  if(!start || ![12,24,36].includes(months)){
+    $("endDate").value="";
+    return "";
+  }
+
+  const end=addMonths(start,months);
+  end.setDate(end.getDate()-1);
+
+  const value=formatDateInput(end);
+
+  $("endDate").value=value;
+
+  return value;
+}
+
+function deriveDurationMonths(startValue,endValue){
+  const start=parseDateInput(startValue);
+  const end=parseDateInput(endValue);
+
+  if(!start || !end) return "";
+
+  const nextDay=new Date(end.getTime());
+  nextDay.setDate(nextDay.getDate()+1);
+
+  const months=
+    (nextDay.getFullYear()-start.getFullYear())*12+
+    (nextDay.getMonth()-start.getMonth());
+
+  return [12,24,36].includes(months)
+    ? String(months)
+    : "";
+}
+
+function calculateMaintenanceTotal(){
+  const enabled=$("maintenanceEnabled").value==="yes";
+  const start=parseDateInput($("startDate").value);
+  const end=parseDateInput($("endDate").value);
+  const cycleMonths=CYCLE_MONTHS[$("maintenanceCycle").value] || 0;
+
+  if(!enabled || !start || !end || !cycleMonths){
+    $("maintenanceTotal").value=0;
+    updateMaintenanceRemaining();
+    return 0;
+  }
+
+  const nextAfterEnd=new Date(end.getTime());
+  nextAfterEnd.setDate(nextAfterEnd.getDate()+1);
+
+  const totalMonths=
+    (nextAfterEnd.getFullYear()-start.getFullYear())*12+
+    (nextAfterEnd.getMonth()-start.getMonth());
+
+  const total=Math.max(
+    0,
+    Math.floor(totalMonths/cycleMonths)
+  );
+
+  $("maintenanceTotal").value=total;
+
+  updateMaintenanceRemaining();
+
+  return total;
+}
+
+function updateMaintenanceRemaining(){
+  const total=Math.max(
+    0,
+    Number($("maintenanceTotal").value)||0
+  );
+
+  let completed=Math.max(
+    0,
+    Number($("maintenanceCompleted").value)||0
+  );
+
+  if(completed>total){
+    completed=total;
+    $("maintenanceCompleted").value=completed;
+  }
+
+  $("maintenanceRemaining").value=
+    Math.max(0,total-completed);
+}
+
+function refreshContractCalculations(){
+  calculateEndDate();
+  calculateMaintenanceTotal();
+}
+
 
 function renderCustomerOptions(selectedId=""){
   const select=$("customerId");
@@ -770,6 +971,11 @@ function resetForm(){
   $("maintenanceEnabled").value="yes";
   $("maintenanceType").value="paid";
   $("maintenanceCycle").value="monthly";
+  $("contractDurationMonths").value="";
+  $("endDate").value="";
+  $("maintenanceTotal").value=0;
+  $("maintenanceCompleted").value=0;
+  $("maintenanceRemaining").value=0;
   setFormError("");
 }
 
@@ -795,6 +1001,17 @@ function fillForm(c){
   ];
 
   fields.forEach(id=>$(id).value=c[id]??"");
+
+  const durationMonths=
+    c.contractDurationMonths ||
+    deriveDurationMonths(c.startDate,c.endDate);
+
+  $("contractDurationMonths").value=String(durationMonths||"");
+
+  $("maintenanceCompleted").value=
+    Math.max(0,Number(c.maintenanceCompleted)||0);
+
+  refreshContractCalculations();
 }
 
 function render(){
@@ -815,7 +1032,12 @@ function render(){
         <td>${esc(customerName(c.customerId))}</td>
         <td>${esc(buildingName(c.buildingId))}</td>
         <td>${esc(elevatorName(c.elevatorId))}</td>
-        <td>${esc(c.startDate||"—")} → ${esc(c.endDate||"—")}</td>
+        <td>
+          ${esc(c.startDate||"—")} → ${esc(c.endDate||"—")}
+          ${c.maintenanceEnabled==="yes"
+            ? `<br><small>${Number(c.maintenanceRemaining ?? 0)} lần bảo trì còn lại</small>`
+            : ""}
+        </td>
         <td><span class="badge ${badgeClass}">${status}</span></td>
         <td><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
       </tr>`;
@@ -864,6 +1086,12 @@ $("buildingId").addEventListener("change",()=>{
   setFormError("");
 });
 
+$("startDate").addEventListener("change",refreshContractCalculations);
+$("contractDurationMonths").addEventListener("change",refreshContractCalculations);
+$("maintenanceEnabled").addEventListener("change",refreshContractCalculations);
+$("maintenanceCycle").addEventListener("change",calculateMaintenanceTotal);
+$("maintenanceCompleted").addEventListener("input",updateMaintenanceRemaining);
+
 form.addEventListener("submit",async e=>{
   e.preventDefault();
 
@@ -910,6 +1138,7 @@ form.addEventListener("submit",async e=>{
     status:$("status").value,
     signedDate:$("signedDate").value,
     startDate:$("startDate").value,
+    contractDurationMonths:Number($("contractDurationMonths").value||0),
     endDate:$("endDate").value,
     contractValue:$("contractValue").value,
 
@@ -923,6 +1152,9 @@ form.addEventListener("submit",async e=>{
     maintenanceType:$("maintenanceType").value,
     maintenanceCycle:$("maintenanceCycle").value,
     maintenanceOwner:$("maintenanceOwner").value,
+    maintenanceTotal:Number($("maintenanceTotal").value||0),
+    maintenanceCompleted:Number($("maintenanceCompleted").value||0),
+    maintenanceRemaining:Number($("maintenanceRemaining").value||0),
 
     paidValue:$("paidValue").value,
     paymentDue:$("paymentDue").value,
@@ -933,6 +1165,23 @@ form.addEventListener("submit",async e=>{
     setFormError("Mã hợp đồng và tên hợp đồng là bắt buộc.");
     return;
   }
+
+  if(!obj.startDate){
+    setFormError("Vui lòng nhập Ngày hiệu lực.");
+    return;
+  }
+
+  if(![12,24,36].includes(obj.contractDurationMonths)){
+    setFormError("Vui lòng chọn thời hạn hợp đồng 1 năm, 2 năm hoặc 3 năm.");
+    return;
+  }
+
+  refreshContractCalculations();
+
+  obj.endDate=$("endDate").value;
+  obj.maintenanceTotal=Number($("maintenanceTotal").value||0);
+  obj.maintenanceCompleted=Number($("maintenanceCompleted").value||0);
+  obj.maintenanceRemaining=Number($("maintenanceRemaining").value||0);
 
   if(typeof createContract!=="function" || typeof updateContract!=="function"){
     setFormError("Firestore chưa có createContract/updateContract. Hãy cập nhật js/core/firestore-v1.js.");
