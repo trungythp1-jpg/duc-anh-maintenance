@@ -128,6 +128,7 @@ tr:hover td{background:#161613}
               <option value="">Chưa phân công</option>
             </select>
           </div>
+          <div class="full"><label>Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
           <div><label>Ngày mở</label><input id="openedDate" type="date"></div>
           <div><label>Hạn xử lý</label><input id="dueDate" type="date"></div>
           <div><label>Ngày hoàn thành</label><input id="completedDate" type="date"></div>
@@ -150,6 +151,9 @@ tr:hover td{background:#161613}
 </div>
 
 <script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { doc, getDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { auth, db } from "./js/core/firebase.js";
 import {
   getMaintenances,
   getWorkOrders,
@@ -163,6 +167,8 @@ let maintenances = [];
 let workOrders = [];
 let technicians = [];
 let editingId = "";
+let authUser = null;
+let currentProfile = null;
 
 const statusText = {
   draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",
@@ -222,6 +228,37 @@ function updateReference(){
   $("refElevator").textContent=m?.elevatorName||"—";
 }
 
+function currentRole(){
+  return String(currentProfile?.role||"").trim().toUpperCase();
+}
+function canManageTechnicianAssignment(){
+  return ["ADMIN","MANAGER"].includes(currentRole());
+}
+function currentActorName(){
+  return String(currentProfile?.name||authUser?.displayName||authUser?.email||authUser?.uid||"").trim();
+}
+function applyAssignmentPermission(){
+  const allowed=canManageTechnicianAssignment();
+  $("technicianId").disabled=!allowed;
+  $("assignmentReason").disabled=!allowed;
+  if(!allowed) $("assignmentReason").value="";
+}
+async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
+  await addDoc(collection(db,"auditLogs"),{
+    action:fromTechnicianId?"TECHNICIAN_REASSIGNED":"TECHNICIAN_ASSIGNED",
+    entityType,
+    entityId,
+    fromTechnicianId:fromTechnicianId||"",
+    fromTechnicianName:fromTechnicianName||"",
+    toTechnicianId:toTechnicianId||"",
+    toTechnicianName:toTechnicianName||"",
+    reason:String(reason||"").trim()||"Phân công ban đầu",
+    performedByUid:authUser?.uid||"",
+    performedByName:currentActorName(),
+    createdAt:serverTimestamp()
+  });
+}
+
 function getTechnicianId(t){
   return String(t?.technicianId || t?.id || "");
 }
@@ -260,6 +297,7 @@ function renderTechnicianSelect(selectedId="", selectedName=""){
       return `<option value="${esc(t.id)}"${disabled}>${esc(t.name||t.id)}${esc(suffix)}</option>`;
     }).join("");
   $("technicianId").value=currentId;
+  applyAssignmentPermission();
 }
 function selectedTechnician(){
   return findTechnician($("technicianId").value);
@@ -281,6 +319,7 @@ function updateWorkflowHint(){
 }
 
 function resetForm(){
+  $("assignmentReason").value="";
   editingId="";
   $("modalTitle").textContent="Tạo Work Order";
   $("form").reset();
@@ -307,7 +346,7 @@ function openEdit(id){
   $("type").value=w.type||"MAINTENANCE";$("priority").value=w.priority||"normal";
   $("issueTitle").value=w.issueTitle||"";$("problemDescription").value=w.problemDescription||"";
   $("statusField").value=w.status||"draft";
-  renderTechnicianSelect(w.assignedTechnicianId||"",w.assignedTechnicianName||"");
+  renderTechnicianSelect(w.assignedTechnicianId||"",w.assignedTechnicianName||"");$("assignmentReason").value="";
   $("openedDate").value=w.openedDate||"";$("dueDate").value=w.dueDate||"";
   $("completedDate").value=w.completedDate||"";
   $("cause").value=w.cause||"";$("resolution").value=w.resolution||"";
@@ -330,12 +369,27 @@ $("form").onsubmit=async e=>{
   $("saveBtn").disabled=true;$("saveBtn").textContent="Đang lưu…";
   $("err").className="err";$("err").textContent="";
   try{
+    const existingWorkOrder=editingId?workOrders.find(x=>x.id===editingId):null;
+    const selectedTech=selectedTechnician();
+    const newTechnicianId=$("technicianId").value||"";
+    const newTechnicianName=selectedTech?.name||"";
+    const oldTechnicianId=existingWorkOrder?.assignedTechnicianId||"";
+    const oldTechnicianName=existingWorkOrder?.assignedTechnicianName||"";
+    if(!canManageTechnicianAssignment() && editingId && newTechnicianId!==oldTechnicianId){
+      throw new Error("Bạn không có quyền phân công hoặc thay đổi kỹ thuật viên.");
+    }
+    const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
+    const assignmentReason=$("assignmentReason").value.trim();
+    if(assignmentChanged && editingId && !assignmentReason){
+      throw new Error("Khi thay đổi kỹ thuật viên phải nhập lý do.");
+    }
+
     const data={
       maintenanceId:$("maintenanceId").value,
       type:$("type").value,priority:$("priority").value,status:$("statusField").value,
       issueTitle:$("issueTitle").value,problemDescription:$("problemDescription").value,
-      assignedTechnicianId:$("technicianId").value,
-      assignedTechnicianName:selectedTechnician()?.name||"",
+      assignedTechnicianId:newTechnicianId,
+      assignedTechnicianName:newTechnicianName,
       openedDate:$("openedDate").value,dueDate:$("dueDate").value,
       completedDate:$("completedDate").value,
       cause:$("cause").value,resolution:$("resolution").value,
@@ -355,7 +409,33 @@ $("form").onsubmit=async e=>{
       if(!data.completedDate)throw new Error("Muốn hoàn thành phải có Ngày hoàn thành.");
     }
 
-    if(editingId) await updateWorkOrder(editingId,data); else await createWorkOrder(data);
+    if(editingId){
+      await updateWorkOrder(editingId,data);
+    }else{
+      const created=await createWorkOrder(data);
+      if(assignmentChanged && created?.id){
+        await writeTechnicianAssignmentAudit({
+          entityType:"workOrder",
+          entityId:created.id,
+          fromTechnicianId:"",
+          fromTechnicianName:"",
+          toTechnicianId:newTechnicianId,
+          toTechnicianName:newTechnicianName,
+          reason:assignmentReason
+        });
+      }
+    }
+    if(editingId && assignmentChanged){
+      await writeTechnicianAssignmentAudit({
+        entityType:"workOrder",
+        entityId:editingId,
+        fromTechnicianId:oldTechnicianId,
+        fromTechnicianName:oldTechnicianName,
+        toTechnicianId:newTechnicianId,
+        toTechnicianName:newTechnicianName,
+        reason:assignmentReason
+      });
+    }
     close(); await load(); $("status").className="status ok"; $("status").textContent="Đã lưu Work Order.";
   }catch(err){
     $("err").className="err show";$("err").textContent=err?.message||String(err);
@@ -379,7 +459,24 @@ async function load(){
     $("status").className="status error";$("status").textContent=err?.message||String(err);
   }
 }
-load();
+onAuthStateChanged(auth,async user=>{
+  authUser=user||null;
+  currentProfile=null;
+  if(!user){
+    $("status").className="status error";
+    $("status").textContent="Chưa đăng nhập Firebase.";
+    return;
+  }
+  try{
+    const snap=await getDoc(doc(db,"users",user.uid));
+    currentProfile=snap.exists()?snap.data():null;
+    if(!currentProfile) throw new Error("Không tồn tại users/{uid}.");
+    await load();
+  }catch(err){
+    $("status").className="status error";
+    $("status").textContent=err?.message||"Không tải được dữ liệu.";
+  }
+});
 </script>
 </body>
 </html>
