@@ -21,6 +21,31 @@
 .auth-gate{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:2000}.auth-gate.hidden{display:none}.auth-box{text-align:center;padding:30px}.auth-box h2{margin-bottom:8px}
 @media(max-width:850px){.kpis{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}.ref-box{grid-template-columns:1fr 1fr}.page-head{flex-direction:column}.check-row{grid-template-columns:1fr 1fr 1fr 1fr 1fr}.check-row label{grid-column:1/-1}}
 @media(max-width:520px){.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.ref-box{grid-template-columns:1fr}.page{padding:16px 12px 40px}}
+
+/* ===== MAINTENANCE V1.1 — UI COLOR HARDENING ===== */
+html,body{background:#0b0b0b;}
+.page{color:#202124 !important;}
+.page h1,.page h2,.page h3,.page .kpi .label,.page .kpi .value,.page .field label,.page .section h3,.page .ref-box strong,.page .ref-box small,.page .check-row label,.page .statusline,.page .empty,.page .link-btn,.page .link-btn strong{color:#202124 !important;}
+.page .muted,.page .link-btn span{color:#6b7280 !important;}
+.page .field input,.page .field select,.page .field textarea{color:#202124 !important;-webkit-text-fill-color:#202124 !important;background:#fff !important;}
+.page .field input::placeholder,.page .field textarea::placeholder{color:#9ca3af !important;-webkit-text-fill-color:#9ca3af !important;opacity:1;}
+.page .field select:disabled,.page .field input:disabled{color:#6b7280 !important;-webkit-text-fill-color:#6b7280 !important;background:#f5f5f5 !important;}
+.page .btn:not(.primary){color:#202124 !important;background:#fff !important;}
+.page .btn.primary{color:#fff !important;background:#111 !important;}
+.page .data-table th{color:#4b5563 !important;}
+.page .data-table td{color:#202124 !important;}
+.page .statusline.error{color:#b42318 !important;}
+.page .statusline.ok{color:#067647 !important;}
+.permission-panel{display:none;margin:0 14px 14px;padding:14px;border:1px solid #f0b4b4;border-radius:12px;background:#fff7f7;color:#202124;}
+.permission-panel.show{display:block;}
+.permission-panel h3{margin:0 0 8px;font-size:15px;color:#991b1b !important;}
+.permission-panel .diag-user{font-size:12px;color:#4b5563 !important;margin-bottom:10px;word-break:break-word;}
+.permission-list{display:grid;gap:7px;}
+.permission-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;background:#fff;border:1px solid #eee;border-radius:8px;font-size:13px;}
+.permission-row .ok{color:#067647 !important;font-weight:700;}
+.permission-row .fail{color:#b42318 !important;font-weight:700;}
+.permission-row .detail{font-size:11px;color:#6b7280 !important;text-align:right;max-width:60%;word-break:break-word;}
+@media(max-width:520px){.permission-row{align-items:flex-start;flex-direction:column;gap:4px}.permission-row .detail{max-width:100%;text-align:left}}
 </style>
 </head>
 <body>
@@ -48,6 +73,11 @@
 
   <div class="card">
     <div class="statusline" id="pageStatus">Đang tải…</div>
+    <div class="permission-panel" id="permissionPanel">
+      <h3>Kiểm tra đăng nhập & quyền Firestore</h3>
+      <div class="diag-user" id="diagUser">Đang kiểm tra…</div>
+      <div class="permission-list" id="permissionList"></div>
+    </div>
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Phiếu</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Hợp đồng / Kỳ</th><th>Lịch</th><th>Trạng thái</th><th>Kết quả</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
     <div class="empty" id="empty">Chưa có phiếu bảo trì.</div>
   </div>
@@ -90,7 +120,8 @@
 
 <script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { auth } from "./js/core/firebase.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { auth, db } from "./js/core/firebase.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js";
 
 const $=id=>document.getElementById(id);
@@ -176,9 +207,58 @@ $("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn"
 
 $("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:"",technicianName:$("technicianName").value.trim(),checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{if(editingId){await updateMaintenance(editingId,payload)}else{await createMaintenance(payload)}const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
 
-async function loadData(){setStatus("Đang tải dữ liệu…");const results=await Promise.all([getCustomers(),getBuildings(),getElevators(),getContracts(),getMaintenances()]);customers=results[0]||[];buildings=results[1]||[];elevators=results[2]||[];contracts=results[3]||[];maintenances=results[4]||[];renderCustomers();render();setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì`,"")}
+async function runPermissionDiagnostics(user){
+  const panel=$("permissionPanel"), list=$("permissionList"), userEl=$("diagUser");
+  panel.classList.remove("show");
+  list.innerHTML="";
+  userEl.textContent=user?`Auth: ĐÃ ĐĂNG NHẬP · UID: ${user.uid}`:"Auth: CHƯA ĐĂNG NHẬP";
+  if(!user){panel.classList.add("show");return false}
 
-onAuthStateChanged(auth,async user=>{authUser=user||null;if(!user){$("authGate").classList.remove("hidden");setStatus("Chưa đăng nhập","error");return}try{await loadData();$("authGate").classList.add("hidden")}catch(err){console.error(err);setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");$("authGate").classList.add("hidden")}});
+  const checks=[];
+  async function check(name,fn){
+    try{const value=await fn();checks.push({name,ok:true,detail:Array.isArray(value)?`OK · ${value.length} bản ghi`:"OK"});return value}
+    catch(err){const code=err?.code||"unknown";const msg=err?.message||String(err);checks.push({name,ok:false,detail:`${code}: ${msg}`});return null}
+  }
+
+  const profile=await check("users/{uid} · role",async()=>{const snap=await getDoc(doc(db,"users",user.uid));if(!snap.exists())throw new Error("Không tồn tại users/{uid}");const role=snap.data()?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;return snap.data()});
+  const c=await check("customers",getCustomers);
+  const b=await check("buildings",getBuildings);
+  const e=await check("elevators",getElevators);
+  const ct=await check("contracts",getContracts);
+  const m=await check("maintenance",getMaintenances);
+
+  list.innerHTML=checks.map(x=>`<div class="permission-row"><span>${esc(x.name)}</span><span class="${x.ok?"ok":"fail"}">${x.ok?"✓ OK":"✕ LỖI"}</span><span class="detail">${esc(x.detail)}</span></div>`).join("");
+  const failed=checks.some(x=>!x.ok);
+  if(failed)panel.classList.add("show");
+  return {profile,customers:c,buildings:b,elevators:e,contracts:ct,maintenances:m,failed};
+}
+
+async function loadData(){
+  setStatus("Đang kiểm tra đăng nhập & quyền…");
+  const diagnostic=await runPermissionDiagnostics(authUser);
+  if(!diagnostic)throw new Error("Chưa đăng nhập Firebase.");
+  if(diagnostic.failed){
+    customers=diagnostic.customers||[];buildings=diagnostic.buildings||[];elevators=diagnostic.elevators||[];contracts=diagnostic.contracts||[];maintenances=diagnostic.maintenances||[];
+    renderCustomers();render();
+    throw new Error("Một hoặc nhiều quyền Firestore chưa hợp lệ. Xem bảng kiểm tra bên dưới.");
+  }
+  customers=diagnostic.customers||[];buildings=diagnostic.buildings||[];elevators=diagnostic.elevators||[];contracts=diagnostic.contracts||[];maintenances=diagnostic.maintenances||[];
+  renderCustomers();render();
+  setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì`,"");
+}
+
+onAuthStateChanged(auth,async user=>{
+  authUser=user||null;
+  if(!user){$("authGate").classList.remove("hidden");setStatus("Chưa đăng nhập Firebase","error");return}
+  try{
+    await loadData();
+    $("authGate").classList.add("hidden");
+  }catch(err){
+    console.error(err);
+    setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
+    $("authGate").classList.add("hidden");
+  }
+});
 renderChecklist();
 </script>
 </body>
