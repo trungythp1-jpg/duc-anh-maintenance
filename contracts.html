@@ -184,9 +184,26 @@ body{
   gap:10px;
   margin-top:22px;
   position:sticky;
-  bottom:-24px;
-  padding:16px 0 4px;
+  bottom:0;
+  padding:16px 0 12px;
+  margin-bottom:0;
   background:#111;
+  z-index:10;
+  border-top:1px solid #242424;
+  box-sizing:border-box;
+}
+
+.modal-foot .primary-button,
+.modal-foot .secondary-button{
+  position:relative;
+  z-index:11;
+  flex:0 0 auto;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)){
+  .modal-foot{
+    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  }
 }
 
 .loading-option{color:#999}
@@ -210,7 +227,11 @@ body{
   .form-group.full,.section-title,.reference-status,.form-error{grid-column:auto}
   .contract-modal{padding:18px;border-radius:15px}
   .modal-head{top:-18px}
-  .modal-foot{bottom:-18px}
+  .modal-foot{
+  bottom:0;
+  margin-bottom:0;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+}
 }
 </style>
 </head>
@@ -462,11 +483,6 @@ body{
 <script src="js/ui/app.js"></script>
 
 <script type="module">
-import { onAuthStateChanged } from
-  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-
-import { auth } from "./js/core/firebase.js";
-
 import * as Firestore from "./js/core/firestore-v1.js";
 
 const {
@@ -896,64 +912,7 @@ document.querySelectorAll("[data-module]").forEach(a=>{
 });
 
 render();
-
-/*
- * QUAN TRỌNG:
- * Không đọc Firestore ngay khi trang vừa mở.
- *
- * Firebase Authentication cần thời gian để khôi phục
- * phiên đăng nhập từ persistence.
- *
- * Chỉ sau khi onAuthStateChanged() xác nhận có user
- * mới được gọi loadReferences() và loadContracts().
- */
-let lastAuthUid = null;
-
-onAuthStateChanged(auth, async (user) => {
-
-  if (!user) {
-    lastAuthUid = null;
-
-    $("pageStatus").textContent = "Chưa đăng nhập";
-
-    contracts = [];
-    customers = [];
-    buildings = [];
-    elevators = [];
-
-    renderCustomerOptions("");
-    render();
-
-    setReferenceStatus(
-      "Firebase Authentication chưa có phiên đăng nhập. Vui lòng đăng nhập lại trước khi sử dụng module Hợp đồng.",
-      "error"
-    );
-
-    return;
-  }
-
-  /*
-   * Tránh tải lại dữ liệu không cần thiết nếu Firebase
-   * chỉ phát lại trạng thái của cùng một user.
-   */
-  if (lastAuthUid === user.uid) {
-    return;
-  }
-
-  lastAuthUid = user.uid;
-
-  $("pageStatus").textContent = "Đang xác thực Firebase...";
-
-  setReferenceStatus(
-    "Firebase Authentication đã xác nhận người dùng. Đang tải dữ liệu hợp đồng...",
-    ""
-  );
-
-  await refreshAll();
-
-  $("pageStatus").textContent =
-    `${contracts.length} hợp đồng`;
-});
+refreshAll();
 </script>
 </body>
 </html>
