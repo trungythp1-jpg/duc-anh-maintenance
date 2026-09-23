@@ -242,11 +242,28 @@ body{
 .check-row label{font-size:13px;color:var(--da-text)!important}
 .check-row input{accent-color:var(--da-gold)}
 .actions{
-  display:flex;justify-content:flex-end;gap:8px;
-  padding:14px 18px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  padding:12px 18px calc(12px + env(safe-area-inset-bottom));
   border-top:1px solid var(--da-border-gold)!important;
-  position:sticky;bottom:0;
-  background:#10100e!important
+  position:sticky;
+  bottom:0;
+  background:rgba(16,16,14,.98)!important;
+  z-index:20;
+  box-shadow:0 -10px 24px rgba(0,0,0,.22);
+}
+.actions .btn{
+  min-height:52px;
+  min-width:112px;
+  font-weight:600;
+  touch-action:manipulation;
+}
+.actions .btn.primary{
+  min-width:150px;
+  background:linear-gradient(180deg,#e0b65c,#bd8e34)!important;
+  color:#111!important;
+  border-color:#e0b65c!important;
 }
 .form-error{color:#ff8176!important;font-size:13px;margin-top:8px;display:none}
 .form-error.show{display:block}
@@ -281,10 +298,43 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
   .ref-box{grid-template-columns:1fr}
   .page{padding:16px 12px 40px}
 }
+
+@media(max-width:520px){
+  .modal{
+    align-items:flex-end;
+    padding:0;
+  }
+  .modal-box{
+    width:100%;
+    max-height:100dvh;
+    height:100dvh;
+    border-radius:16px 16px 0 0;
+    border-left:1px solid var(--da-border-gold)!important;
+    border-right:1px solid var(--da-border-gold)!important;
+  }
+  .modal-head{
+    padding:14px 16px;
+  }
+  .modal-body{
+    padding:16px 14px 120px;
+  }
+  .actions{
+    left:0;
+    right:0;
+    bottom:0;
+    flex-direction:row;
+    justify-content:stretch;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  }
+  .actions .btn{
+    flex:1;
+    min-width:0;
+  }
+}
 </style>
 
 </head>
-<body>
+<body data-maintenance-build="v1.4-gold-black-v4">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -349,7 +399,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
         <div class="section"><div class="field"><label><input id="issueFound" type="checkbox"> Có vấn đề cần xử lý tiếp</label></div><div class="field" style="margin-top:10px"><label for="note">Ghi chú</label><textarea id="note" placeholder="Ghi chú thêm…"></textarea></div></div>
         <div class="form-error" id="formError"></div>
       </div>
-      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
+      <div class="actions" aria-label="Thao tác phiếu bảo trì"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
     </form>
   </section>
 </div>
@@ -358,7 +408,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js?v=4";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
