@@ -1,1 +1,348 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Đức Anh Maintenance — schedules</title><link rel="stylesheet" href="css/main.css"><link rel="stylesheet" href="css/mobile.css"></head><body><header class="app-header"><div class="brand">Đức Anh Maintenance</div></header><main class="page"><h1>schedules</h1><div class="card">DEV V1.0 module scaffold.</div></main></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Đức Anh Maintenance — Lịch bảo trì</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/mobile.css">
+<style>
+:root{
+  --bg:#090909;--panel:#121212;--panel2:#171717;--border:#2b2b2b;
+  --gold:#d9ad32;--text:#f4f4f4;--muted:#929292;
+}
+body{background:var(--bg)!important;color:var(--text)!important}
+.page{padding:28px;max-width:1500px;margin:auto}
+.header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:22px}
+h1,h2,p{margin-top:0}
+.muted{color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+button,select,input{font:inherit}
+.btn{border:1px solid var(--border);border-radius:10px;padding:11px 15px;cursor:pointer}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:#090909;font-weight:800}
+.btn.secondary{background:#181818;color:#eee}
+.filters{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+select,input{
+  width:100%;box-sizing:border-box;min-height:46px;padding:10px 12px;
+  color:#eee;background:#151515;border:1px solid #303030;border-radius:10px
+}
+.panel{background:linear-gradient(145deg,#141414,#101010);border:1px solid var(--border);border-radius:14px;padding:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:#151515;border:1px solid #292929;border-radius:12px;padding:15px}
+.kpi small{color:#888}.kpi strong{display:block;font-size:25px;margin-top:5px}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+th,td{text-align:left;padding:13px;border-bottom:1px solid #252525;vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;color:#858585}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#292929}
+.badge.green{background:#123b23;color:#78d394}
+.badge.yellow{background:#3a2e10;color:#e5bf48}
+.badge.red{background:#3b1717;color:#ef8585}
+.badge.blue{background:#17283a;color:#82b9e8}
+.empty{text-align:center;padding:50px;color:#777}
+.note{margin-top:14px;padding:12px 14px;background:#171717;border:1px solid #292929;border-radius:10px;color:#999}
+@media(max-width:900px){
+  .filters{grid-template-columns:1fr 1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .page{padding:18px}
+  .header{flex-direction:column}
+  .filters{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<main class="page">
+  <header class="header">
+    <div>
+      <p class="muted">ĐỨC ANH MAINTENANCE · SERVICE</p>
+      <h1>Lịch bảo trì</h1>
+      <p class="muted">Lịch được xác định từ Hợp đồng. Không tạo nguồn dữ liệu hợp đồng thứ hai.</p>
+    </div>
+    <div class="actions">
+      <button class="btn secondary" id="refresh" type="button">↻ Làm mới</button>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><small>Tổng kỳ dự kiến</small><strong id="kpiTotal">0</strong></div>
+    <div class="kpi"><small>Đã hoàn thành</small><strong id="kpiDone">0</strong></div>
+    <div class="kpi"><small>Chưa thực hiện</small><strong id="kpiPending">0</strong></div>
+    <div class="kpi"><small>Quá hạn</small><strong id="kpiOverdue">0</strong></div>
+  </section>
+
+  <section class="panel">
+    <div class="filters">
+      <input id="search" placeholder="Tìm khách hàng, tòa nhà, mã thang, hợp đồng...">
+      <select id="statusFilter">
+        <option value="">Tất cả trạng thái</option>
+        <option value="pending">Chưa thực hiện</option>
+        <option value="done">Đã hoàn thành</option>
+        <option value="overdue">Quá hạn</option>
+      </select>
+      <select id="cycleFilter">
+        <option value="">Tất cả chu kỳ</option>
+        <option value="monthly">1 tháng</option>
+        <option value="bi_monthly">2 tháng</option>
+        <option value="quarterly">3 tháng</option>
+      </select>
+      <select id="yearFilter">
+        <option value="">Tất cả năm</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Kỳ</th>
+            <th>Hợp đồng</th>
+            <th>Khách hàng</th>
+            <th>Tòa nhà</th>
+            <th>Thang máy</th>
+            <th>Dự kiến</th>
+            <th>Chu kỳ</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">Chưa có hợp đồng bảo trì phù hợp.</div>
+    <div class="note">
+      Lịch này được tính từ các hợp đồng có <strong>maintenanceEnabled</strong>.
+      Chưa tự tạo phiếu bảo trì. Khi đến bước thực hiện, phiếu sẽ được cấp số
+      <strong>PBM-xxxxxx</strong> và ghi nhận vào Module Bảo trì.
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { auth } from "./js/core/firebase.js";
+import {
+  getContracts,
+  getCustomers,
+  getBuildings,
+  getElevators,
+  getMaintenances
+} from "./js/core/firestore-v1.js";
+
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? "")
+  .replaceAll("&","&amp;").replaceAll("<","&lt;")
+  .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+  .replaceAll("'","&#039;");
+
+let contracts=[],customers=[],buildings=[],elevators=[],maintenances=[];
+let authReady=false;
+
+const cycleMonths={monthly:1,bi_monthly:2,quarterly:3};
+const cycleText={monthly:"1 tháng",bi_monthly:"2 tháng",quarterly:"3 tháng"};
+
+function parseDate(value){
+  if(!value) return null;
+  const d=new Date(`${value}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function addMonths(date,months){
+  const d=new Date(date);
+  const day=d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+months);
+  const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  d.setDate(Math.min(day,last));
+  return d;
+}
+
+function fmtDate(date){
+  if(!date)return "—";
+  return date.toLocaleDateString("vi-VN");
+}
+
+function contractEnabled(c){
+  return c.maintenanceEnabled==="yes" ||
+         c.maintenanceEnabled===true ||
+         c.maintenanceEnabled==="true";
+}
+
+function buildSchedules(){
+  const schedules=[];
+
+  for(const c of contracts){
+    if(!contractEnabled(c)) continue;
+
+    const start=parseDate(c.startDate);
+    const end=parseDate(c.endDate);
+    const months=cycleMonths[c.maintenanceCycle];
+
+    if(!start || !end || !months) continue;
+
+    /*
+     * Lịch kỳ được tính từ ngày hiệu lực hợp đồng.
+     * Không ghi thêm dữ liệu vào Firestore ở bước này.
+     */
+    let date=new Date(start);
+    let period=1;
+
+    while(date<=end){
+      const maintenanceForPeriod=maintenances.find(m =>
+        String(m.contractId||"")===String(c.id) &&
+        Number(m.periodNumber||0)===period
+      );
+
+      /*
+       * Tương thích dữ liệu cũ:
+       * nếu phiếu chưa có periodNumber, thử ghép theo contractId + scheduledDate.
+       */
+      const legacyMaintenance=maintenanceForPeriod || maintenances.find(m =>
+        String(m.contractId||"")===String(c.id) &&
+        String(m.scheduledDate||"")===date.toISOString().slice(0,10)
+      );
+
+      const today=new Date();
+      today.setHours(0,0,0,0);
+
+      let status="pending";
+      if(legacyMaintenance?.status==="completed"){
+        status="done";
+      }else if(date<today){
+        status="overdue";
+      }
+
+      schedules.push({
+        id:`${c.id}_${period}`,
+        contract:c,
+        period,
+        date:new Date(date),
+        status,
+        maintenance:legacyMaintenance||null
+      });
+
+      date=addMonths(date,months);
+      period++;
+    }
+  }
+
+  return schedules;
+}
+
+function nameOf(list,id,fallback="—"){
+  return list.find(x=>String(x.id)===String(id))?.name || fallback;
+}
+
+function enrich(schedule){
+  const c=schedule.contract;
+  const customer=nameOf(customers,c.customerId,c.customerName);
+  const building=nameOf(buildings,c.buildingId,c.buildingName);
+  const elevator=nameOf(elevators,c.elevatorId,c.elevatorName);
+  return {...schedule,customer,building,elevator};
+}
+
+function filteredSchedules(){
+  const q=$("search").value.trim().toLowerCase();
+  const sf=$("statusFilter").value;
+  const cf=$("cycleFilter").value;
+  const yf=$("yearFilter").value;
+
+  return buildSchedules().map(enrich).filter(x=>{
+    const c=x.contract;
+    const hay=[
+      c.code,c.name,c.customerName,c.buildingName,c.elevatorName,
+      x.customer,x.building,x.elevator
+    ].join(" ").toLowerCase();
+
+    if(q && !hay.includes(q)) return false;
+    if(sf && x.status!==sf) return false;
+    if(cf && c.maintenanceCycle!==cf) return false;
+    if(yf && String(x.date.getFullYear())!==yf) return false;
+    return true;
+  });
+}
+
+function renderYearOptions(){
+  const years=new Set();
+  contracts.forEach(c=>{
+    const s=parseDate(c.startDate),e=parseDate(c.endDate);
+    if(s) years.add(s.getFullYear());
+    if(e) years.add(e.getFullYear());
+  });
+
+  const current=$("yearFilter").value;
+  $("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+
+    [...years].sort((a,b)=>a-b).map(y=>`<option value="${y}">${y}</option>`).join("");
+  $("yearFilter").value=current;
+}
+
+function render(){
+  const all=buildSchedules();
+  const rows=filteredSchedules();
+
+  $("kpiTotal").textContent=all.length;
+  $("kpiDone").textContent=all.filter(x=>x.status==="done").length;
+  $("kpiPending").textContent=all.filter(x=>x.status==="pending").length;
+  $("kpiOverdue").textContent=all.filter(x=>x.status==="overdue").length;
+
+  $("empty").style.display=rows.length?"none":"block";
+
+  $("rows").innerHTML=rows.map(x=>{
+    const c=x.contract;
+    const badge=x.status==="done"
+      ? '<span class="badge green">Đã hoàn thành</span>'
+      : x.status==="overdue"
+        ? '<span class="badge red">Quá hạn</span>'
+        : '<span class="badge yellow">Chưa thực hiện</span>';
+
+    return `<tr>
+      <td><strong>Kỳ ${x.period}</strong></td>
+      <td><strong>${esc(c.code||"—")}</strong><br><small>${esc(c.name||"")}</small></td>
+      <td>${esc(x.customer)}</td>
+      <td>${esc(x.building)}</td>
+      <td>${esc(x.elevator)}</td>
+      <td>${esc(fmtDate(x.date))}</td>
+      <td>${esc(cycleText[c.maintenanceCycle]||"—")}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function load(){
+  const results=await Promise.allSettled([
+    getContracts(),
+    getCustomers(),
+    getBuildings(),
+    getElevators(),
+    getMaintenances()
+  ]);
+
+  contracts=results[0].status==="fulfilled"?results[0].value||[]:[];
+  customers=results[1].status==="fulfilled"?results[1].value||[]:[];
+  buildings=results[2].status==="fulfilled"?results[2].value||[]:[];
+  elevators=results[3].status==="fulfilled"?results[3].value||[]:[];
+  maintenances=results[4].status==="fulfilled"?results[4].value||[]:[];
+
+  renderYearOptions();
+  render();
+}
+
+["search","statusFilter","cycleFilter","yearFilter"].forEach(id=>{
+  $(id).addEventListener(id==="search"?"input":"change",render);
+});
+
+$("refresh").addEventListener("click",load);
+
+onAuthStateChanged(auth,async user=>{
+  authReady=true;
+  if(!user){
+    contracts=[];customers=[];buildings=[];elevators=[];maintenances=[];
+    renderYearOptions();render();
+    return;
+  }
+  await load();
+});
+</script>
+</body>
+</html>
