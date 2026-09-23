@@ -1,3 +1,4 @@
+/* MAINTENANCE DATA LAYER V4 */
 import {
   collection,
   doc,
@@ -678,20 +679,33 @@ function maintenanceKey(contractId, periodNumber){
   return `contract_${encodeURIComponent(String(contractId))}_period_${Number(periodNumber)}`;
 }
 
-async function assertMaintenancePeriodAvailable(contractId, periodNumber, excludeId = ""){
+async function findMaintenanceDuplicate(contractId, periodNumber, excludeId = ""){
+  const normalizedContractId = String(contractId || "").trim();
+  const normalizedPeriod = Number(periodNumber || 0);
+
   const q = query(
     collection(db, COLLECTIONS.MAINTENANCE),
-    where("contractId", "==", contractId)
+    where("contractId", "==", normalizedContractId)
   );
   const snapshot = await getDocs(q);
-  const duplicate = snapshot.docs.find(item =>
+
+  return snapshot.docs.find(item =>
     item.id !== excludeId &&
-    Number(item.data()?.periodNumber || 0) === Number(periodNumber)
-  );
+    Number(item.data()?.periodNumber || 0) === normalizedPeriod
+  ) || null;
+}
+
+async function assertMaintenancePeriodAvailable(contractId, periodNumber, excludeId = ""){
+  const duplicate = await findMaintenanceDuplicate(contractId, periodNumber, excludeId);
 
   if(duplicate){
-    const ticketNo = duplicate.data()?.ticketNo || duplicate.id;
-    throw new Error(`Kỳ bảo trì này đã có phiếu bảo trì (${ticketNo}). Không thể tạo phiếu trùng.`);
+    const data = duplicate.data() || {};
+    const ticketNo = data.ticketNo || duplicate.id;
+    const storedPeriod = Number(data.periodNumber || 0);
+    throw new Error(
+      `Kỳ bảo trì ${Number(periodNumber)} đã có phiếu ${ticketNo} ` +
+      `(Kỳ lưu trong Firestore: ${storedPeriod}). Không thể tạo phiếu trùng.`
+    );
   }
 }
 
@@ -788,7 +802,7 @@ export async function createMaintenance(data){
     return { id: maintenanceId, ticketNo };
   });
 
-  return { id:saved.id, ...maintenance, ticketNo:saved.ticketNo };
+  return { id:saved.id, ...maintenance, periodNumber, ticketNo:saved.ticketNo };
 }
 
 export async function updateMaintenance(maintenanceId, data){
