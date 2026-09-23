@@ -181,23 +181,40 @@ body{
 .modal-foot{
   display:flex;
   justify-content:flex-end;
+  align-items:center;
   gap:10px;
   margin-top:22px;
   position:sticky;
   bottom:0;
-  padding:16px 0 12px;
+  width:100%;
+  min-height:76px;
+  padding:14px 0 calc(14px + env(safe-area-inset-bottom));
   margin-bottom:0;
-  background:#111;
-  z-index:10;
+  background:#111!important;
+  z-index:50;
   border-top:1px solid #242424;
   box-sizing:border-box;
+  isolation:isolate;
 }
 
 .modal-foot .primary-button,
 .modal-foot .secondary-button{
   position:relative;
-  z-index:11;
-  flex:0 0 auto;
+  z-index:51;
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:120px!important;
+  max-width:220px!important;
+  height:48px!important;
+  min-height:48px!important;
+  max-height:48px!important;
+  padding:0 17px!important;
+  margin:0!important;
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  line-height:1;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)){
@@ -229,8 +246,24 @@ body{
   .modal-head{top:-18px}
   .modal-foot{
   bottom:0;
+  width:100%;
+  min-height:76px;
   margin-bottom:0;
-  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  padding:14px 0 calc(14px + env(safe-area-inset-bottom));
+  justify-content:flex-end;
+  align-items:center;
+  background:#111!important;
+}
+
+.modal-foot .primary-button,
+.modal-foot .secondary-button{
+  width:auto!important;
+  min-width:120px!important;
+  max-width:calc(50% - 5px)!important;
+  height:48px!important;
+  min-height:48px!important;
+  max-height:48px!important;
+  padding:0 14px!important;
 }
 }
 </style>
