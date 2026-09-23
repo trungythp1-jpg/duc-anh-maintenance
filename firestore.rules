@@ -299,7 +299,10 @@ service cloud.firestore {
 
       // Bộ đếm số phiếu PBM phải được cập nhật atomically bằng transaction.
       // Chỉ tài khoản có quyền tạo/sửa phiếu bảo trì được cập nhật đúng document này.
-      allow create, update: if (settingId == 'maintenanceTicket' && (isAdmin() || isManager() || isTechnician()))
+      allow create, update: if (
+        (settingId == 'maintenanceTicket' || settingId == 'workOrderTicket')
+        && (isAdmin() || isManager() || isTechnician())
+      )
         || isAdmin();
 
       allow delete: if false;
