@@ -516,6 +516,11 @@ body{
 <script src="js/ui/app.js"></script>
 
 <script type="module">
+import { onAuthStateChanged } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+import { auth } from "./js/core/firebase.js";
+
 import * as Firestore from "./js/core/firestore-v1.js";
 
 const {
@@ -535,6 +540,8 @@ let elevators = [];
 let contracts = [];
 let editingId = null;
 let loadingContracts = false;
+let authUser = null;
+let authReady = false;
 
 const modal = $("contractModal");
 const form = $("contractForm");
@@ -705,20 +712,28 @@ async function loadReferences(){
 }
 
 async function loadContracts(){
+  if(!authReady || !authUser){
+    return false;
+  }
+
   if(typeof getContracts!=="function"){
     setReferenceStatus("Module Firestore chưa có getContracts(). Hãy cập nhật firestore-v1.js.","error");
     return false;
   }
 
   loadingContracts=true;
+  $("pageStatus").textContent = "Đang tải hợp đồng...";
   try{
     contracts=await getContracts();
     render();
+    $("pageStatus").textContent =
+      `${contracts.length} hợp đồng`;
     return true;
   }catch(error){
     console.error("CONTRACT LOAD ERROR:",error);
     contracts=[];
     render();
+    $("pageStatus").textContent = "Không tải được hợp đồng";
     setReferenceStatus(error?.message || "Không thể tải hợp đồng từ Firebase.","error");
     return false;
   }finally{
@@ -846,6 +861,11 @@ $("buildingId").addEventListener("change",()=>{
 form.addEventListener("submit",async e=>{
   e.preventDefault();
 
+  if(!authReady || !authUser){
+    setFormError("Phiên đăng nhập Firebase chưa sẵn sàng. Vui lòng đăng nhập lại.");
+    return;
+  }
+
   const customer=$("customerId");
   const building=$("buildingId");
   const elevator=$("elevatorId");
@@ -867,9 +887,8 @@ form.addEventListener("submit",async e=>{
   }
 
   if(!selectedElevator ||
-     String(selectedElevator.buildingId)!==String(building.value) ||
-     String(selectedElevator.customerId)!==String(customer.value)){
-    setFormError("Thang máy không thuộc tòa nhà/khách hàng đã chọn.");
+     String(selectedElevator.buildingId)!==String(building.value)){
+    setFormError("Thang máy không thuộc tòa nhà đã chọn.");
     return;
   }
 
@@ -877,8 +896,11 @@ form.addEventListener("submit",async e=>{
     code:$("contractCode").value.trim(),
     name:$("contractName").value.trim(),
     customerId:customer.value,
+    customerName:customer.options[customer.selectedIndex]?.text || "",
     buildingId:building.value,
+    buildingName:building.options[building.selectedIndex]?.text || "",
     elevatorId:elevator.value,
+    elevatorName:elevator.options[elevator.selectedIndex]?.text || "",
     status:$("status").value,
     signedDate:$("signedDate").value,
     startDate:$("startDate").value,
@@ -924,10 +946,12 @@ form.addEventListener("submit",async e=>{
     const wasEditing = Boolean(editingId);
     await loadContracts();
     closeModal();
-    setReferenceStatus(
-      wasEditing ? "Đã cập nhật hợp đồng trên Firebase." : "Đã lưu hợp đồng vào Firebase.",
-      "success"
-    );
+
+    $("pageStatus").textContent =
+      wasEditing
+        ? `Đã cập nhật hợp đồng · ${contracts.length} hợp đồng`
+        : `Đã lưu hợp đồng · ${contracts.length} hợp đồng`;
+
   }catch(error){
     console.error("CONTRACT SAVE ERROR:",error);
     setFormError(error?.message || "Không thể lưu hợp đồng vào Firebase.");
@@ -945,7 +969,36 @@ document.querySelectorAll("[data-module]").forEach(a=>{
 });
 
 render();
-refreshAll();
+
+/*
+ * AUTH GATE
+ *
+ * Không gọi Firestore khi trang vừa mở.
+ * Chờ Firebase khôi phục phiên đăng nhập trước.
+ */
+onAuthStateChanged(auth, async (user) => {
+  authReady = true;
+  authUser = user || null;
+
+  if(!user){
+    $("pageStatus").textContent = "Chưa đăng nhập";
+    contracts = [];
+    render();
+
+    setReferenceStatus(
+      "Phiên đăng nhập Firebase không còn hoạt động. Vui lòng đăng nhập lại.",
+      "error"
+    );
+    return;
+  }
+
+  $("pageStatus").textContent = "Đang xác thực...";
+
+  await refreshAll();
+
+  $("pageStatus").textContent =
+    `${contracts.length} hợp đồng`;
+});
 </script>
 </body>
 </html>
