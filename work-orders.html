@@ -61,6 +61,13 @@ tr:hover td{background:#161613}
 .actions .primary{min-width:150px}
 .err{color:var(--danger);margin-top:8px;display:none}
 .err.show{display:block}
+.audit-history{display:grid;gap:8px}
+.audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
+.audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.audit-action{color:var(--gold2)!important;font-weight:700;font-size:13px}.audit-time{color:#999!important;font-size:11px}
+.audit-meta{margin-top:5px;font-size:12px;color:#eee!important;line-height:1.55}.audit-meta span{color:#999!important}
+.audit-empty{color:#999!important;font-size:12px;padding:8px 0}
+
 @media(max-width:850px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.ref{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){
   main{padding:16px 12px 50px}.head{flex-direction:column}.toolbar{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}
@@ -140,6 +147,8 @@ tr:hover td{background:#161613}
           <div class="full"><label>Ghi chú</label><textarea id="note" rows="3"></textarea></div>
         </div>
         <div id="workflowHint" class="muted" style="margin-top:10px"></div>
+        <div class="section" style="margin-top:18px;padding-top:14px;border-top:1px solid #40382b"><h3 style="margin:0 0 10px;color:var(--gold2)">LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
+        
         <div id="err" class="err"></div>
       </div>
       <div class="actions">
@@ -152,7 +161,7 @@ tr:hover td{background:#161613}
 
 <script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { doc, getDoc, getDocs, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import {
   getMaintenances,
@@ -259,6 +268,30 @@ async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicia
   });
 }
 
+function formatAuditTime(value){
+  if(!value)return "—";
+  try{const d=value?.toDate?value.toDate():new Date(value);return Number.isNaN(d.getTime())?"—":d.toLocaleString("vi-VN");}catch(e){return "—"}
+}
+async function loadAssignmentHistory(entityId){
+  const box=$("assignmentHistory");
+  if(!box)return;
+  if(!entityId){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
+  box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
+  try{
+    const snap=await getDocs(collection(db,"auditLogs"));
+    const items=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(x=>String(x.entityType||"")==="workOrder"&&String(x.entityId||"")===String(entityId))
+      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa});
+    if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
+    box.innerHTML=items.map(x=>{
+      const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
+      const from=x.fromTechnicianName||"Chưa phân công";
+      const to=x.toTechnicianName||"Chưa phân công";
+      return `<div class="audit-item"><div class="audit-top"><div class="audit-action">${esc(action)}</div><div class="audit-time">${esc(formatAuditTime(x.createdAt))}</div></div><div class="audit-meta"><span>Từ:</span> ${esc(from)}<br><span>Sang:</span> ${esc(to)}<br><span>Người thực hiện:</span> ${esc(x.performedByName||x.performedByUid||"—")}<br><span>Lý do:</span> ${esc(x.reason||"—")}</div></div>`;
+    }).join("");
+  }catch(err){console.error(err);box.innerHTML='<div class="audit-empty">Không thể tải lịch sử phân công.</div>'}
+}
+
 function getTechnicianId(t){
   return String(t?.technicianId || t?.id || "");
 }
@@ -319,6 +352,7 @@ function updateWorkflowHint(){
 }
 
 function resetForm(){
+  $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
   $("assignmentReason").value="";
   editingId="";
   $("modalTitle").textContent="Tạo Work Order";
@@ -355,6 +389,7 @@ function openEdit(id){
   updateWorkflowHint();
   $("err").className="err";$("err").textContent="";
   $("modal").classList.add("show");
+  loadAssignmentHistory(editingId);
 }
 function close(){ $("modal").classList.remove("show"); }
 
