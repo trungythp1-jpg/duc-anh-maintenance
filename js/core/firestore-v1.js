@@ -1105,19 +1105,32 @@ export async function createWorkOrder(data){
   const counterRef = doc(db, COLLECTIONS.SETTINGS, WORK_ORDER_COUNTER_ID);
 
   const saved = await runTransaction(db, async transaction => {
+    // IMPORTANT: Firestore requires every transaction read to happen
+    // before the first transaction write.
     const counterSnapshot = await transaction.get(counterRef);
-    const current = counterSnapshot.exists()
-      ? Number(counterSnapshot.data().lastNumber || 0)
-      : 0;
-
-    const nextNumber = current + 1;
-    const workOrderNo = `WO-${String(nextNumber).padStart(6, "0")}`;
-
-    // Firestore transaction rule: ALL reads must happen before any writes.
-    // Read the linked maintenance record before setting the counter/work order.
     const maintenanceRef = doc(db, COLLECTIONS.MAINTENANCE, maintenance.id);
     const maintenanceSnapshot = await transaction.get(maintenanceRef);
 
+    const currentNumber = counterSnapshot.exists()
+      ? Number(counterSnapshot.data().lastNumber || 0)
+      : 0;
+
+    const nextNumber = currentNumber + 1;
+    const workOrderNo = `WO-${String(nextNumber).padStart(6, "0")}`;
+
+    let currentIds = [];
+    if(maintenanceSnapshot.exists()){
+      const maintenanceData = maintenanceSnapshot.data() || {};
+      currentIds = Array.isArray(maintenanceData.workOrderIds)
+        ? maintenanceData.workOrderIds.map(String)
+        : [];
+    }
+
+    if(!currentIds.includes(String(workOrderId))){
+      currentIds.push(String(workOrderId));
+    }
+
+    // ---- ALL READS ARE ABOVE. WRITES START HERE. ----
     transaction.set(counterRef, {
       lastNumber: nextNumber,
       prefix: "WO-",
@@ -1132,15 +1145,6 @@ export async function createWorkOrder(data){
     });
 
     if(maintenanceSnapshot.exists()){
-      const current = maintenanceSnapshot.data() || {};
-      const currentIds = Array.isArray(current.workOrderIds)
-        ? current.workOrderIds.map(String)
-        : [];
-
-      if(!currentIds.includes(String(workOrderId))){
-        currentIds.push(String(workOrderId));
-      }
-
       transaction.update(maintenanceRef, {
         workOrderIds: currentIds,
         workOrderCount: currentIds.length,
@@ -1290,10 +1294,11 @@ export async function updateWorkOrder(workOrderId, data){
   );
 
   await runTransaction(db, async transaction => {
-    // Firestore transaction rule: ALL reads must happen before any writes.
+    // IMPORTANT: read first, then write.
     const maintenanceSnapshot =
       await transaction.get(maintenanceRef);
 
+    // ---- ALL READS ARE ABOVE. WRITES START HERE. ----
     transaction.update(workOrderRef, payload);
 
     if(maintenanceSnapshot.exists()){
