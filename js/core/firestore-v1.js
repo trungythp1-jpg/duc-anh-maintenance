@@ -674,24 +674,25 @@ async function validateMaintenanceReferences(data){
   return { customer, building, elevator, contract };
 }
 
-async function allocateMaintenanceTicketNo(){
-  const counterRef = doc(db, COLLECTIONS.SETTINGS, MAINTENANCE_COUNTER_ID);
+function maintenanceKey(contractId, periodNumber){
+  return `contract_${encodeURIComponent(String(contractId))}_period_${Number(periodNumber)}`;
+}
 
-  const nextNumber = await runTransaction(db, async transaction => {
-    const snapshot = await transaction.get(counterRef);
-    const current = snapshot.exists() ? Number(snapshot.data().lastNumber || 0) : 0;
-    const next = current + 1;
+async function assertMaintenancePeriodAvailable(contractId, periodNumber, excludeId = ""){
+  const q = query(
+    collection(db, COLLECTIONS.MAINTENANCE),
+    where("contractId", "==", contractId)
+  );
+  const snapshot = await getDocs(q);
+  const duplicate = snapshot.docs.find(item =>
+    item.id !== excludeId &&
+    Number(item.data()?.periodNumber || 0) === Number(periodNumber)
+  );
 
-    transaction.set(counterRef, {
-      lastNumber: next,
-      prefix: "PBM-",
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    return next;
-  });
-
-  return `PBM-${String(nextNumber).padStart(6, "0")}`;
+  if(duplicate){
+    const ticketNo = duplicate.data()?.ticketNo || duplicate.id;
+    throw new Error(`Kỳ bảo trì này đã có phiếu bảo trì (${ticketNo}). Không thể tạo phiếu trùng.`);
+  }
 }
 
 export async function getMaintenance(maintenanceId){
@@ -715,9 +716,15 @@ export async function getMaintenancesByElevator(elevatorId){
 
 export async function createMaintenance(data){
   const references = await validateMaintenanceReferences(data);
-  const ticketNo = await allocateMaintenanceTicketNo();
-  const status = normalizeMaintenanceStatus(data.status);
+  const periodNumber = Number(data.periodNumber || 0) || null;
+  if(!periodNumber){
+    throw new Error("Kỳ bảo trì là bắt buộc. Phiếu bảo trì phải gắn với một kỳ trong lịch.");
+  }
 
+  // Chặn trùng với dữ liệu cũ trước khi ghi.
+  await assertMaintenancePeriodAvailable(references.contract.id, periodNumber);
+
+  const status = normalizeMaintenanceStatus(data.status);
   const maintenance = {
     ticketNo,
     customerId: references.customer.id,
@@ -729,7 +736,7 @@ export async function createMaintenance(data){
     elevatorAssetCode: references.elevator.assetCode || "",
     contractId: references.contract.id,
     contractCode: references.contract.code || "",
-    periodNumber: Number(data.periodNumber || 0) || null,
+    periodNumber,
     scheduledDate: data.scheduledDate || "",
     completedDate: status === "completed" ? (data.completedDate || new Date().toISOString().slice(0,10)) : (data.completedDate || ""),
     status,
@@ -745,8 +752,44 @@ export async function createMaintenance(data){
     updatedAt: serverTimestamp()
   };
 
-  const ref = await addDoc(collection(db, COLLECTIONS.MAINTENANCE), maintenance);
-  return { id:ref.id, ...maintenance };
+  // Dùng document ID xác định theo Contract + Kỳ để chống trùng ngay cả khi
+  // hai người dùng cùng lúc tạo phiếu cho cùng một kỳ. Transaction khóa
+  // document này trước khi tăng bộ đếm mã PBM.
+  const maintenanceId = maintenanceKey(references.contract.id, periodNumber);
+  const maintenanceRef = doc(db, COLLECTIONS.MAINTENANCE, maintenanceId);
+  const counterRef = doc(db, COLLECTIONS.SETTINGS, MAINTENANCE_COUNTER_ID);
+
+  const saved = await runTransaction(db, async transaction => {
+    const existing = await transaction.get(maintenanceRef);
+    if(existing.exists()){
+      const existingTicket = existing.data()?.ticketNo || maintenanceId;
+      throw new Error(`Kỳ bảo trì này đã có phiếu bảo trì (${existingTicket}). Không thể tạo phiếu trùng.`);
+    }
+
+    const counterSnapshot = await transaction.get(counterRef);
+    const current = counterSnapshot.exists()
+      ? Number(counterSnapshot.data().lastNumber || 0)
+      : 0;
+    const nextNumber = current + 1;
+    const ticketNo = `PBM-${String(nextNumber).padStart(6, "0")}`;
+
+    transaction.set(counterRef, {
+      lastNumber: nextNumber,
+      prefix: "PBM-",
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    transaction.set(maintenanceRef, {
+      ...maintenance,
+      ticketNo,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    return { id: maintenanceId, ticketNo };
+  });
+
+  return { id:saved.id, ...maintenance, ticketNo:saved.ticketNo };
 }
 
 export async function updateMaintenance(maintenanceId, data){
@@ -755,6 +798,13 @@ export async function updateMaintenance(maintenanceId, data){
   if(!existing) throw new Error("Không tìm thấy phiếu bảo trì.");
 
   const references = await validateMaintenanceReferences(data);
+  const periodNumber = Number(data.periodNumber || existing.periodNumber || 0) || null;
+  if(!periodNumber){
+    throw new Error("Kỳ bảo trì là bắt buộc.");
+  }
+
+  await assertMaintenancePeriodAvailable(references.contract.id, periodNumber, maintenanceId);
+
   const status = normalizeMaintenanceStatus(data.status);
   const payload = {
     customerId: references.customer.id,
@@ -766,7 +816,7 @@ export async function updateMaintenance(maintenanceId, data){
     elevatorAssetCode: references.elevator.assetCode || "",
     contractId: references.contract.id,
     contractCode: references.contract.code || "",
-    periodNumber: Number(data.periodNumber || existing.periodNumber || 0) || null,
+    periodNumber,
     scheduledDate: data.scheduledDate || "",
     completedDate: status === "completed" ? (data.completedDate || existing.completedDate || new Date().toISOString().slice(0,10)) : (data.completedDate || ""),
     status,
