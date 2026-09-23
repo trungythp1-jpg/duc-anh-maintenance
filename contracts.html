@@ -732,12 +732,18 @@ async function loadContracts(){
   }catch(error){
     console.error("CONTRACT LOAD ERROR:",error);
     contracts=[];
-    render();
     $("pageStatus").textContent = "Không tải được hợp đồng";
     setReferenceStatus(error?.message || "Không thể tải hợp đồng từ Firebase.","error");
     return false;
   }finally{
     loadingContracts=false;
+
+    /*
+     * Phải render lại SAU KHI loadingContracts=false.
+     * Nếu render trước finally, render() vẫn thấy loadingContracts=true
+     * và giữ nguyên trạng thái "Đang tải..." thay vì hiển thị các hợp đồng.
+     */
+    render();
   }
 }
 
