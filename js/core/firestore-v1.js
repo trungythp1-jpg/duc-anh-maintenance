@@ -847,6 +847,245 @@ export async function updateMaintenance(maintenanceId, data){
   return getMaintenance(maintenanceId);
 }
 
+
+/* =========================
+   WORK ORDERS / PHIẾU CÔNG VIỆC
+========================= */
+
+const WORK_ORDER_COUNTER_ID = "workOrderTicket";
+const WORK_ORDER_COOLDOWN_MS = 20 * 60 * 1000;
+
+function normalizeWorkOrderStatus(value){
+  const allowed = ["draft","assigned","in_progress","waiting_parts","completed","cancelled"];
+  return allowed.includes(value) ? value : "draft";
+}
+
+function normalizeWorkOrderPriority(value){
+  const allowed = ["low","normal","high","urgent"];
+  return allowed.includes(value) ? value : "normal";
+}
+
+function normalizeWorkOrderType(value){
+  const allowed = ["MAINTENANCE","BREAKDOWN","REPAIR","INSPECTION"];
+  return allowed.includes(value) ? value : "MAINTENANCE";
+}
+
+async function validateWorkOrderMaintenance(data){
+  requireValue(data.maintenanceId, "maintenanceId");
+
+  const maintenance = await getMaintenance(data.maintenanceId);
+  if(!maintenance){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(!maintenance.contractId || !maintenance.elevatorId){
+    throw new Error("Phiếu bảo trì chưa đủ liên kết Hợp đồng → Thang máy.");
+  }
+
+  return maintenance;
+}
+
+async function assertWorkOrderCooldown(maintenanceId){
+  const q = query(
+    collection(db, COLLECTIONS.WORK_ORDERS),
+    where("maintenanceId", "==", String(maintenanceId))
+  );
+  const snapshot = await getDocs(q);
+
+  const now = Date.now();
+
+  for(const item of snapshot.docs){
+    const data = item.data() || {};
+    const createdAt = data.createdAt;
+
+    if(createdAt && typeof createdAt.toMillis === "function"){
+      const age = now - createdAt.toMillis();
+      if(age >= 0 && age < WORK_ORDER_COOLDOWN_MS){
+        const workOrderNo = data.workOrderNo || item.id;
+        const remaining = Math.max(
+          1,
+          Math.ceil((WORK_ORDER_COOLDOWN_MS - age) / 60000)
+        );
+        throw new Error(
+          `Phiếu công việc ${workOrderNo} vừa được tạo. ` +
+          `Vui lòng chờ khoảng ${remaining} phút trước khi tạo thêm Work Order cho cùng phiếu bảo trì.`
+        );
+      }
+    }
+  }
+}
+
+export async function getWorkOrder(workOrderId){
+  requireValue(workOrderId, "workOrderId");
+  const snapshot = await getDoc(
+    doc(db, COLLECTIONS.WORK_ORDERS, workOrderId)
+  );
+  if(!snapshot.exists()) return null;
+  return { id:snapshot.id, ...snapshot.data() };
+}
+
+export async function getWorkOrders(){
+  const snapshot = await getDocs(
+    collection(db, COLLECTIONS.WORK_ORDERS)
+  );
+  return snapshot.docs.map(item => ({
+    id:item.id,
+    ...item.data()
+  }));
+}
+
+export async function getWorkOrdersByMaintenance(maintenanceId){
+  requireValue(maintenanceId, "maintenanceId");
+  const q = query(
+    collection(db, COLLECTIONS.WORK_ORDERS),
+    where("maintenanceId", "==", String(maintenanceId))
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(item => ({
+    id:item.id,
+    ...item.data()
+  }));
+}
+
+export async function createWorkOrder(data){
+  const maintenance = await validateWorkOrderMaintenance(data);
+  await assertWorkOrderCooldown(maintenance.id);
+
+  const status = normalizeWorkOrderStatus(data.status);
+  const priority = normalizeWorkOrderPriority(data.priority);
+  const type = normalizeWorkOrderType(data.type);
+
+  const workOrder = {
+    maintenanceId: maintenance.id,
+    maintenanceTicketNo: maintenance.ticketNo || "",
+    customerId: maintenance.customerId || "",
+    customerName: maintenance.customerName || "",
+    buildingId: maintenance.buildingId || "",
+    buildingName: maintenance.buildingName || "",
+    elevatorId: maintenance.elevatorId || "",
+    elevatorName: maintenance.elevatorName || "",
+    elevatorAssetCode: maintenance.elevatorAssetCode || "",
+    contractId: maintenance.contractId || "",
+    contractCode: maintenance.contractCode || "",
+    periodNumber: Number(maintenance.periodNumber || 0) || null,
+
+    type,
+    priority,
+    status,
+
+    issueTitle: String(data.issueTitle || "").trim(),
+    problemDescription: String(data.problemDescription || "").trim(),
+
+    assignedTechnicianId: data.assignedTechnicianId || "",
+    assignedTechnicianName: data.assignedTechnicianName || "",
+
+    openedDate: data.openedDate || new Date().toISOString().slice(0,10),
+    dueDate: data.dueDate || "",
+    completedDate: status === "completed"
+      ? (data.completedDate || new Date().toISOString().slice(0,10))
+      : (data.completedDate || ""),
+
+    cause: data.cause || "",
+    resolution: data.resolution || "",
+
+    materials: Array.isArray(data.materials) ? data.materials : [],
+    laborCost: Number(data.laborCost || 0) || 0,
+    materialCost: Number(data.materialCost || 0) || 0,
+    totalCost: Number(data.totalCost || 0) || 0,
+
+    attachmentUrls: Array.isArray(data.attachmentUrls)
+      ? data.attachmentUrls
+      : [],
+
+    note: data.note || "",
+    source: "maintenance",
+
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+
+  const workOrderId = `wo_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const workOrderRef = doc(db, COLLECTIONS.WORK_ORDERS, workOrderId);
+  const counterRef = doc(db, COLLECTIONS.SETTINGS, WORK_ORDER_COUNTER_ID);
+
+  const saved = await runTransaction(db, async transaction => {
+    const counterSnapshot = await transaction.get(counterRef);
+    const current = counterSnapshot.exists()
+      ? Number(counterSnapshot.data().lastNumber || 0)
+      : 0;
+
+    const nextNumber = current + 1;
+    const workOrderNo = `WO-${String(nextNumber).padStart(6, "0")}`;
+
+    transaction.set(counterRef, {
+      lastNumber: nextNumber,
+      prefix: "WO-",
+      updatedAt: serverTimestamp()
+    }, { merge:true });
+
+    transaction.set(workOrderRef, {
+      ...workOrder,
+      workOrderNo,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    return { id: workOrderId, workOrderNo };
+  });
+
+  return {
+    id:saved.id,
+    ...workOrder,
+    workOrderNo:saved.workOrderNo
+  };
+}
+
+export async function updateWorkOrder(workOrderId, data){
+  requireValue(workOrderId, "workOrderId");
+
+  const existing = await getWorkOrder(workOrderId);
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu công việc.");
+  }
+
+  const status = normalizeWorkOrderStatus(data.status || existing.status);
+  const priority = normalizeWorkOrderPriority(data.priority || existing.priority);
+  const type = normalizeWorkOrderType(data.type || existing.type);
+
+  const payload = {
+    type,
+    priority,
+    status,
+    issueTitle: String(data.issueTitle ?? existing.issueTitle ?? "").trim(),
+    problemDescription: String(data.problemDescription ?? existing.problemDescription ?? "").trim(),
+    assignedTechnicianId: data.assignedTechnicianId ?? existing.assignedTechnicianId ?? "",
+    assignedTechnicianName: data.assignedTechnicianName ?? existing.assignedTechnicianName ?? "",
+    openedDate: data.openedDate ?? existing.openedDate ?? "",
+    dueDate: data.dueDate ?? existing.dueDate ?? "",
+    completedDate: status === "completed"
+      ? (data.completedDate || existing.completedDate || new Date().toISOString().slice(0,10))
+      : (data.completedDate ?? existing.completedDate ?? ""),
+    cause: data.cause ?? existing.cause ?? "",
+    resolution: data.resolution ?? existing.resolution ?? "",
+    materials: Array.isArray(data.materials) ? data.materials : (existing.materials || []),
+    laborCost: Number(data.laborCost ?? existing.laborCost ?? 0) || 0,
+    materialCost: Number(data.materialCost ?? existing.materialCost ?? 0) || 0,
+    totalCost: Number(data.totalCost ?? existing.totalCost ?? 0) || 0,
+    attachmentUrls: Array.isArray(data.attachmentUrls)
+      ? data.attachmentUrls
+      : (existing.attachmentUrls || []),
+    note: data.note ?? existing.note ?? "",
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(
+    doc(db, COLLECTIONS.WORK_ORDERS, workOrderId),
+    payload
+  );
+
+  return getWorkOrder(workOrderId);
+}
+
 /* =========================
    GENERIC HELPERS
 ========================= */
