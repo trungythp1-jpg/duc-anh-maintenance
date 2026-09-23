@@ -468,7 +468,8 @@ async function loadAssignmentHistory(entityId){
     const snap=await getDocs(collection(db,"auditLogs"));
     const items=snap.docs.map(d=>({id:d.id,...d.data()}))
       .filter(x=>String(x.entityType||"")==="maintenance"&&String(x.entityId||"")===String(entityId))
-      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa});
+      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa})
+      .slice(0,3);
     if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
     box.innerHTML=items.map(x=>{
       const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
