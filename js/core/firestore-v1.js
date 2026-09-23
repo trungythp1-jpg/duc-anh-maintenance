@@ -850,6 +850,7 @@ export async function updateMaintenance(maintenanceId, data){
 
 /* =========================
    WORK ORDERS / PHIẾU CÔNG VIỆC
+   V1.1 — ASSIGNMENT / PROCESS / COMPLETION
 ========================= */
 
 const WORK_ORDER_COUNTER_ID = "workOrderTicket";
@@ -870,6 +871,39 @@ function normalizeWorkOrderType(value){
   return allowed.includes(value) ? value : "MAINTENANCE";
 }
 
+function workOrderStatusLabel(value){
+  return {
+    draft:"Nháp",
+    assigned:"Đã phân công",
+    in_progress:"Đang xử lý",
+    waiting_parts:"Chờ vật tư",
+    completed:"Hoàn thành",
+    cancelled:"Đã hủy"
+  }[value] || value;
+}
+
+function validateWorkOrderState({ status, technicianName, resolution, completedDate, existingStatus = "" }){
+  const tech = String(technicianName || "").trim();
+  const result = String(resolution || "").trim();
+
+  if(existingStatus === "completed" && status !== "completed"){
+    throw new Error("Work Order đã hoàn thành và không được chuyển ngược trạng thái.");
+  }
+
+  if(["assigned","in_progress","waiting_parts","completed"].includes(status) && !tech){
+    throw new Error(`Trạng thái "${workOrderStatusLabel(status)}" bắt buộc phải có kỹ thuật viên.`);
+  }
+
+  if(status === "completed"){
+    if(!result){
+      throw new Error("Muốn hoàn thành Work Order phải nhập Biện pháp xử lý.");
+    }
+    if(!completedDate){
+      throw new Error("Muốn hoàn thành Work Order phải có Ngày hoàn thành.");
+    }
+  }
+}
+
 async function validateWorkOrderMaintenance(data){
   requireValue(data.maintenanceId, "maintenanceId");
 
@@ -885,27 +919,30 @@ async function validateWorkOrderMaintenance(data){
   return maintenance;
 }
 
-async function assertWorkOrderCooldown(maintenanceId){
+async function assertWorkOrderCooldown(maintenanceId, excludeWorkOrderId = ""){
   const q = query(
     collection(db, COLLECTIONS.WORK_ORDERS),
     where("maintenanceId", "==", String(maintenanceId))
   );
   const snapshot = await getDocs(q);
-
   const now = Date.now();
 
   for(const item of snapshot.docs){
+    if(excludeWorkOrderId && item.id === excludeWorkOrderId) continue;
+
     const data = item.data() || {};
     const createdAt = data.createdAt;
 
     if(createdAt && typeof createdAt.toMillis === "function"){
       const age = now - createdAt.toMillis();
+
       if(age >= 0 && age < WORK_ORDER_COOLDOWN_MS){
         const workOrderNo = data.workOrderNo || item.id;
         const remaining = Math.max(
           1,
           Math.ceil((WORK_ORDER_COOLDOWN_MS - age) / 60000)
         );
+
         throw new Error(
           `Phiếu công việc ${workOrderNo} vừa được tạo. ` +
           `Vui lòng chờ khoảng ${remaining} phút trước khi tạo thêm Work Order cho cùng phiếu bảo trì.`
@@ -915,19 +952,57 @@ async function assertWorkOrderCooldown(maintenanceId){
   }
 }
 
+async function syncMaintenanceWorkOrderLink(
+  transaction,
+  maintenanceId,
+  workOrderId,
+  workOrderNo,
+  status
+){
+  const maintenanceRef = doc(db, COLLECTIONS.MAINTENANCE, maintenanceId);
+  const maintenanceSnapshot = await transaction.get(maintenanceRef);
+
+  if(!maintenanceSnapshot.exists()) return;
+
+  const current = maintenanceSnapshot.data() || {};
+  const currentIds = Array.isArray(current.workOrderIds)
+    ? current.workOrderIds.map(String)
+    : [];
+
+  if(!currentIds.includes(String(workOrderId))){
+    currentIds.push(String(workOrderId));
+  }
+
+  transaction.update(maintenanceRef, {
+    workOrderIds: currentIds,
+    workOrderCount: currentIds.length,
+    latestWorkOrderId: String(workOrderId),
+    latestWorkOrderNo: String(workOrderNo || ""),
+    latestWorkOrderStatus: status || "draft",
+    updatedAt: serverTimestamp()
+  });
+}
+
 export async function getWorkOrder(workOrderId){
   requireValue(workOrderId, "workOrderId");
+
   const snapshot = await getDoc(
     doc(db, COLLECTIONS.WORK_ORDERS, workOrderId)
   );
+
   if(!snapshot.exists()) return null;
-  return { id:snapshot.id, ...snapshot.data() };
+
+  return {
+    id:snapshot.id,
+    ...snapshot.data()
+  };
 }
 
 export async function getWorkOrders(){
   const snapshot = await getDocs(
     collection(db, COLLECTIONS.WORK_ORDERS)
   );
+
   return snapshot.docs.map(item => ({
     id:item.id,
     ...item.data()
@@ -936,11 +1011,14 @@ export async function getWorkOrders(){
 
 export async function getWorkOrdersByMaintenance(maintenanceId){
   requireValue(maintenanceId, "maintenanceId");
+
   const q = query(
     collection(db, COLLECTIONS.WORK_ORDERS),
     where("maintenanceId", "==", String(maintenanceId))
   );
+
   const snapshot = await getDocs(q);
+
   return snapshot.docs.map(item => ({
     id:item.id,
     ...item.data()
@@ -954,6 +1032,24 @@ export async function createWorkOrder(data){
   const status = normalizeWorkOrderStatus(data.status);
   const priority = normalizeWorkOrderPriority(data.priority);
   const type = normalizeWorkOrderType(data.type);
+
+  const issueTitle = String(data.issueTitle || "").trim();
+  const problemDescription = String(data.problemDescription || "").trim();
+  const technicianName = String(data.assignedTechnicianName || "").trim();
+  const openedDate = data.openedDate || new Date().toISOString().slice(0,10);
+  const completedDate = status === "completed"
+    ? (data.completedDate || new Date().toISOString().slice(0,10))
+    : (data.completedDate || "");
+
+  validateWorkOrderState({
+    status,
+    technicianName,
+    resolution:data.resolution,
+    completedDate
+  });
+
+  if(!issueTitle) throw new Error("Tiêu đề công việc là bắt buộc.");
+  if(!problemDescription) throw new Error("Mô tả vấn đề là bắt buộc.");
 
   const workOrder = {
     maintenanceId: maintenance.id,
@@ -973,20 +1069,18 @@ export async function createWorkOrder(data){
     priority,
     status,
 
-    issueTitle: String(data.issueTitle || "").trim(),
-    problemDescription: String(data.problemDescription || "").trim(),
+    issueTitle,
+    problemDescription,
 
     assignedTechnicianId: data.assignedTechnicianId || "",
-    assignedTechnicianName: data.assignedTechnicianName || "",
+    assignedTechnicianName: technicianName,
 
-    openedDate: data.openedDate || new Date().toISOString().slice(0,10),
+    openedDate,
     dueDate: data.dueDate || "",
-    completedDate: status === "completed"
-      ? (data.completedDate || new Date().toISOString().slice(0,10))
-      : (data.completedDate || ""),
+    completedDate,
 
-    cause: data.cause || "",
-    resolution: data.resolution || "",
+    cause: String(data.cause || "").trim(),
+    resolution: String(data.resolution || "").trim(),
 
     materials: Array.isArray(data.materials) ? data.materials : [],
     laborCost: Number(data.laborCost || 0) || 0,
@@ -997,14 +1091,16 @@ export async function createWorkOrder(data){
       ? data.attachmentUrls
       : [],
 
-    note: data.note || "",
+    note: String(data.note || "").trim(),
     source: "maintenance",
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 
-  const workOrderId = `wo_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const workOrderId =
+    `wo_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+
   const workOrderRef = doc(db, COLLECTIONS.WORK_ORDERS, workOrderId);
   const counterRef = doc(db, COLLECTIONS.SETTINGS, WORK_ORDER_COUNTER_ID);
 
@@ -1030,7 +1126,18 @@ export async function createWorkOrder(data){
       updatedAt: serverTimestamp()
     });
 
-    return { id: workOrderId, workOrderNo };
+    await syncMaintenanceWorkOrderLink(
+      transaction,
+      maintenance.id,
+      workOrderId,
+      workOrderNo,
+      status
+    );
+
+    return {
+      id:workOrderId,
+      workOrderNo
+    };
   });
 
   return {
@@ -1044,44 +1151,142 @@ export async function updateWorkOrder(workOrderId, data){
   requireValue(workOrderId, "workOrderId");
 
   const existing = await getWorkOrder(workOrderId);
+
   if(!existing){
     throw new Error("Không tìm thấy phiếu công việc.");
   }
 
-  const status = normalizeWorkOrderStatus(data.status || existing.status);
-  const priority = normalizeWorkOrderPriority(data.priority || existing.priority);
-  const type = normalizeWorkOrderType(data.type || existing.type);
+  const status = normalizeWorkOrderStatus(
+    data.status ?? existing.status
+  );
+
+  const priority = normalizeWorkOrderPriority(
+    data.priority ?? existing.priority
+  );
+
+  const type = normalizeWorkOrderType(
+    data.type ?? existing.type
+  );
+
+  const technicianName = String(
+    data.assignedTechnicianName ?? existing.assignedTechnicianName ?? ""
+  ).trim();
+
+  const completedDate = status === "completed"
+    ? (
+        data.completedDate ||
+        existing.completedDate ||
+        new Date().toISOString().slice(0,10)
+      )
+    : (
+        data.completedDate ??
+        existing.completedDate ??
+        ""
+      );
+
+  const resolution = String(
+    data.resolution ?? existing.resolution ?? ""
+  ).trim();
+
+  validateWorkOrderState({
+    status,
+    technicianName,
+    resolution,
+    completedDate,
+    existingStatus:existing.status
+  });
 
   const payload = {
     type,
     priority,
     status,
-    issueTitle: String(data.issueTitle ?? existing.issueTitle ?? "").trim(),
-    problemDescription: String(data.problemDescription ?? existing.problemDescription ?? "").trim(),
-    assignedTechnicianId: data.assignedTechnicianId ?? existing.assignedTechnicianId ?? "",
-    assignedTechnicianName: data.assignedTechnicianName ?? existing.assignedTechnicianName ?? "",
-    openedDate: data.openedDate ?? existing.openedDate ?? "",
-    dueDate: data.dueDate ?? existing.dueDate ?? "",
-    completedDate: status === "completed"
-      ? (data.completedDate || existing.completedDate || new Date().toISOString().slice(0,10))
-      : (data.completedDate ?? existing.completedDate ?? ""),
-    cause: data.cause ?? existing.cause ?? "",
-    resolution: data.resolution ?? existing.resolution ?? "",
-    materials: Array.isArray(data.materials) ? data.materials : (existing.materials || []),
-    laborCost: Number(data.laborCost ?? existing.laborCost ?? 0) || 0,
-    materialCost: Number(data.materialCost ?? existing.materialCost ?? 0) || 0,
-    totalCost: Number(data.totalCost ?? existing.totalCost ?? 0) || 0,
-    attachmentUrls: Array.isArray(data.attachmentUrls)
-      ? data.attachmentUrls
-      : (existing.attachmentUrls || []),
-    note: data.note ?? existing.note ?? "",
-    updatedAt: serverTimestamp()
+
+    issueTitle:String(
+      data.issueTitle ?? existing.issueTitle ?? ""
+    ).trim(),
+
+    problemDescription:String(
+      data.problemDescription ?? existing.problemDescription ?? ""
+    ).trim(),
+
+    assignedTechnicianId:
+      data.assignedTechnicianId ??
+      existing.assignedTechnicianId ??
+      "",
+
+    assignedTechnicianName:technicianName,
+
+    openedDate:
+      data.openedDate ??
+      existing.openedDate ??
+      "",
+
+    dueDate:
+      data.dueDate ??
+      existing.dueDate ??
+      "",
+
+    completedDate,
+
+    cause:String(
+      data.cause ?? existing.cause ?? ""
+    ).trim(),
+
+    resolution,
+
+    materials:
+      Array.isArray(data.materials)
+        ? data.materials
+        : (existing.materials || []),
+
+    laborCost:
+      Number(data.laborCost ?? existing.laborCost ?? 0) || 0,
+
+    materialCost:
+      Number(data.materialCost ?? existing.materialCost ?? 0) || 0,
+
+    totalCost:
+      Number(data.totalCost ?? existing.totalCost ?? 0) || 0,
+
+    attachmentUrls:
+      Array.isArray(data.attachmentUrls)
+        ? data.attachmentUrls
+        : (existing.attachmentUrls || []),
+
+    note:String(
+      data.note ?? existing.note ?? ""
+    ).trim(),
+
+    updatedAt:serverTimestamp()
   };
 
-  await updateDoc(
-    doc(db, COLLECTIONS.WORK_ORDERS, workOrderId),
-    payload
+  const workOrderRef = doc(
+    db,
+    COLLECTIONS.WORK_ORDERS,
+    workOrderId
   );
+
+  const maintenanceRef = doc(
+    db,
+    COLLECTIONS.MAINTENANCE,
+    existing.maintenanceId
+  );
+
+  await runTransaction(db, async transaction => {
+    transaction.update(workOrderRef, payload);
+
+    const maintenanceSnapshot =
+      await transaction.get(maintenanceRef);
+
+    if(maintenanceSnapshot.exists()){
+      transaction.update(maintenanceRef, {
+        latestWorkOrderId:workOrderId,
+        latestWorkOrderNo:existing.workOrderNo || "",
+        latestWorkOrderStatus:status,
+        updatedAt:serverTimestamp()
+      });
+    }
+  });
 
   return getWorkOrder(workOrderId);
 }
