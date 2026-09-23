@@ -157,7 +157,6 @@ import {
   updateWorkOrder
 } from "./js/core/firestore-v1.js?v=wo1.3";
 import { getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
-import { getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $ = id => document.getElementById(id);
 let maintenances = [];
@@ -223,39 +222,25 @@ function updateReference(){
   $("refElevator").textContent=m?.elevatorName||"—";
 }
 
-function activeTechnicians(){
-  return technicians.filter(t=>String(t.status||"active")==="active");
+function getTechnicianId(t){
+  return String(t?.technicianId || t?.id || "");
+}
+function getTechnicianStatus(t){
+  return String(t?.status || "active");
 }
 function findTechnician(id){
-  return technicians.find(t=>String(t.technicianId||t.id)===String(id))||null;
+  return technicians.find(t=>getTechnicianId(t)===String(id))||null;
 }
-function renderTechnicianSelect(selectedId="", selectedName=""){
-  const active=activeTechnicians();
-  const currentId=String(selectedId||"");
-  const currentName=String(selectedName||"").trim();
-  let options=active.map(t=>({id:String(t.technicianId||t.id),name:String(t.name||"").trim(),status:String(t.status||"active")}));
-  if(currentId && !options.some(t=>t.id===currentId)){
-    const current=findTechnician(currentId);
-    options.unshift({id:currentId,name:current?.name||currentName||"Kỹ thuật viên hiện tại",status:current?.status||"leave"});
-  }
-  options.sort((a,b)=>a.name.localeCompare(b.name,"vi"));
-  $("technicianId").innerHTML='<option value="">Chưa phân công</option>'+options.map(t=>{
-    const label=t.status==="active"?t.name:`${t.name} · ${t.status==="leave"?"Đang nghỉ":"Đã nghỉ việc"}`;
-    const disabled=t.status!=="active"?" disabled":"";
-    return `<option value="${esc(t.id)}"${disabled}>${esc(label)}</option>`;
-  }).join("");
-  $("technicianId").value=currentId;
-}
-function selectedTechnician(){ return findTechnician($("technicianId").value); }
-
-function getTechnicianId(t){ return String(t?.technicianId || t?.id || ""); }
-function getTechnicianStatus(t){ return String(t?.status || "active"); }
-function findTechnician(id){ return technicians.find(t=>getTechnicianId(t)===String(id))||null; }
 function renderTechnicianSelect(selectedId="", selectedName=""){
   const currentId=String(selectedId||"");
   const currentName=String(selectedName||"").trim();
   const active=technicians.filter(t=>getTechnicianStatus(t)==="active");
-  const options=active.map(t=>({id:getTechnicianId(t),name:String(t?.name||"").trim(),status:"active"})).filter(t=>t.id);
+  const options=active.map(t=>({
+    id:getTechnicianId(t),
+    name:String(t?.name||"").trim(),
+    status:"active"
+  })).filter(t=>t.id);
+
   if(currentId && !options.some(t=>t.id===currentId)){
     const current=findTechnician(currentId);
     options.unshift({
@@ -264,16 +249,21 @@ function renderTechnicianSelect(selectedId="", selectedName=""){
       status:getTechnicianStatus(current)||"leave"
     });
   }
+
   options.sort((a,b)=>a.name.localeCompare(b.name,"vi"));
-  $("technicianId").innerHTML='<option value="">Chưa phân công</option>'+
+  $("technicianId").innerHTML =
+    '<option value="">Chưa phân công</option>' +
     options.map(t=>{
-      const suffix=t.status==="active"?"":` · ${t.status==="leave"?"Đang nghỉ":"Đã nghỉ việc"}`;
-      const disabled=t.status!=="active"?" disabled":"";
+      const suffix=t.status==="active" ? "" :
+        ` · ${t.status==="leave"?"Đang nghỉ":"Đã nghỉ việc"}`;
+      const disabled=t.status!=="active" ? " disabled" : "";
       return `<option value="${esc(t.id)}"${disabled}>${esc(t.name||t.id)}${esc(suffix)}</option>`;
     }).join("");
   $("technicianId").value=currentId;
 }
-function selectedTechnician(){ return findTechnician($("technicianId").value); }
+function selectedTechnician(){
+  return findTechnician($("technicianId").value);
+}
 
 function updateWorkflowHint(){
   const status=$("statusField").value;
@@ -316,7 +306,8 @@ function openEdit(id){
   fillMaintenanceSelect(w.maintenanceId);
   $("type").value=w.type||"MAINTENANCE";$("priority").value=w.priority||"normal";
   $("issueTitle").value=w.issueTitle||"";$("problemDescription").value=w.problemDescription||"";
-  $("statusField").value=w.status||"draft";renderTechnicianSelect(w.assignedTechnicianId||"",w.assignedTechnicianName||"");
+  $("statusField").value=w.status||"draft";
+  renderTechnicianSelect(w.assignedTechnicianId||"",w.assignedTechnicianName||"");
   $("openedDate").value=w.openedDate||"";$("dueDate").value=w.dueDate||"";
   $("completedDate").value=w.completedDate||"";
   $("cause").value=w.cause||"";$("resolution").value=w.resolution||"";
@@ -376,7 +367,11 @@ $("form").onsubmit=async e=>{
 async function load(){
   $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
   try{
-    [maintenances,workOrders,technicians]=await Promise.all([getMaintenances(),getWorkOrders(),getTechnicians()]);
+    [maintenances,workOrders,technicians]=await Promise.all([
+      getMaintenances(),
+      getWorkOrders(),
+      getTechnicians()
+    ]);
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>String(b.createdAt?.toMillis?.()||0)-String(a.createdAt?.toMillis?.()||0));
     render();$("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
