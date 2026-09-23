@@ -726,7 +726,6 @@ export async function createMaintenance(data){
 
   const status = normalizeMaintenanceStatus(data.status);
   const maintenance = {
-    ticketNo,
     customerId: references.customer.id,
     customerName: references.customer.name || "",
     buildingId: references.building.id,
