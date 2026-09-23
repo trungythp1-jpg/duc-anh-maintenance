@@ -1113,6 +1113,11 @@ export async function createWorkOrder(data){
     const nextNumber = current + 1;
     const workOrderNo = `WO-${String(nextNumber).padStart(6, "0")}`;
 
+    // Firestore transaction rule: ALL reads must happen before any writes.
+    // Read the linked maintenance record before setting the counter/work order.
+    const maintenanceRef = doc(db, COLLECTIONS.MAINTENANCE, maintenance.id);
+    const maintenanceSnapshot = await transaction.get(maintenanceRef);
+
     transaction.set(counterRef, {
       lastNumber: nextNumber,
       prefix: "WO-",
@@ -1126,13 +1131,25 @@ export async function createWorkOrder(data){
       updatedAt: serverTimestamp()
     });
 
-    await syncMaintenanceWorkOrderLink(
-      transaction,
-      maintenance.id,
-      workOrderId,
-      workOrderNo,
-      status
-    );
+    if(maintenanceSnapshot.exists()){
+      const current = maintenanceSnapshot.data() || {};
+      const currentIds = Array.isArray(current.workOrderIds)
+        ? current.workOrderIds.map(String)
+        : [];
+
+      if(!currentIds.includes(String(workOrderId))){
+        currentIds.push(String(workOrderId));
+      }
+
+      transaction.update(maintenanceRef, {
+        workOrderIds: currentIds,
+        workOrderCount: currentIds.length,
+        latestWorkOrderId: String(workOrderId),
+        latestWorkOrderNo: String(workOrderNo || ""),
+        latestWorkOrderStatus: status || "draft",
+        updatedAt: serverTimestamp()
+      });
+    }
 
     return {
       id:workOrderId,
@@ -1273,10 +1290,11 @@ export async function updateWorkOrder(workOrderId, data){
   );
 
   await runTransaction(db, async transaction => {
-    transaction.update(workOrderRef, payload);
-
+    // Firestore transaction rule: ALL reads must happen before any writes.
     const maintenanceSnapshot =
       await transaction.get(maintenanceRef);
+
+    transaction.update(workOrderRef, payload);
 
     if(maintenanceSnapshot.exists()){
       transaction.update(maintenanceRef, {
