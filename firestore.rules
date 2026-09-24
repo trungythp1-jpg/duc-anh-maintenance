@@ -4,15 +4,25 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /*
-     * ĐỨC ANH MAINTENANCE — DEV FIRESTORE RULES
+     * ĐỨC ANH MAINTENANCE — MODULE 4.8
+     * FIRESTORE RULES — TECHNICIAN SCOPE
      *
      * Mục tiêu:
-     * - Tài khoản đã đăng nhập mới được truy cập hệ thống.
-     * - Role được đọc từ users/{uid}.role.
-     * - Chấp nhận cả role viết HOA và viết thường để tránh lỗi
-     *   ADMIN/admin, MANAGER/manager...
-     * - Module Hợp đồng sử dụng collection: contracts
-     * - Không cho xóa dữ liệu vận hành.
+     * - ADMIN / MANAGER giữ quyền quản lý đầy đủ theo Rules hiện tại.
+     * - TECHNICIAN chỉ được đọc/sửa công việc được giao cho chính mình.
+     * - Liên kết bảo mật:
+     *     users/{uid}.technicianId
+     *       ↓
+     *     maintenance.technicianId
+     *       hoặc
+     *     workOrders.assignedTechnicianId
+     *
+     * LƯU Ý:
+     * - technicianId là mã nghiệp vụ lâu dài.
+     * - Firebase Auth UID chỉ là tài khoản đăng nhập.
+     * - Không thêm technicianUid vào maintenance/workOrders.
+     * - Trước khi dùng tài khoản TECHNICIAN thật, users/{uid}
+     *   phải có technicianId đúng với technicians/{technicianId}.
      */
 
     function signedIn() {
@@ -73,6 +83,30 @@ service cloud.firestore {
         && userRole() in ['WAREHOUSE', 'warehouse'];
     }
 
+    function technicianIdFromUser() {
+      return hasUserDoc()
+        ? userDoc().data.get('technicianId', '')
+        : '';
+    }
+
+    function isAssignedTechnician(technicianId) {
+      return isTechnician()
+        && technicianIdFromUser() != ''
+        && technicianId == technicianIdFromUser();
+    }
+
+    function isAssignedWorkOrder() {
+      return isTechnician()
+        && technicianIdFromUser() != ''
+        && resource.data.assignedTechnicianId == technicianIdFromUser();
+    }
+
+    function isAssignedMaintenance() {
+      return isTechnician()
+        && technicianIdFromUser() != ''
+        && resource.data.technicianId == technicianIdFromUser();
+    }
+
     function isServiceStaff() {
       return isAdmin()
         || isManager()
@@ -87,10 +121,7 @@ service cloud.firestore {
     // =========================================================
 
     match /users/{userId} {
-
-      // User được đọc hồ sơ của chính mình.
-      // Management/Admin được đọc toàn bộ user.
-      allow read: if signedIn()
+      allow get: if signedIn()
         && (
           request.auth.uid == userId
           || isAdmin()
@@ -98,11 +129,12 @@ service cloud.firestore {
           || isDirector()
         );
 
-      // Chỉ Admin được tạo user.
+      allow list: if isAdmin()
+        || isManager()
+        || isDirector();
+
       allow create: if isAdmin();
 
-      // Admin được sửa user.
-      // User thường chỉ được sửa các thông tin cá nhân cơ bản.
       allow update: if isAdmin()
         || (
           signedIn()
@@ -117,87 +149,62 @@ service cloud.firestore {
             ])
         );
 
-      // Không xóa user.
       allow delete: if false;
     }
 
 
     // =========================================================
-    // CUSTOMERS
+    // CUSTOMERS / BUILDINGS / ELEVATORS
     // =========================================================
+    //
+    // Giữ quyền hiện tại cho giai đoạn Module 4.
+    // Scope dữ liệu TECHNICIAN trên PBM/WO được khóa ở dưới.
+    // Các màn hình TECHNICIAN sẽ không tải toàn bộ các collection
+    // này sau khi Permission Test được hoàn thiện.
+    //
 
     match /customers/{customerId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager()
         || isCSKH();
-
       allow delete: if false;
     }
-
-
-    // =========================================================
-    // BUILDINGS
-    // =========================================================
 
     match /buildings/{buildingId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager()
         || isCSKH();
-
       allow delete: if false;
     }
-
-
-    // =========================================================
-    // ELEVATORS
-    // =========================================================
 
     match /elevators/{elevatorId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager();
-
       allow delete: if false;
     }
-
-
-    // =========================================================
-    // ELEVATOR RELATIONSHIPS
-    // =========================================================
 
     match /elevatorRelationships/{relationshipId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager();
-
       allow delete: if false;
     }
 
 
     // =========================================================
-    // CONTRACTS — HỢP ĐỒNG
-    //
-    // contracts.html và firestore-v1.js dùng:
-    // collection(db, "contracts")
+    // CONTRACTS
     // =========================================================
 
     match /contracts/{contractId} {
-
-      // Administrator/Management/CSKH/Technician được xem.
       allow read: if isServiceStaff();
 
-      // Chỉ Admin, Manager, CSKH được tạo/sửa.
       allow create, update: if isAdmin()
         || isManager()
         || isCSKH();
 
-      // Không xóa hợp đồng.
       allow delete: if false;
     }
 
@@ -205,13 +212,52 @@ service cloud.firestore {
     // =========================================================
     // MAINTENANCE
     // =========================================================
+    //
+    // ADMIN / MANAGER:
+    //   đọc và sửa toàn bộ.
+    //
+    // TECHNICIAN:
+    //   chỉ được đọc/sửa PBM có technicianId đúng bằng
+    //   users/{uid}.technicianId.
+    //
+    // Quan trọng:
+    // Query TECHNICIAN phải dùng:
+    // where("technicianId", "==", users/{uid}.technicianId)
+    //
+    // Firestore Rules không phải bộ lọc; query không có constraint
+    // phù hợp sẽ bị từ chối.
+    //
 
     match /maintenance/{maintenanceId} {
-      allow read: if isServiceStaff();
-
-      allow create, update: if isAdmin()
+      allow get: if isAdmin()
         || isManager()
-        || isTechnician();
+        || isDirector()
+        || isCSKH()
+        || isAssignedMaintenance();
+
+      allow list: if isAdmin()
+        || isManager()
+        || isDirector()
+        || isCSKH()
+        || isAssignedMaintenance();
+
+      allow create: if isAdmin()
+        || isManager();
+
+      allow update: if isAdmin()
+        || isManager()
+        || (
+          isAssignedMaintenance()
+          && request.resource.data.technicianId
+             == resource.data.technicianId
+          && request.resource.data.technicianId
+             == technicianIdFromUser()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'scheduledDate','completedDate','status','checklist','condition','result',
+            'issueFound','note','latestWorkOrderId','latestWorkOrderNo',
+            'latestWorkOrderStatus','workOrderIds','workOrderCount','updatedAt'
+          ])
+        );
 
       allow delete: if false;
     }
@@ -220,13 +266,47 @@ service cloud.firestore {
     // =========================================================
     // WORK ORDERS
     // =========================================================
+    //
+    // TECHNICIAN chỉ được đọc/sửa WO được giao.
+    //
+    // Query TECHNICIAN phải dùng:
+    // where(
+    //   "assignedTechnicianId",
+    //   "==",
+    //   users/{uid}.technicianId
+    // )
+    //
 
     match /workOrders/{workOrderId} {
-      allow read: if isServiceStaff();
-
-      allow create, update: if isAdmin()
+      allow get: if isAdmin()
         || isManager()
-        || isTechnician();
+        || isDirector()
+        || isCSKH()
+        || isAssignedWorkOrder();
+
+      allow list: if isAdmin()
+        || isManager()
+        || isDirector()
+        || isCSKH()
+        || isAssignedWorkOrder();
+
+      allow create: if isAdmin()
+        || isManager();
+
+      allow update: if isAdmin()
+        || isManager()
+        || (
+          isAssignedWorkOrder()
+          && request.resource.data.assignedTechnicianId
+             == resource.data.assignedTechnicianId
+          && request.resource.data.assignedTechnicianId
+             == technicianIdFromUser()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'type','priority','status','issueTitle','problemDescription','openedDate',
+            'dueDate','completedDate','cause','resolution','materials','laborCost',
+            'materialCost','totalCost','attachmentUrls','note','updatedAt'
+          ])
+        );
 
       allow delete: if false;
     }
@@ -237,7 +317,21 @@ service cloud.firestore {
     // =========================================================
 
     match /technicians/{technicianId} {
-      allow read: if isServiceStaff();
+      allow get: if isAdmin()
+        || isManager()
+        || isDirector()
+        || isCSKH()
+        || isAssignedTechnician(technicianId);
+
+      allow list: if isAdmin()
+        || isManager()
+        || isDirector()
+        || isCSKH()
+        || (
+          isTechnician()
+          && technicianIdFromUser() != ''
+          && resource.data.technicianId == technicianIdFromUser()
+        );
 
       allow create, update: if isAdmin()
         || isManager();
@@ -252,10 +346,8 @@ service cloud.firestore {
 
     match /kpi/{kpiId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager();
-
       allow delete: if false;
     }
 
@@ -266,11 +358,9 @@ service cloud.firestore {
 
     match /documents/{documentId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager()
         || isCSKH();
-
       allow delete: if false;
     }
 
@@ -297,12 +387,9 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isServiceStaff();
 
-      // Bộ đếm số phiếu PBM phải được cập nhật atomically bằng transaction.
-      // Chỉ tài khoản có quyền tạo/sửa phiếu bảo trì được cập nhật đúng document này.
-      allow create, update: if (
-        (settingId == 'maintenanceTicket' || settingId == 'workOrderTicket')
-        && (isAdmin() || isManager() || isTechnician())
-      )
+      allow create, update: if
+        (settingId == 'maintenanceTicket'
+          && (isAdmin() || isManager() || isTechnician()))
         || isAdmin();
 
       allow delete: if false;
@@ -315,11 +402,8 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read: if isServiceStaff();
-
       allow create: if isServiceStaff();
-
       allow update: if isServiceStaff();
-
       allow delete: if false;
     }
 
@@ -330,10 +414,8 @@ service cloud.firestore {
 
     match /serviceAreas/{areaId} {
       allow read: if isServiceStaff();
-
       allow create, update: if isAdmin()
         || isManager();
-
       allow delete: if false;
     }
 
@@ -346,8 +428,7 @@ service cloud.firestore {
       allow read: if isServiceStaff();
 
       allow create, update: if isAdmin()
-        || isManager()
-        || isTechnician();
+        || isManager();
 
       allow delete: if false;
     }
@@ -368,7 +449,7 @@ service cloud.firestore {
 
 
     // =========================================================
-    // SERVICE CONTRACTS — GIỮ TƯƠNG THÍCH DỮ LIỆU CŨ
+    // SERVICE CONTRACTS — COMPATIBILITY
     // =========================================================
 
     match /serviceContracts/{contractId} {
@@ -383,7 +464,7 @@ service cloud.firestore {
 
 
     // =========================================================
-    // MAINTENANCE AGREEMENTS — GIỮ TƯƠNG THÍCH DỮ LIỆU CŨ
+    // MAINTENANCE AGREEMENTS — COMPATIBILITY
     // =========================================================
 
     match /maintenanceAgreements/{agreementId} {
