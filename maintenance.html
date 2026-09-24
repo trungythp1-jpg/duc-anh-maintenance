@@ -54,6 +54,10 @@ body{
   padding:10px 14px;
   cursor:pointer;
   font:inherit;
+  -webkit-appearance:none;
+  appearance:none;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 .btn.primary{
   background:linear-gradient(180deg,#e0b65c,#bd8e34)!important;
@@ -197,6 +201,7 @@ body{
   width:min(1050px,100%);
   max-height:94vh;
   overflow:auto;
+  -webkit-overflow-scrolling:touch;
   box-shadow:0 24px 80px rgba(0,0,0,.62),0 0 0 1px rgba(214,168,79,.08)
 }
 .modal-head{
@@ -205,12 +210,15 @@ body{
   border-bottom:1px solid var(--da-border-gold)!important;
   padding:16px 18px;
   display:flex;justify-content:space-between;align-items:center;
-  z-index:2
+  z-index:20
 }
 .modal-head h2{margin:0;font-size:22px;color:var(--gold,var(--da-gold-light))!important}
 .close{
   border:0;background:none;font-size:28px;cursor:pointer;
-  color:var(--da-gold-light)!important
+  color:var(--da-gold-light)!important;
+  -webkit-appearance:none;
+  appearance:none;
+  touch-action:manipulation;
 }
 .modal-body{padding:18px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
@@ -246,7 +254,15 @@ body{
   padding:14px 18px;
   border-top:1px solid var(--da-border-gold)!important;
   position:sticky;bottom:0;
-  background:#10100e!important
+  background:#10100e!important;
+  z-index:20;
+  isolation:isolate;
+}
+.actions .btn{
+  position:relative;
+  z-index:21;
+  pointer-events:auto;
+  min-height:48px;
 }
 .audit-history{display:grid;gap:8px}
 .audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
@@ -286,11 +302,44 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
   .kpis{grid-template-columns:1fr 1fr}
   .ref-box{grid-template-columns:1fr}
   .page{padding:16px 12px 40px}
+  .modal{
+    align-items:flex-end;
+    padding:0;
+  }
+  .modal-box{
+    width:100%;
+    max-height:100dvh;
+    height:100dvh;
+    border-radius:16px 16px 0 0;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .modal-body{
+    padding-bottom:120px;
+  }
+  .actions{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    min-height:76px;
+    z-index:100;
+    background:#10100e!important;
+  }
+  .actions .btn{
+    flex:1;
+    min-width:0;
+    min-height:54px;
+    font-size:16px;
+  }
+  .actions .primary{
+    min-width:0;
+  }
 }
 </style>
 
 </head>
-<body data-maintenance-build="v1.17-technician-save-fix">
+<body data-maintenance-build="v1.18-iphone-save-fix">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -549,7 +598,8 @@ function renderYears(){const current=$("yearFilter").value;const years=[...new S
 
 function resetForm(){
   $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
-  $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()}
+  $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()
+}
 function openModal(){ $("modal").classList.add("show");document.body.style.overflow="hidden" }
 function closeModal(){ $("modal").classList.remove("show");document.body.style.overflow="";resetForm() }
 async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("assignmentReason").value="";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal();applyTechnicianScopeUI();await loadAssignmentHistory(editingId)}
@@ -587,8 +637,6 @@ if(assignmentChanged && editingId && !assignmentReason){
 const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
 if(editingId){
   if(currentRole()==="TECHNICIAN"){
-    // TECHNICIAN chỉ ghi các trường nghiệp vụ được Firestore Rules cho phép.
-    // Không gửi lại Customer/Building/Elevator/Contract vì đó là dữ liệu tham chiếu khóa.
     const technicianPayload={
       scheduledDate:payload.scheduledDate,
       completedDate:payload.completedDate,
@@ -656,8 +704,6 @@ async function runPermissionDiagnostics(user){
 
 async function loadData(){
   setStatus("Đang tải dữ liệu…");
-
-  // Đọc profile một lần để xác định quyền/phạm vi dữ liệu.
   const profileSnap=await getDoc(doc(db,"users",authUser.uid));
   if(!profileSnap.exists()) throw new Error("Không tồn tại users/{uid}.");
   currentProfile=profileSnap.data()||{};
@@ -668,7 +714,6 @@ async function loadData(){
     throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
   }
 
-  // Các collection độc lập được tải song song để giảm thời gian chờ.
   const [c,b,e,ct,m,techData]=await Promise.all([
     getCustomers(),
     getBuildings(),
