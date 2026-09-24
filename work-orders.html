@@ -253,8 +253,9 @@ import {
   getMaintenances,
   getWorkOrders,
   createWorkOrder,
-  updateWorkOrder
-} from "./js/core/firestore-v1.js?v=wo2.0";
+  updateWorkOrder,
+  reportWorkOrderByTechnician
+} from "./js/core/firestore-v1.js?v=wo2.1";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $ = id => document.getElementById(id);
@@ -540,11 +541,7 @@ async function submitTechnicianReport(status){
   $("err").textContent="";
   try{
     const isCompleted=status==="completed";
-    await updateWorkOrder(editingId,{
-      status,
-      completedDate:isCompleted?new Date().toISOString().slice(0,10):"",
-      resolution:isCompleted?"KTV báo cáo đã hoàn thành":""
-    });
+    await reportWorkOrderByTechnician(editingId,status);
     close();
     $("status").className="status ok";
     $("status").textContent=isCompleted?"KTV đã báo cáo hoàn thành Work Order.":"KTV đã báo cáo chưa hoàn thành Work Order.";
