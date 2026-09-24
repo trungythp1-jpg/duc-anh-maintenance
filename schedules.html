@@ -12,43 +12,48 @@
   --gold:#d9ad32;--text:#f4f4f4;--muted:#929292;
 }
 body{background:var(--bg)!important;color:var(--text)!important}
-.page{padding:28px;max-width:1500px;margin:auto}
+.page{padding:28px;max-width:1550px;margin:auto}
 .header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:22px}
-h1,h2,p{margin-top:0}
-.muted{color:var(--muted)}
+h1,h2,p{margin-top:0}.muted{color:var(--muted)}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 button,select,input{font:inherit}
 .btn{border:1px solid var(--border);border-radius:10px;padding:11px 15px;cursor:pointer}
 .btn.primary{background:var(--gold);border-color:var(--gold);color:#090909;font-weight:800}
 .btn.secondary{background:#181818;color:#eee}
-.filters{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.filters{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:18px}
 select,input{
   width:100%;box-sizing:border-box;min-height:46px;padding:10px 12px;
   color:#eee;background:#151515;border:1px solid #303030;border-radius:10px
 }
 .panel{background:linear-gradient(145deg,#141414,#101010);border:1px solid var(--border);border-radius:14px;padding:20px}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
 .kpi{background:#151515;border:1px solid #292929;border-radius:12px;padding:15px}
 .kpi small{color:#888}.kpi strong{display:block;font-size:25px;margin-top:5px}
 .table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:1100px}
+table{width:100%;border-collapse:collapse;min-width:1450px}
 th,td{text-align:left;padding:13px;border-bottom:1px solid #252525;vertical-align:middle}
 th{font-size:11px;text-transform:uppercase;color:#858585}
-.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#292929}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#292929;white-space:nowrap}
 .badge.green{background:#123b23;color:#78d394}
 .badge.yellow{background:#3a2e10;color:#e5bf48}
 .badge.red{background:#3b1717;color:#ef8585}
 .badge.blue{background:#17283a;color:#82b9e8}
+.badge.gray{background:#292929;color:#aaa}
 .empty{text-align:center;padding:50px;color:#777}
-.note{margin-top:14px;padding:12px 14px;background:#171717;border:1px solid #292929;border-radius:10px;color:#999}
-@media(max-width:900px){
-  .filters{grid-template-columns:1fr 1fr}
-  .kpis{grid-template-columns:repeat(2,1fr)}
+.note{margin-top:14px;padding:12px 14px;background:#171717;border:1px solid #292929;border-radius:10px;color:#999;line-height:1.55}
+.alert-panel{margin-bottom:18px;padding:15px 18px;background:#151515;border:1px solid #292929;border-radius:12px}
+.alert-panel strong{color:#f0c84b}
+.small{font-size:12px;color:#8d8d8d}
+.nowrap{white-space:nowrap}
+@media(max-width:1100px){
+  .filters{grid-template-columns:1fr 1fr 1fr}
+  .kpis{grid-template-columns:repeat(3,1fr)}
 }
-@media(max-width:640px){
+@media(max-width:700px){
   .page{padding:18px}
   .header{flex-direction:column}
   .filters{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -57,9 +62,12 @@ th{font-size:11px;text-transform:uppercase;color:#858585}
 <main class="page">
   <header class="header">
     <div>
-      <p class="muted">ĐỨC ANH MAINTENANCE · SERVICE</p>
+      <p class="muted">ĐỨC ANH MAINTENANCE · SCHEDULE ENGINE</p>
       <h1>Lịch bảo trì</h1>
-      <p class="muted">Lịch được xác định từ Hợp đồng. Không tạo nguồn dữ liệu hợp đồng thứ hai.</p>
+      <p class="muted">
+        Schedule lấy nguồn từ Hợp đồng + Maintenance thực tế.
+        Không phải lịch làm việc cứng của KTV và không ghi nhận “đã bảo trì”.
+      </p>
     </div>
     <div class="actions">
       <button class="btn secondary" id="refresh" type="button">↻ Làm mới</button>
@@ -67,10 +75,18 @@ th{font-size:11px;text-transform:uppercase;color:#858585}
   </header>
 
   <section class="kpis">
-    <div class="kpi"><small>Tổng kỳ dự kiến</small><strong id="kpiTotal">0</strong></div>
+    <div class="kpi"><small>Tổng kỳ trong hợp đồng</small><strong id="kpiTotal">0</strong></div>
     <div class="kpi"><small>Đã hoàn thành</small><strong id="kpiDone">0</strong></div>
-    <div class="kpi"><small>Chưa thực hiện</small><strong id="kpiPending">0</strong></div>
-    <div class="kpi"><small>Quá hạn</small><strong id="kpiOverdue">0</strong></div>
+    <div class="kpi"><small>Đang trong cửa sổ</small><strong id="kpiWindow">0</strong></div>
+    <div class="kpi"><small>Sắp đến hạn</small><strong id="kpiDueSoon">0</strong></div>
+    <div class="kpi"><small>Quá hạn / cần xử lý</small><strong id="kpiRisk">0</strong></div>
+  </section>
+
+  <section class="alert-panel">
+    <strong>Nguyên tắc Schedule:</strong>
+    hệ thống theo dõi nghĩa vụ bảo trì theo hợp đồng, dùng ngày hoàn thành thực tế gần nhất
+    để tính kỳ tiếp theo. Không dựng lại các kỳ lịch sử thiếu phiếu; nếu lần bảo trì mới quá sát lần trước,
+    hệ thống cảnh báo thay vì coi đơn giản là “đủ 1 lần trong tháng”.
   </section>
 
   <section class="panel">
@@ -78,9 +94,12 @@ th{font-size:11px;text-transform:uppercase;color:#858585}
       <input id="search" placeholder="Tìm khách hàng, tòa nhà, mã thang, hợp đồng...">
       <select id="statusFilter">
         <option value="">Tất cả trạng thái</option>
-        <option value="pending">Chưa thực hiện</option>
         <option value="done">Đã hoàn thành</option>
+        <option value="window">Đang trong cửa sổ</option>
+        <option value="upcoming">Sắp đến hạn</option>
+        <option value="too_early">Quá sát lần trước</option>
         <option value="overdue">Quá hạn</option>
+        <option value="not_started">Chưa đến kỳ</option>
       </select>
       <select id="cycleFilter">
         <option value="">Tất cả chu kỳ</option>
@@ -90,6 +109,9 @@ th{font-size:11px;text-transform:uppercase;color:#858585}
       </select>
       <select id="yearFilter">
         <option value="">Tất cả năm</option>
+      </select>
+      <select id="monthFilter">
+        <option value="">Tất cả tháng</option>
       </select>
     </div>
 
@@ -101,20 +123,26 @@ th{font-size:11px;text-transform:uppercase;color:#858585}
             <th>Hợp đồng</th>
             <th>Khách hàng</th>
             <th>Tòa nhà</th>
-            <th>Thang máy</th>
-            <th>Dự kiến</th>
+            <th>Thang / Mã thang</th>
             <th>Chu kỳ</th>
+            <th>Lần gần nhất</th>
+            <th>Ngày mục tiêu</th>
+            <th>Cửa sổ đề xuất</th>
+            <th>Khoảng cách</th>
             <th>Trạng thái</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
-    <div class="empty" id="empty">Chưa có hợp đồng bảo trì phù hợp.</div>
+
+    <div class="empty" id="empty">Chưa có dữ liệu Schedule phù hợp.</div>
+
     <div class="note">
-      Lịch này được tính từ các hợp đồng có <strong>maintenanceEnabled</strong>.
-      Chưa tự tạo phiếu bảo trì. Khi đến bước thực hiện, phiếu sẽ được cấp số
-      <strong>PBM-xxxxxx</strong> và ghi nhận vào Module Bảo trì.
+      Schedule chỉ tính toán và cảnh báo. Không tự tạo phiếu bảo trì và không tự đánh dấu
+      hoàn thành. Maintenance vẫn là hồ sơ thực tế của lần bảo trì. Hợp đồng cũ có thể dùng
+      maintenanceCompleted + maintenanceLastDate làm mốc lịch sử mà không cần tạo lại phiếu. Khi làm màn hình
+      “Công việc của tôi”, KTV sẽ tự sắp xếp ngày làm việc trong cửa sổ phù hợp.
     </div>
   </section>
 </main>
@@ -131,224 +159,1119 @@ import {
 } from "./js/core/firestore-v1.js";
 
 const $ = id => document.getElementById(id);
+
 const esc = value => String(value ?? "")
-  .replaceAll("&","&amp;").replaceAll("<","&lt;")
-  .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+  .replaceAll("&","&amp;")
+  .replaceAll("<","&lt;")
+  .replaceAll(">","&gt;")
+  .replaceAll('"',"&quot;")
   .replaceAll("'","&#039;");
 
-let contracts=[],customers=[],buildings=[],elevators=[],maintenances=[];
-let authReady=false;
+let contracts = [];
+let customers = [];
+let buildings = [];
+let elevators = [];
+let maintenances = [];
 
-const cycleMonths={monthly:1,bi_monthly:2,quarterly:3};
-const cycleText={monthly:"1 tháng",bi_monthly:"2 tháng",quarterly:"3 tháng"};
+const cycleMonths = {
+  monthly: 1,
+  bi_monthly: 2,
+  quarterly: 3
+};
+
+const cycleText = {
+  monthly: "1 tháng",
+  bi_monthly: "2 tháng",
+  quarterly: "3 tháng"
+};
+
+/*
+ * SCHEDULE V2.1
+ *
+ * Nguồn:
+ * - Contract = nghĩa vụ bảo trì và chu kỳ.
+ * - Maintenance = lần bảo trì thực tế.
+ *
+ * Schedule chỉ:
+ * - tính kỳ;
+ * - tính ngày mục tiêu;
+ * - tính cửa sổ đề xuất;
+ * - phát hiện quá sát / sắp đến hạn / quá hạn.
+ *
+ * Schedule KHÔNG:
+ * - tạo Maintenance;
+ * - đánh dấu Maintenance hoàn thành;
+ * - sửa Contract;
+ * - ghi dữ liệu Firestore.
+ *
+ * KTV vẫn tự chủ động ngày làm việc.
+ */
 
 function parseDate(value){
   if(!value) return null;
-  const d=new Date(`${value}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
 
-function addMonths(date,months){
-  const d=new Date(date);
-  const day=d.getDate();
-  d.setDate(1);
-  d.setMonth(d.getMonth()+months);
-  const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-  d.setDate(Math.min(day,last));
+  if(typeof value?.toDate === "function"){
+    const d = value.toDate();
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  if(value instanceof Date){
+    const d = new Date(value);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  const text = String(value);
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if(match){
+    const d = new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3])
+    );
+    d.setHours(0,0,0,0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return null;
+
+  d.setHours(0,0,0,0);
   return d;
 }
 
+function dateKey(date){
+  if(!(date instanceof Date) || Number.isNaN(date.getTime())){
+    return "";
+  }
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth()+1).padStart(2,"0"),
+    String(date.getDate()).padStart(2,"0")
+  ].join("-");
+}
+
+function addMonths(date, months){
+  const d = new Date(date);
+  const day = d.getDate();
+
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+
+  const last = new Date(
+    d.getFullYear(),
+    d.getMonth()+1,
+    0
+  ).getDate();
+
+  d.setDate(Math.min(day,last));
+  d.setHours(0,0,0,0);
+
+  return d;
+}
+
+function addDays(date, days){
+  const d = new Date(date);
+  d.setDate(d.getDate()+days);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function diffDays(from,to){
+  const a = parseDate(from);
+  const b = parseDate(to);
+
+  if(!a || !b) return null;
+
+  return Math.round(
+    (b.getTime()-a.getTime()) / 86400000
+  );
+}
+
 function fmtDate(date){
-  if(!date)return "—";
+  if(!date) return "—";
   return date.toLocaleDateString("vi-VN");
 }
 
-function contractEnabled(c){
-  return c.maintenanceEnabled==="yes" ||
-         c.maintenanceEnabled===true ||
-         c.maintenanceEnabled==="true";
+function contractEnabled(contract){
+  return contract.maintenanceEnabled === "yes" ||
+         contract.maintenanceEnabled === true ||
+         contract.maintenanceEnabled === "true";
+}
+
+/*
+ * Đây là ngưỡng cảnh báo vận hành.
+ * Không phải tuyên bố về tiêu chuẩn pháp lý/kỹ thuật.
+ *
+ * Mục đích:
+ * phát hiện trường hợp hai lần bảo trì bị dồn quá sát.
+ */
+function minimumGapDays(months){
+  if(months === 1) return 21;
+  if(months === 2) return 45;
+  if(months === 3) return 75;
+
+  return Math.max(7, months * 21);
+}
+
+function completedDateOf(maintenance){
+  if(maintenance?.status !== "completed"){
+    return null;
+  }
+
+  /*
+   * completedDate là ngày thực tế ưu tiên.
+   * scheduledDate chỉ là fallback cho dữ liệu cũ.
+   */
+  return parseDate(maintenance.completedDate) ||
+         parseDate(maintenance.scheduledDate);
+}
+
+function maintenanceDateForComparison(maintenance){
+  /*
+   * Với phiếu chưa hoàn thành, scheduledDate là ngày KTV dự kiến.
+   * Với phiếu hoàn thành, completedDate là ngày thực tế.
+   */
+  return completedDateOf(maintenance) ||
+         parseDate(maintenance?.scheduledDate);
+}
+
+function getContractMaintenances(contractId){
+  return maintenances
+    .filter(m =>
+      String(m.contractId || "") === String(contractId)
+    )
+    .sort((a,b) => {
+      const da = maintenanceDateForComparison(a);
+      const db = maintenanceDateForComparison(b);
+
+      return (db?.getTime() || 0) - (da?.getTime() || 0);
+    });
+}
+
+function getCompletedMaintenances(contractId){
+  return getContractMaintenances(contractId)
+    .filter(m => completedDateOf(m));
+}
+
+function getLatestCompletedMaintenance(contractId){
+  return getCompletedMaintenances(contractId)[0] || null;
+}
+
+function getCurrentOpenMaintenance(contractId){
+  return getContractMaintenances(contractId)
+    .find(m => m.status !== "completed" &&
+               m.status !== "cancelled") || null;
+}
+
+function findMaintenanceForPeriod(contract, period, targetDate){
+  /*
+   * Ưu tiên periodNumber.
+   * Fallback scheduledDate để giữ tương thích dữ liệu cũ.
+   */
+  const byPeriod = maintenances.find(m =>
+    String(m.contractId || "") === String(contract.id) &&
+    Number(m.periodNumber || 0) === Number(period)
+  );
+
+  if(byPeriod){
+    return byPeriod;
+  }
+
+  const targetKey = dateKey(targetDate);
+
+  return maintenances.find(m =>
+    String(m.contractId || "") === String(contract.id) &&
+    String(m.scheduledDate || "").slice(0,10) === targetKey
+  ) || null;
+}
+
+function buildWindow(lastActualDate,targetDate,months){
+  const minGap = minimumGapDays(months);
+
+  /*
+   * Cửa sổ mặc định quanh ngày mục tiêu.
+   * Không cho earliest sớm hơn khoảng cách tối thiểu.
+   */
+  let earliest = addDays(targetDate,-5);
+
+  if(lastActualDate){
+    const minimumAllowed = addDays(
+      lastActualDate,
+      minGap
+    );
+
+    if(earliest < minimumAllowed){
+      earliest = minimumAllowed;
+    }
+  }
+
+  const latest = addDays(targetDate,5);
+
+  return {
+    earliest,
+    latest,
+    minimumAllowed: lastActualDate
+      ? addDays(lastActualDate,minGap)
+      : null
+  };
+}
+
+function getStatus({
+  today,
+  lastActualDate,
+  targetDate,
+  window,
+  openMaintenance,
+  months
+}){
+  /*
+   * 1. Phiếu đã hoàn thành:
+   *    Maintenance là nguồn sự thật.
+   */
+  if(openMaintenance?.status === "completed"){
+    return {
+      code: "done",
+      label: "Đã hoàn thành"
+    };
+  }
+
+  /*
+   * 2. Nếu KTV đã có một phiếu chưa hoàn thành nhưng
+   *    scheduledDate nằm trước khoảng cách tối thiểu:
+   *    cảnh báo quá sát.
+   */
+  const scheduledDate =
+    parseDate(openMaintenance?.scheduledDate);
+
+  if(
+    lastActualDate &&
+    scheduledDate
+  ){
+    const gap = diffDays(
+      lastActualDate,
+      scheduledDate
+    );
+
+    if(
+      gap !== null &&
+      gap < minimumGapDays(months)
+    ){
+      return {
+        code: "too_early",
+        label: "Quá sát lần trước"
+      };
+    }
+  }
+
+  /*
+   * 3. Nếu hôm nay chưa tới khoảng cách tối thiểu,
+   *    không coi là kỳ có thể thực hiện bình thường.
+   */
+  if(lastActualDate){
+    const gapToToday = diffDays(
+      lastActualDate,
+      today
+    );
+
+    if(
+      gapToToday !== null &&
+      gapToToday < minimumGapDays(months)
+    ){
+      return {
+        code: "not_started",
+        label: "Chưa đến khoảng cách tối thiểu"
+      };
+    }
+  }
+
+  /*
+   * 4. Cửa sổ đề xuất.
+   */
+  if(today < window.earliest){
+    return {
+      code: "not_started",
+      label: "Chưa đến cửa sổ"
+    };
+  }
+
+  if(today <= targetDate){
+    return {
+      code: "window",
+      label: "Đang trong cửa sổ"
+    };
+  }
+
+  if(today <= window.latest){
+    return {
+      code: "upcoming",
+      label: "Sắp đến hạn"
+    };
+  }
+
+  return {
+    code: "overdue",
+    label: "Quá hạn"
+  };
+}
+
+function getLegacyMaintenanceState(contract, completedList){
+  const actualCompleted = completedList.length;
+
+  const contractCompleted = Math.max(
+    0,
+    Number(contract.maintenanceCompleted || 0)
+  );
+
+  const completedCount = Math.max(
+    actualCompleted,
+    contractCompleted
+  );
+
+  /*
+   * Với hợp đồng cũ chưa nhập đủ Maintenance:
+   * maintenanceLastDate là mốc thực tế gần nhất.
+   *
+   * Nếu đã có Maintenance hoàn thành, ưu tiên ngày thực tế từ Maintenance.
+   * Nếu chưa có, dùng maintenanceLastDate của Contract.
+   */
+  const latestMaintenance =
+    completedList[0] || null;
+
+  const actualLastDate =
+    latestMaintenance
+      ? completedDateOf(latestMaintenance)
+      : null;
+
+  const legacyLastDate =
+    parseDate(contract.maintenanceLastDate);
+
+  const lastActualDate =
+    actualLastDate || legacyLastDate || null;
+
+  return {
+    actualCompleted,
+    contractCompleted,
+    completedCount,
+    lastActualDate,
+    usesLegacyHistory:
+      !actualLastDate &&
+      contractCompleted > 0 &&
+      Boolean(legacyLastDate)
+  };
+}
+
+function findFutureMaintenance(contractId, period, targetDate){
+  const byPeriod = maintenances.find(m =>
+    String(m.contractId || "") === String(contractId) &&
+    Number(m.periodNumber || 0) === Number(period)
+  );
+
+  if(byPeriod) return byPeriod;
+
+  const targetKey = dateKey(targetDate);
+
+  return maintenances.find(m =>
+    String(m.contractId || "") === String(contractId) &&
+    String(m.scheduledDate || "").slice(0,10) === targetKey
+  ) || null;
+}
+
+function buildContractSchedule(contract){
+  const months = cycleMonths[contract.maintenanceCycle];
+  const start = parseDate(contract.startDate);
+  const end = parseDate(contract.endDate);
+
+  if(!months || !start || !end){
+    return [];
+  }
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const completedList =
+    getCompletedMaintenances(contract.id);
+
+  const legacyState =
+    getLegacyMaintenanceState(
+      contract,
+      completedList
+    );
+
+  const lastActualDate =
+    legacyState.lastActualDate;
+
+  const openMaintenance =
+    getCurrentOpenMaintenance(contract.id);
+
+  const total =
+    Math.max(
+      0,
+      Number(contract.maintenanceTotal || 0)
+    );
+
+  /*
+   * Khi đã có lịch sử:
+   * - Không dựng lại hàng loạt kỳ quá khứ thiếu phiếu.
+   * - Chỉ bắt đầu từ kỳ tiếp theo sau lần thực tế gần nhất.
+   *
+   * Điều này đặc biệt quan trọng với hợp đồng cũ:
+   * maintenanceCompleted = 10
+   * maintenanceLastDate = 20/09/2026
+   * => Schedule bắt đầu từ kỳ tiếp theo, không bắt nhập lại 10 phiếu.
+   */
+  let nextTarget;
+  let nextPeriod;
+
+  if(lastActualDate){
+    nextTarget = addMonths(lastActualDate, months);
+    nextPeriod = Math.min(
+      total > 0 ? total : Number.MAX_SAFE_INTEGER,
+      legacyState.completedCount + 1
+    );
+  }else{
+    nextTarget = new Date(start);
+    nextPeriod = 1;
+  }
+
+  const rows = [];
+
+  /*
+   * Nếu đã có Maintenance thực tế, đưa các phiếu hoàn thành
+   * hiện có vào Schedule để giữ lịch sử thật.
+   * Không tạo giả các phiếu lịch sử còn thiếu.
+   */
+  const completedMaintenanceIds = new Set();
+
+  completedList.forEach(m => {
+    const completedDate = completedDateOf(m);
+    if(!completedDate) return;
+
+    completedMaintenanceIds.add(String(m.id));
+
+    rows.push({
+      id: `${contract.id}_maintenance_${m.id}`,
+      contract,
+      period: Number(m.periodNumber || 0) || null,
+      targetDate: completedDate,
+      maintenance: m,
+      lastActualDate: null,
+      window: null,
+      status: {
+        code: "done",
+        label: "Đã hoàn thành"
+      },
+      isNextCalculatedPeriod: false,
+      isHistoricalActual: true
+    });
+  });
+
+  /*
+   * Sinh các kỳ còn lại từ kỳ tiếp theo.
+   * Không sinh vượt quá tổng số lần của hợp đồng.
+   */
+  let target = new Date(nextTarget);
+  let period = nextPeriod;
+
+  const safetyLimit = 120;
+
+  for(let i=0; i<safetyLimit; i++){
+    if(target > end) break;
+    if(total > 0 && period > total) break;
+
+    const maintenance =
+      findFutureMaintenance(
+        contract.id,
+        period,
+        target
+      );
+
+    /*
+     * Nếu maintenance này đã hoàn thành thì dùng ngày thực tế.
+     * Không tạo thêm bản ghi giả cho lịch sử.
+     */
+    if(
+      maintenance &&
+      maintenance.status === "completed"
+    ){
+      if(!completedMaintenanceIds.has(String(maintenance.id))){
+        const actualDate =
+          completedDateOf(maintenance) || target;
+
+        rows.push({
+          id: `${contract.id}_${period}`,
+          contract,
+          period,
+          targetDate: actualDate,
+          maintenance,
+          lastActualDate: null,
+          window: null,
+          status: {
+            code: "done",
+            label: "Đã hoàn thành"
+          },
+          isNextCalculatedPeriod: false,
+          isHistoricalActual: true
+        });
+
+        completedMaintenanceIds.add(String(maintenance.id));
+      }
+
+      /*
+       * Khi có phiếu hoàn thành thực tế, kỳ sau phải neo
+       * theo ngày thực tế đó.
+       */
+      const actualDate =
+        completedDateOf(maintenance);
+
+      if(actualDate){
+        target = addMonths(actualDate, months);
+      }else{
+        target = addMonths(target, months);
+      }
+
+      period++;
+      continue;
+    }
+
+    const isNext =
+      period === nextPeriod;
+
+    const window =
+      buildWindow(
+        lastActualDate,
+        target,
+        months
+      );
+
+    const status =
+      getStatus({
+        today,
+        lastActualDate,
+        targetDate: target,
+        window,
+        openMaintenance: isNext
+          ? openMaintenance
+          : maintenance,
+        months
+      });
+
+    rows.push({
+      id: `${contract.id}_${period}`,
+      contract,
+      period,
+      targetDate: new Date(target),
+      maintenance,
+      lastActualDate:
+        isNext ? lastActualDate : null,
+      window: {
+        ...window,
+        months
+      },
+      status,
+      isNextCalculatedPeriod: isNext,
+      isHistoricalActual: false
+    });
+
+    target =
+      addMonths(target, months);
+
+    period++;
+  }
+
+  /*
+   * Nếu có Maintenance đang mở và scheduledDate khác ngày mục tiêu,
+   * cảnh báo quá sát nếu khoảng cách thực tế không đạt ngưỡng.
+   */
+  if(
+    openMaintenance &&
+    openMaintenance.status !== "cancelled"
+  ){
+    const scheduledDate =
+      parseDate(openMaintenance.scheduledDate);
+
+    if(scheduledDate && lastActualDate){
+      const gap =
+        diffDays(
+          lastActualDate,
+          scheduledDate
+        );
+
+      if(
+        gap !== null &&
+        gap < minimumGapDays(months)
+      ){
+        const nextRow =
+          rows.find(row =>
+            row.isNextCalculatedPeriod
+          );
+
+        if(nextRow){
+          nextRow.status = {
+            code: "too_early",
+            label: "Quá sát lần trước"
+          };
+        }
+      }
+    }
+  }
+
+  return rows;
 }
 
 function buildSchedules(){
-  const schedules=[];
+  const schedules = [];
 
-  for(const c of contracts){
-    if(!contractEnabled(c)) continue;
-
-    const start=parseDate(c.startDate);
-    const end=parseDate(c.endDate);
-    const months=cycleMonths[c.maintenanceCycle];
-
-    if(!start || !end || !months) continue;
-
-    let date=new Date(start);
-    let period=1;
-
-    while(date<=end){
-      const maintenanceForPeriod=maintenances.find(m =>
-        String(m.contractId||"")===String(c.id) &&
-        Number(m.periodNumber||0)===period
-      );
-
-      const legacyMaintenance=maintenanceForPeriod || maintenances.find(m =>
-        String(m.contractId||"")===String(c.id) &&
-        String(m.scheduledDate||"")===date.toISOString().slice(0,10)
-      );
-
-      const today=new Date();
-      today.setHours(0,0,0,0);
-
-      let status="pending";
-      if(legacyMaintenance?.status==="completed"){
-        status="done";
-      }else if(date<today){
-        status="overdue";
-      }
-
-      schedules.push({
-        id:`${c.id}_${period}`,
-        contract:c,
-        period,
-        date:new Date(date),
-        status,
-        maintenance:legacyMaintenance||null
-      });
-
-      date=addMonths(date,months);
-      period++;
+  for(const contract of contracts){
+    if(!contractEnabled(contract)){
+      continue;
     }
+
+    schedules.push(
+      ...buildContractSchedule(contract)
+    );
   }
 
   return schedules;
 }
 
 function nameOf(list,id,fallback="—"){
-  return list.find(x=>String(x.id)===String(id))?.name || fallback;
+  return list.find(x =>
+    String(x.id) === String(id)
+  )?.name || fallback;
 }
 
-function enrich(schedule){
-  const c=schedule.contract;
-  const customer=nameOf(customers,c.customerId,c.customerName);
-  const building=nameOf(buildings,c.buildingId,c.buildingName);
-  const elevator=nameOf(elevators,c.elevatorId,c.elevatorName);
-  return {...schedule,customer,building,elevator};
+function enrich(row){
+  const c = row.contract;
+
+  const customer =
+    nameOf(
+      customers,
+      c.customerId,
+      c.customerName
+    );
+
+  const building =
+    nameOf(
+      buildings,
+      c.buildingId,
+      c.buildingName
+    );
+
+  const elevator =
+    elevators.find(x =>
+      String(x.id) === String(c.elevatorId)
+    );
+
+  return {
+    ...row,
+    customer,
+    building,
+    elevatorName:
+      elevator?.name ||
+      c.elevatorName ||
+      "—",
+    assetCode:
+      elevator?.assetCode ||
+      "—"
+  };
 }
 
 function filteredSchedules(){
-  const q=$("search").value.trim().toLowerCase();
-  const sf=$("statusFilter").value;
-  const cf=$("cycleFilter").value;
-  const yf=$("yearFilter").value;
+  const q =
+    $("search").value.trim().toLowerCase();
 
-  return buildSchedules().map(enrich).filter(x=>{
-    const c=x.contract;
-    const hay=[
-      c.code,c.name,c.customerName,c.buildingName,c.elevatorName,
-      x.customer,x.building,x.elevator
-    ].join(" ").toLowerCase();
+  const sf =
+    $("statusFilter").value;
 
-    if(q && !hay.includes(q)) return false;
-    if(sf && x.status!==sf) return false;
-    if(cf && c.maintenanceCycle!==cf) return false;
-    if(yf && String(x.date.getFullYear())!==yf) return false;
-    return true;
-  });
+  const cf =
+    $("cycleFilter").value;
+
+  const yf =
+    $("yearFilter").value;
+
+  const mf =
+    $("monthFilter").value;
+
+  return buildSchedules()
+    .map(enrich)
+    .filter(x => {
+      const c = x.contract;
+
+      const hay = [
+        c.code,
+        c.name,
+        c.customerName,
+        c.buildingName,
+        c.elevatorName,
+        x.customer,
+        x.building,
+        x.elevatorName,
+        x.assetCode
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if(q && !hay.includes(q)){
+        return false;
+      }
+
+      if(
+        sf &&
+        x.status?.code !== sf
+      ){
+        return false;
+      }
+
+      if(
+        cf &&
+        c.maintenanceCycle !== cf
+      ){
+        return false;
+      }
+
+      if(
+        yf &&
+        String(x.targetDate.getFullYear()) !== yf
+      ){
+        return false;
+      }
+
+      if(
+        mf &&
+        String(x.targetDate.getMonth()+1) !== mf
+      ){
+        return false;
+      }
+
+      return true;
+    });
 }
 
 function renderYearOptions(){
-  const years=new Set();
-  contracts.forEach(c=>{
-    const s=parseDate(c.startDate),e=parseDate(c.endDate);
+  const years = new Set();
+
+  contracts.forEach(c => {
+    const s = parseDate(c.startDate);
+    const e = parseDate(c.endDate);
+
     if(s) years.add(s.getFullYear());
     if(e) years.add(e.getFullYear());
   });
 
-  const current=$("yearFilter").value;
-  $("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+
-    [...years].sort((a,b)=>a-b).map(y=>`<option value="${y}">${y}</option>`).join("");
-  $("yearFilter").value=current;
+  const current =
+    $("yearFilter").value;
+
+  $("yearFilter").innerHTML =
+    '<option value="">Tất cả năm</option>' +
+    [...years]
+      .sort((a,b) => a-b)
+      .map(y =>
+        `<option value="${y}">${y}</option>`
+      )
+      .join("");
+
+  $("yearFilter").value = current;
+}
+
+function renderMonthOptions(){
+  const current =
+    $("monthFilter").value;
+
+  $("monthFilter").innerHTML =
+    '<option value="">Tất cả tháng</option>' +
+    Array.from(
+      {length:12},
+      (_,i) =>
+        `<option value="${i+1}">Tháng ${i+1}</option>`
+    ).join("");
+
+  $("monthFilter").value = current;
+}
+
+function statusBadge(status){
+  if(status === "done"){
+    return '<span class="badge green">Đã hoàn thành</span>';
+  }
+
+  if(status === "too_early"){
+    return '<span class="badge red">Quá sát lần trước</span>';
+  }
+
+  if(status === "overdue"){
+    return '<span class="badge red">Quá hạn</span>';
+  }
+
+  if(status === "upcoming"){
+    return '<span class="badge yellow">Sắp đến hạn</span>';
+  }
+
+  if(status === "window"){
+    return '<span class="badge blue">Đang trong cửa sổ</span>';
+  }
+
+  return '<span class="badge">Chưa đến kỳ</span>';
 }
 
 function render(){
-  const all=buildSchedules();
-  const filtered=filteredSchedules();
-  const hasFilter=Boolean(
+  const all =
+    buildSchedules();
+
+  const filtered =
+    filteredSchedules();
+
+  const hasFilter = Boolean(
     $("search").value.trim() ||
     $("statusFilter").value ||
     $("cycleFilter").value ||
-    $("yearFilter").value
+    $("yearFilter").value ||
+    $("monthFilter").value
   );
 
   /*
-   * Mặc định chỉ hiển thị 5 kỳ gần nhất.
-   * Khi người dùng tìm kiếm/lọc, hiển thị toàn bộ kết quả phù hợp.
+   * Giữ nguyên nguyên tắc hiển thị 5 kỳ gần nhất.
+   * Có bộ lọc/tìm kiếm -> hiển thị toàn bộ kết quả.
    */
-  const rows=hasFilter
-    ? filtered.sort((a,b)=>b.date-a.date)
-    : filtered.sort((a,b)=>b.date-a.date).slice(0,5);
+  const rows = hasFilter
+    ? filtered.sort(
+        (a,b) =>
+          b.targetDate-a.targetDate
+      )
+    : filtered
+        .sort(
+          (a,b) =>
+            b.targetDate-a.targetDate
+        )
+        .slice(0,5);
 
-  $("kpiTotal").textContent=all.length;
-  $("kpiDone").textContent=all.filter(x=>x.status==="done").length;
-  $("kpiPending").textContent=all.filter(x=>x.status==="pending").length;
-  $("kpiOverdue").textContent=all.filter(x=>x.status==="overdue").length;
+  $("kpiTotal").textContent =
+    contracts.reduce((sum,c)=>{
+      const enabled=contractEnabled(c);
+      return enabled
+        ? sum + Math.max(0,Number(c.maintenanceTotal||0))
+        : sum;
+    },0);
 
-  $("empty").style.display=rows.length?"none":"block";
+  $("kpiDone").textContent =
+    contracts.reduce((sum,c)=>{
+      if(!contractEnabled(c)) return sum;
 
-  $("rows").innerHTML=rows.map(x=>{
-    const c=x.contract;
-    const badge=x.status==="done"
-      ? '<span class="badge green">Đã hoàn thành</span>'
-      : x.status==="overdue"
-        ? '<span class="badge red">Quá hạn</span>'
-        : '<span class="badge yellow">Chưa thực hiện</span>';
+      const actualCompleted =
+        maintenances.filter(m=>
+          String(m.contractId||"")===String(c.id) &&
+          m.status==="completed"
+        ).length;
 
-    return `<tr>
-      <td><strong>Kỳ ${x.period}</strong></td>
-      <td><strong>${esc(c.code||"—")}</strong><br><small>${esc(c.name||"")}</small></td>
-      <td>${esc(x.customer)}</td>
-      <td>${esc(x.building)}</td>
-      <td>${esc(x.elevator)}</td>
-      <td>${esc(fmtDate(x.date))}</td>
-      <td>${esc(cycleText[c.maintenanceCycle]||"—")}</td>
-      <td>${badge}</td>
-    </tr>`;
-  }).join("");
+      return sum + Math.max(
+        actualCompleted,
+        Number(c.maintenanceCompleted||0)
+      );
+    },0);
+
+  $("kpiWindow").textContent =
+    all.filter(x =>
+      x.status?.code === "window"
+    ).length;
+
+  $("kpiDueSoon").textContent =
+    all.filter(x =>
+      x.status?.code === "upcoming"
+    ).length;
+
+  $("kpiRisk").textContent =
+    all.filter(x =>
+      x.status?.code === "overdue" ||
+      x.status?.code === "too_early"
+    ).length;
+
+  $("empty").style.display =
+    rows.length ? "none" : "block";
+
+  $("rows").innerHTML =
+    rows.map(x => {
+      const c = x.contract;
+
+      const lastDate =
+        x.lastActualDate;
+
+      const targetDate =
+        x.targetDate;
+
+      let windowText = "—";
+
+      if(x.window){
+        windowText =
+          `${fmtDate(x.window.earliest)} → ${fmtDate(x.window.latest)}`;
+      }
+
+      let gapText = "—";
+
+      if(lastDate){
+        const gap =
+          diffDays(
+            lastDate,
+            targetDate
+          );
+
+        if(gap !== null){
+          gapText = `${gap} ngày`;
+        }
+      }
+
+      return `<tr>
+        <td>
+          <strong>Kỳ ${x.period}</strong>
+          <div class="small">
+            ${
+              esc(
+                x.maintenance?.ticketNo ||
+                x.maintenance?.maintenanceTicketNo ||
+                ""
+              )
+            }
+          </div>
+        </td>
+
+        <td>
+          <strong>
+            ${esc(c.code || "—")}
+          </strong><br>
+          <small>
+            ${esc(c.name || "")}
+          </small>
+        </td>
+
+        <td>
+          ${esc(x.customer)}
+        </td>
+
+        <td>
+          ${esc(x.building)}
+        </td>
+
+        <td>
+          ${esc(x.elevatorName)}
+          <div class="small">
+            ${esc(x.assetCode)}
+          </div>
+        </td>
+
+        <td>
+          ${esc(
+            cycleText[
+              c.maintenanceCycle
+            ] || "—"
+          )}
+        </td>
+
+        <td class="nowrap">
+          ${esc(fmtDate(lastDate))}
+        </td>
+
+        <td class="nowrap">
+          ${esc(fmtDate(targetDate))}
+        </td>
+
+        <td class="nowrap">
+          ${esc(windowText)}
+        </td>
+
+        <td class="nowrap">
+          ${esc(gapText)}
+        </td>
+
+        <td>
+          ${statusBadge(
+            x.status?.code
+          )}
+        </td>
+      </tr>`;
+    }).join("");
 }
 
 async function load(){
-  const results=await Promise.allSettled([
-    getContracts(),
-    getCustomers(),
-    getBuildings(),
-    getElevators(),
-    getMaintenances()
-  ]);
+  const results =
+    await Promise.allSettled([
+      getContracts(),
+      getCustomers(),
+      getBuildings(),
+      getElevators(),
+      getMaintenances()
+    ]);
 
-  contracts=results[0].status==="fulfilled"?results[0].value||[]:[];
-  customers=results[1].status==="fulfilled"?results[1].value||[]:[];
-  buildings=results[2].status==="fulfilled"?results[2].value||[]:[];
-  elevators=results[3].status==="fulfilled"?results[3].value||[]:[];
-  maintenances=results[4].status==="fulfilled"?results[4].value||[]:[];
+  contracts =
+    results[0].status === "fulfilled"
+      ? results[0].value || []
+      : [];
+
+  customers =
+    results[1].status === "fulfilled"
+      ? results[1].value || []
+      : [];
+
+  buildings =
+    results[2].status === "fulfilled"
+      ? results[2].value || []
+      : [];
+
+  elevators =
+    results[3].status === "fulfilled"
+      ? results[3].value || []
+      : [];
+
+  maintenances =
+    results[4].status === "fulfilled"
+      ? results[4].value || []
+      : [];
 
   renderYearOptions();
+  renderMonthOptions();
   render();
 }
 
-["search","statusFilter","cycleFilter","yearFilter"].forEach(id=>{
-  $(id).addEventListener(id==="search"?"input":"change",render);
+[
+  "search",
+  "statusFilter",
+  "cycleFilter",
+  "yearFilter",
+  "monthFilter"
+].forEach(id => {
+  $(id).addEventListener(
+    id === "search"
+      ? "input"
+      : "change",
+    render
+  );
 });
 
-$("refresh").addEventListener("click",load);
+$("refresh").addEventListener(
+  "click",
+  load
+);
 
-onAuthStateChanged(auth,async user=>{
-  authReady=true;
-  if(!user){
-    contracts=[];customers=[];buildings=[];elevators=[];maintenances=[];
-    renderYearOptions();render();
-    return;
+onAuthStateChanged(
+  auth,
+  async user => {
+    if(!user){
+      contracts = [];
+      customers = [];
+      buildings = [];
+      elevators = [];
+      maintenances = [];
+
+      renderYearOptions();
+      renderMonthOptions();
+      render();
+
+      return;
+    }
+
+    await load();
   }
-  await load();
-});
+);
 </script>
 </body>
 </html>
