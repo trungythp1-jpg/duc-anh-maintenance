@@ -412,7 +412,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
   <div class="card kpi-collapsible-card">
     <button type="button" class="card-head kpi-collapsible-head" id="maintenanceToggle" aria-expanded="false" aria-controls="maintenanceDetailBody">
-      <span class="kpi-collapsible-title">Chi tiết Bảo trì <span id="maintenanceProjectCount">(0 công trình)</span></span>
+      <span class="kpi-collapsible-title">Chi tiết Bảo trì <span id="maintenanceProjectCount">(0 lượt)</span></span>
       <span class="kpi-collapsible-icon" aria-hidden="true">+</span>
     </button>
     <div id="maintenanceDetailBody" class="kpi-collapsible-body" hidden>
@@ -423,7 +423,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
   <div class="card kpi-collapsible-card">
     <button type="button" class="card-head kpi-collapsible-head" id="workOrderToggle" aria-expanded="false" aria-controls="workOrderDetailBody">
-      <span class="kpi-collapsible-title">Chi tiết Work Order <span id="workOrderProjectCount">(0 công trình)</span></span>
+      <span class="kpi-collapsible-title">Chi tiết Work Order <span id="workOrderProjectCount">(0 lượt)</span></span>
       <span class="kpi-collapsible-icon" aria-hidden="true">+</span>
     </button>
     <div id="workOrderDetailBody" class="kpi-collapsible-body" hidden>
@@ -815,7 +815,7 @@ function renderMaintenanceDetails(){
   const source=state.kpis.flatMap(k=>k.maintenance.maintenanceRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
     !q||[r.ticketNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.contractCode].join(" ").toLowerCase().includes(q)
   );
-  $("maintenanceProjectCount").textContent=`(${uniqueProjectCount(source)} công trình)`;
+  $("maintenanceProjectCount").textContent=`(${source.length} lượt)`;
   if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
   const groups=new Map();
@@ -880,7 +880,7 @@ function renderDetails(){
   const source=state.kpis.flatMap(k=>k.workOrderOriginRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
     !q||[r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.sourceType].join(" ").toLowerCase().includes(q)
   );
-  $("workOrderProjectCount").textContent=`(${uniqueProjectCount(source)} công trình)`;
+  $("workOrderProjectCount").textContent=`(${source.length} lượt)`;
   if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
   const groups=new Map();
