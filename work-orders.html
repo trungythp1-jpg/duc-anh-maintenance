@@ -94,6 +94,20 @@ tr:hover td{background:#161613}
     <div class="kpi"><b>KHẨN CẤP</b><strong id="kUrgent">0</strong></div>
   </div>
 
+  <div id="requestPanel" class="card" style="margin-bottom:15px;display:none">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <div><strong style="color:var(--gold2);font-size:15px">YÊU CẦU TẠO WORK ORDER</strong><div class="muted" style="margin-top:4px">KTV gửi yêu cầu tại đây. ADMIN/MANAGER xem xét và tạo Work Order chính thức.</div></div>
+      <span id="requestCount" class="badge gold">0 chờ xử lý</span>
+    </div>
+    <div class="table-wrap">
+      <table style="min-width:1050px">
+        <thead><tr><th>Thời gian</th><th>PBM / Khách hàng</th><th>Thang máy</th><th>Công việc</th><th>Ưu tiên</th><th>KTV yêu cầu</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="requestRows"></tbody>
+      </table>
+    </div>
+    <div id="requestEmpty" class="empty" style="display:none">Không có yêu cầu đang chờ.</div>
+  </div>
+
   <div class="toolbar">
     <div><label>Tìm kiếm</label><input id="search" placeholder="WO, PBM, khách hàng, tòa nhà, thang..."></div>
     <div><label>Trạng thái</label><select id="filterStatus"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
@@ -162,7 +176,7 @@ tr:hover td{background:#161613}
 
 <script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc, getDocs, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { doc, getDoc, getDocs, addDoc, updateDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import {
   getMaintenances,
@@ -180,6 +194,7 @@ let editingId = "";
 let authUser = null;
 let currentProfile = null;
 let requestMode = false;
+let workOrderRequests = [];
 
 const statusText = {
   draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",
@@ -198,6 +213,48 @@ function badgeStatus(v){
 function badgePriority(v){
   const c=v==="urgent"?"red":v==="high"?"gold":"";
   return `<span class="badge ${c}">${esc(priorityText[v]||v)}</span>`;
+}
+
+function formatRequestTime(value){
+  if(!value) return "—";
+  try{const d=value?.toDate?value.toDate():new Date(value);return Number.isNaN(d.getTime())?"—":d.toLocaleString("vi-VN");}catch(e){return "—"}
+}
+function canViewRequests(){
+  return ["ADMIN","MANAGER","DIRECTOR","CSKH"].includes(currentRole());
+}
+function renderRequests(){
+  const panel=$("requestPanel");
+  if(!panel) return;
+  const visible=canViewRequests();
+  panel.style.display=visible?"block":"none";
+  if(!visible) return;
+  const pending=workOrderRequests.filter(r=>String(r.status||"")==="pending");
+  $("requestCount").textContent=`${pending.length} chờ xử lý`;
+  $("requestEmpty").style.display=pending.length?"none":"block";
+  $("requestRows").innerHTML=pending.length?pending.map(r=>`<tr>
+    <td>${esc(formatRequestTime(r.createdAt))}</td>
+    <td><strong>${esc(r.maintenanceTicketNo||"—")}</strong><div>${esc(r.customerName||"—")}</div><div class="muted">${esc(r.buildingName||"")}</div></td>
+    <td><strong>${esc(r.elevatorName||"—")}</strong><div class="muted">${esc(r.elevatorAssetCode||"")}</div></td>
+    <td><strong>${esc(r.issueTitle||"—")}</strong><div class="muted">${esc(r.problemDescription||"").slice(0,120)}</div></td>
+    <td>${badgePriority(r.priority||"normal")}</td>
+    <td>${esc(r.requestedByTechnicianName||r.requestedByTechnicianId||"—")}</td>
+    <td><span class="badge gold">Chờ xử lý</span></td>
+    <td><button class="btn" data-request-open="${esc(r.id)}">Xem / tạo WO</button></td>
+  </tr>`).join(""):"";
+  document.querySelectorAll("[data-request-open]").forEach(b=>b.onclick=()=>openRequest(b.dataset.requestOpen));
+}
+async function loadWorkOrderRequests(){
+  if(!canViewRequests()) { workOrderRequests=[]; renderRequests(); return; }
+  try{
+    const snap=await getDocs(collection(db,"workOrderRequests"));
+    workOrderRequests=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(r=>String(r.status||"")==="pending")
+      .sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+  }catch(err){
+    console.error("WORK ORDER REQUEST LOAD ERROR:",err);
+    workOrderRequests=[];
+  }
+  renderRequests();
 }
 
 function render(){
@@ -414,8 +471,9 @@ function openEdit(id){
   const w=workOrders.find(x=>x.id===id); if(!w)return;
   requestMode=false;
   editingId=id;
+  const linkedMaintenanceId=String(w.maintenanceId||"") || String(maintenances.find(m=>String(m.ticketNo||"")===String(w.maintenanceTicketNo||""))?.id||"");
   $("modalTitle").textContent=`Work Order ${w.workOrderNo}`;
-  fillMaintenanceSelect(w.maintenanceId);
+  fillMaintenanceSelect(linkedMaintenanceId);
   $("type").value=w.type||"MAINTENANCE";$("priority").value=w.priority||"normal";
   $("issueTitle").value=w.issueTitle||"";$("problemDescription").value=w.problemDescription||"";
   $("statusField").value=w.status||"draft";
@@ -431,9 +489,33 @@ function openEdit(id){
   $("modal").classList.add("show");
   loadAssignmentHistory(editingId);
 }
+function openRequest(requestId){
+  const r=workOrderRequests.find(x=>x.id===requestId);
+  if(!r) return;
+  if(!["ADMIN","MANAGER"].includes(currentRole())) return;
+  resetForm();
+  requestMode=false;
+  editingId="";
+  $("modalTitle").textContent="Tạo Work Order từ yêu cầu";
+  fillMaintenanceSelect(String(r.maintenanceId||""));
+  $("type").value=r.type||"MAINTENANCE";
+  $("priority").value=r.priority||"normal";
+  $("issueTitle").value=r.issueTitle||"";
+  $("problemDescription").value=r.problemDescription||"";
+  $("statusField").value="assigned";
+  $("openedDate").value=new Date().toISOString().slice(0,10);
+  $("assignmentReason").value=`Từ yêu cầu của ${r.requestedByTechnicianName||r.requestedByTechnicianId||"KTV"}`;
+  renderTechnicianSelect(r.requestedByTechnicianId||"",r.requestedByTechnicianName||"");
+  updateWorkflowHint();
+  $("err").className="err";$("err").textContent="";
+  $("modal").classList.add("show");
+  window.__activeWorkOrderRequestId=requestId;
+}
+
 function close(){
   $("modal").classList.remove("show");
   requestMode=false;
+  window.__activeWorkOrderRequestId="";
   applyRequestModeUI();
 }
 
@@ -486,6 +568,7 @@ $("form").onsubmit=async e=>{
   $("saveBtn").disabled=true;$("saveBtn").textContent="Đang lưu…";
   $("err").className="err";$("err").textContent="";
   try{
+    const activeRequestId=window.__activeWorkOrderRequestId||"";
     if(currentRole()==="TECHNICIAN" && requestMode && !editingId){
       await createWorkOrderRequest();
       close();
@@ -538,14 +621,27 @@ $("form").onsubmit=async e=>{
       if(!data.completedDate)throw new Error("Muốn hoàn thành phải có Ngày hoàn thành.");
     }
 
+    let createdWorkOrder=null;
     if(editingId){
       await updateWorkOrder(editingId,data);
     }else{
-      const created=await createWorkOrder(data);
-      if(assignmentChanged && created?.id){
+      createdWorkOrder=await createWorkOrder(data);
+      if(activeRequestId && createdWorkOrder?.id){
+        await updateDoc(doc(db,"workOrderRequests",activeRequestId),{
+          status:"created",
+          createdWorkOrderId:createdWorkOrder.id,
+          createdWorkOrderNo:createdWorkOrder.workOrderNo||"",
+          processedByUid:authUser?.uid||"",
+          processedByName:currentActorName(),
+          processedAt:serverTimestamp(),
+          updatedAt:serverTimestamp()
+        });
+        window.__activeWorkOrderRequestId="";
+      }
+      if(assignmentChanged && createdWorkOrder?.id){
         await writeTechnicianAssignmentAudit({
           entityType:"workOrder",
-          entityId:created.id,
+          entityId:createdWorkOrder.id,
           fromTechnicianId:"",
           fromTechnicianName:"",
           toTechnicianId:newTechnicianId,
@@ -595,7 +691,9 @@ async function load(){
     }
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>String(b.createdAt?.toMillis?.()||0)-String(a.createdAt?.toMillis?.()||0));
-    render();$("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
+    render();
+    await loadWorkOrderRequests();
+    $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
   }catch(err){
     $("status").className="status error";$("status").textContent=err?.message||String(err);
   }
