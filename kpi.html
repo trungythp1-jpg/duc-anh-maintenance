@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Đức Anh Maintenance — KPI V4.6</title>
+<title>Đức Anh Maintenance — KPI V4.7</title>
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/mobile.css">
 <style>
@@ -58,6 +58,85 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .detail-box{background:#171714;border:1px solid #302c25;border-radius:10px;padding:12px}
 .detail-box small{display:block;color:var(--da-muted);margin-bottom:4px}
 .detail-box strong{font-size:17px;color:var(--da-ivory)}
+/* KPI V4.7: khi chọn "Tất cả KTV", chỉ hiển thị dòng tóm tắt; bấm từng KTV mới mở KPI chi tiết. */
+.kpi-tech-compact-list{display:none;padding:10px 12px}
+.kpi-tech-compact-item{
+  border:1px solid #302c25!important;
+  border-radius:12px!important;
+  background:#11110f!important;
+  margin:0 0 8px!important;
+  overflow:hidden!important;
+}
+.kpi-tech-compact-item:last-child{margin-bottom:0!important}
+.kpi-tech-compact-summary{
+  list-style:none!important;
+  cursor:pointer!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto 24px!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:12px 14px!important;
+  min-height:58px!important;
+}
+.kpi-tech-compact-summary::-webkit-details-marker{display:none!important}
+.kpi-tech-compact-summary::after{
+  content:"+"!important;
+  color:var(--da-gold-light)!important;
+  font-size:20px!important;
+  font-weight:700!important;
+  text-align:center!important;
+}
+.kpi-tech-compact-item[open]>.kpi-tech-compact-summary::after{content:"−"!important}
+.kpi-tech-compact-name{
+  color:var(--da-ivory)!important;
+  font-weight:700!important;
+  font-size:15px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.kpi-tech-compact-sub{
+  color:var(--da-muted)!important;
+  font-size:12px!important;
+  margin-top:3px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.kpi-tech-compact-rate{
+  color:var(--da-gold-light)!important;
+  font-size:13px!important;
+  font-weight:700!important;
+  white-space:nowrap!important;
+}
+.kpi-tech-compact-body{
+  border-top:1px solid #292722!important;
+  padding:10px 12px 12px!important;
+  background:#10100e!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.kpi-tech-metric{
+  min-width:0!important;
+  padding:8px 9px!important;
+  border:1px solid #292722!important;
+  border-radius:8px!important;
+  background:#171714!important;
+}
+.kpi-tech-metric small{
+  display:block!important;
+  color:var(--da-gold-light)!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  text-transform:uppercase!important;
+  margin-bottom:3px!important;
+}
+.kpi-tech-metric div{color:var(--da-text)!important;overflow-wrap:anywhere!important}
+@media(max-width:650px){
+  .kpi-tech-compact-body{grid-template-columns:1fr 1fr!important}
+  .kpi-tech-compact-summary{grid-template-columns:minmax(0,1fr) auto 22px!important;padding:11px 12px!important}
+}
 .kpi-detail-list{padding:10px 12px}
 .kpi-detail-item{
   border:1px solid #302c25!important;
@@ -226,7 +305,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
       <h1>KPI vận hành</h1>
       <div class="muted">
         Theo dõi khối lượng Bảo trì và toàn bộ Work Order được phân công.
-        KPI V4.6 là số liệu vận hành, không chấm điểm hay xếp hạng nhân sự.
+        KPI V4.7 là số liệu vận hành, không chấm điểm hay xếp hạng nhân sự.
       </div>
     </div>
     <button class="btn primary" id="refreshBtn" type="button">↻ Cập nhật</button>
@@ -274,7 +353,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
       <h2>Tổng hợp Bảo trì + Work Order theo kỹ thuật viên</h2>
       <span class="muted" id="periodLabel">—</span>
     </div>
-    <div class="table-wrap tech-table-wrap">
+    <div class="table-wrap tech-table-wrap" id="technicianTableWrap">
       <table class="data-table">
         <thead>
           <tr>
@@ -295,6 +374,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
         <tbody id="technicianRows"></tbody>
       </table>
     </div>
+    <div id="technicianCompactRows" class="kpi-tech-compact-list"></div>
     <div class="empty" id="technicianEmpty">Chưa có dữ liệu KPI.</div>
   </div>
 
@@ -320,7 +400,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
 <script>
 const bootGateText=document.querySelector("#authGate .muted");
-if(bootGateText) bootGateText.textContent="Đang khởi động KPI V4.6…";
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V4.7…";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -550,9 +630,56 @@ function renderSummary(){
   $("periodLabel").textContent=`${fmt(state.period.startDate)} → ${fmt(state.period.endDate)}`;
 }
 function renderTechRows(){
-  const rows=$("technicianRows"),empty=$("technicianEmpty");
-  if(!state.kpis.length){rows.innerHTML="";empty.style.display="block";return;}
+  const rows=$("technicianRows"),compact=$("technicianCompactRows"),empty=$("technicianEmpty"),tableWrap=$("technicianTableWrap");
+  if(!state.kpis.length){
+    rows.innerHTML="";
+    compact.innerHTML="";
+    tableWrap.style.display="none";
+    compact.style.display="none";
+    empty.style.display="block";
+    return;
+  }
   empty.style.display="none";
+
+  /* Khi xem "Tất cả KTV": không bung 12 cột cho tất cả nhân sự.
+     Chỉ hiện một dòng tóm tắt/KTV; bấm từng KTV mới xem KPI đầy đủ. */
+  if(!state.selectedTechnician){
+    tableWrap.style.display="none";
+    compact.style.display="block";
+    rows.innerHTML="";
+    compact.innerHTML=state.kpis.map(k=>{
+      const m=k.maintenance,w=k.workOrder;
+      const rate=Number(m.maintenanceCompletionRate)||0;
+      return `<details class="kpi-tech-compact-item">
+        <summary class="kpi-tech-compact-summary">
+          <div>
+            <div class="kpi-tech-compact-name">${esc(k.technicianName||k.technicianId)}</div>
+            <div class="kpi-tech-compact-sub">BT ${m.completedMaintenance}/${m.plannedMaintenance} · WO ${w.completedWorkOrders}/${w.totalWorkOrders} hoàn thành</div>
+          </div>
+          <div class="kpi-tech-compact-rate">${rate.toFixed(1)}%</div>
+        </summary>
+        <div class="kpi-tech-compact-body">
+          <div class="kpi-tech-metric"><small>KH bảo trì</small><div>${m.plannedMaintenance}</div></div>
+          <div class="kpi-tech-metric"><small>Đã BT</small><div>${m.completedMaintenance}</div></div>
+          <div class="kpi-tech-metric"><small>Còn lại</small><div>${m.remainingMaintenance}</div></div>
+          <div class="kpi-tech-metric"><small>% BT</small><div>${rate.toFixed(1)}%</div></div>
+          <div class="kpi-tech-metric"><small>Tổng WO</small><div>${w.totalWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO hoàn thành</small><div>${w.completedWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO đang xử lý</small><div>${w.activeWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO quá hạn</small><div>${w.overdueWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO đúng hạn</small><div>${w.completedOnTime}</div></div>
+          <div class="kpi-tech-metric"><small>TB xử lý</small><div>${Number.isFinite(Number(w.averageProcessingDays))?Number(w.averageProcessingDays).toFixed(1)+" ngày":"—"}</div></div>
+          <div class="kpi-tech-metric"><small>Chi phí WO</small><div>${money(w.totalCost)}</div></div>
+        </div>
+      </details>`;
+    }).join("");
+    return;
+  }
+
+  /* Chọn một KTV: giữ bảng chi tiết hiện tại vì chỉ còn một người. */
+  tableWrap.style.display="block";
+  compact.style.display="none";
+  compact.innerHTML="";
   rows.innerHTML=state.kpis.map(k=>{
     const m=k.maintenance,w=k.workOrder;
     return `<tr>
