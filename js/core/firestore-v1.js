@@ -515,10 +515,6 @@ function normalizeContractData(data, references) {
 
     signedDate: data.signedDate || "",
     startDate: data.startDate || "",
-
-    contractDurationMonths:
-      Number(data.contractDurationMonths || 0) || 0,
-
     endDate: data.endDate || "",
 
     contractValue:
@@ -548,17 +544,8 @@ function normalizeContractData(data, references) {
     maintenanceCycle:
       data.maintenanceCycle || "monthly",
 
-    maintenanceTotal:
-      Math.max(0, Number(data.maintenanceTotal || 0)),
-
-    maintenanceCompleted:
-      Math.max(0, Number(data.maintenanceCompleted || 0)),
-
-    maintenanceRemaining:
-      Math.max(0, Number(data.maintenanceRemaining || 0)),
-
-    maintenanceLastDate:
-      data.maintenanceLastDate || "",
+    maintenanceOwner:
+      data.maintenanceOwner || "",
 
     paidValue:
       data.paidValue ?? "",
@@ -708,6 +695,22 @@ async function findMaintenanceDuplicate(contractId, periodNumber, excludeId = ""
   ) || null;
 }
 
+function localTodayIso(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function assertMaintenanceScheduledDateNotPast(scheduledDate){
+  const value = String(scheduledDate || "").trim();
+  if(!value) return;
+  if(value < localTodayIso()){
+    throw new Error(`Không thể tạo phiếu bảo trì có ngày dự kiến trước hôm nay (${localTodayIso()}). Phiếu lịch sử phải được ghi nhận theo dữ liệu lịch sử đã có.`);
+  }
+}
+
 async function assertMaintenancePeriodAvailable(contractId, periodNumber, excludeId = ""){
   const duplicate = await findMaintenanceDuplicate(contractId, periodNumber, excludeId);
 
@@ -751,6 +754,10 @@ export async function createMaintenance(data){
   if(!periodNumber){
     throw new Error("Kỳ bảo trì là bắt buộc. Phiếu bảo trì phải gắn với một kỳ trong lịch.");
   }
+
+  // Không cho tạo phiếu bảo trì mới có ngày dự kiến trong quá khứ.
+  // Các phiếu lịch sử đã tồn tại và thao tác cập nhật phiếu cũ không bị chặn bởi rule này.
+  assertMaintenanceScheduledDateNotPast(data.scheduledDate);
 
   // Chặn trùng với dữ liệu cũ trước khi ghi.
   await assertMaintenancePeriodAvailable(references.contract.id, periodNumber);
