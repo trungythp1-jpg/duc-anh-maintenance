@@ -181,10 +181,6 @@ function buildSchedules(){
 
     if(!start || !end || !months) continue;
 
-    /*
-     * Lịch kỳ được tính từ ngày hiệu lực hợp đồng.
-     * Không ghi thêm dữ liệu vào Firestore ở bước này.
-     */
     let date=new Date(start);
     let period=1;
 
@@ -194,10 +190,6 @@ function buildSchedules(){
         Number(m.periodNumber||0)===period
       );
 
-      /*
-       * Tương thích dữ liệu cũ:
-       * nếu phiếu chưa có periodNumber, thử ghép theo contractId + scheduledDate.
-       */
       const legacyMaintenance=maintenanceForPeriod || maintenances.find(m =>
         String(m.contractId||"")===String(c.id) &&
         String(m.scheduledDate||"")===date.toISOString().slice(0,10)
@@ -279,7 +271,21 @@ function renderYearOptions(){
 
 function render(){
   const all=buildSchedules();
-  const rows=filteredSchedules();
+  const filtered=filteredSchedules();
+  const hasFilter=Boolean(
+    $("search").value.trim() ||
+    $("statusFilter").value ||
+    $("cycleFilter").value ||
+    $("yearFilter").value
+  );
+
+  /*
+   * Mặc định chỉ hiển thị 5 kỳ gần nhất.
+   * Khi người dùng tìm kiếm/lọc, hiển thị toàn bộ kết quả phù hợp.
+   */
+  const rows=hasFilter
+    ? filtered.sort((a,b)=>b.date-a.date)
+    : filtered.sort((a,b)=>b.date-a.date).slice(0,5);
 
   $("kpiTotal").textContent=all.length;
   $("kpiDone").textContent=all.filter(x=>x.status==="done").length;
