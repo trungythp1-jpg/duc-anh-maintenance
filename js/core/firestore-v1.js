@@ -854,25 +854,58 @@ export async function updateMaintenance(maintenanceId, data){
 
 /* =========================
    WORK ORDERS / PHIẾU CÔNG VIỆC
-   V1.1 — ASSIGNMENT / PROCESS / COMPLETION
+   V2 — INDEPENDENT SOURCE / ASSET CONTEXT / ASSIGNMENT
 ========================= */
 
 const WORK_ORDER_COUNTER_ID = "workOrderTicket";
 const WORK_ORDER_COOLDOWN_MS = 20 * 60 * 1000;
 
+const WORK_ORDER_SOURCE_TYPES = [
+  "MAINTENANCE",
+  "CUSTOMER_REPORT",
+  "INCIDENT",
+  "SALES",
+  "MANAGEMENT",
+  "OTHER"
+];
+
+const WORK_ORDER_TYPES = [
+  "MAINTENANCE",
+  "BREAKDOWN",
+  "REPAIR",
+  "INSPECTION"
+];
+
+const WORK_ORDER_PRIORITIES = [
+  "low",
+  "normal",
+  "high",
+  "urgent"
+];
+
+const WORK_ORDER_STATUSES = [
+  "draft",
+  "assigned",
+  "in_progress",
+  "waiting_parts",
+  "completed",
+  "cancelled"
+];
+
 function normalizeWorkOrderStatus(value){
-  const allowed = ["draft","assigned","in_progress","waiting_parts","completed","cancelled"];
-  return allowed.includes(value) ? value : "draft";
+  return WORK_ORDER_STATUSES.includes(value) ? value : "draft";
 }
 
 function normalizeWorkOrderPriority(value){
-  const allowed = ["low","normal","high","urgent"];
-  return allowed.includes(value) ? value : "normal";
+  return WORK_ORDER_PRIORITIES.includes(value) ? value : "normal";
 }
 
 function normalizeWorkOrderType(value){
-  const allowed = ["MAINTENANCE","BREAKDOWN","REPAIR","INSPECTION"];
-  return allowed.includes(value) ? value : "MAINTENANCE";
+  return WORK_ORDER_TYPES.includes(value) ? value : "REPAIR";
+}
+
+function normalizeWorkOrderSourceType(value){
+  return WORK_ORDER_SOURCE_TYPES.includes(value) ? value : "OTHER";
 }
 
 function workOrderStatusLabel(value){
@@ -886,34 +919,114 @@ function workOrderStatusLabel(value){
   }[value] || value;
 }
 
-function validateWorkOrderState({ status, technicianName, resolution, completedDate, existingStatus = "" }){
-  const tech = String(technicianName || "").trim();
-  const result = String(resolution || "").trim();
+function normalizeWorkOrderText(value){
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function buildWorkOrderIssueFingerprint({ type, issueTitle, problemDescription }){
+  return [
+    normalizeWorkOrderText(type),
+    normalizeWorkOrderText(issueTitle),
+    normalizeWorkOrderText(problemDescription)
+  ].join("|").slice(0, 500);
+}
+
+function validateWorkOrderState({
+  sourceType,
+  status,
+  technicianId,
+  resolution,
+  completedDate,
+  existingStatus = "",
+  maintenanceId = ""
+}){
+  if(!WORK_ORDER_SOURCE_TYPES.includes(sourceType)){
+    throw new Error("Nguồn Work Order không hợp lệ.");
+  }
 
   if(existingStatus === "completed" && status !== "completed"){
     throw new Error("Work Order đã hoàn thành và không được chuyển ngược trạng thái.");
   }
 
-  if(["assigned","in_progress","waiting_parts","completed"].includes(status) && !tech){
-    throw new Error(`Trạng thái "${workOrderStatusLabel(status)}" bắt buộc phải có kỹ thuật viên.`);
+  if(
+    ["assigned","in_progress","waiting_parts","completed"].includes(status) &&
+    !String(technicianId || "").trim()
+  ){
+    throw new Error(
+      `Trạng thái "${workOrderStatusLabel(status)}" bắt buộc phải có kỹ thuật viên.`
+    );
   }
 
   if(status === "completed"){
-    if(!result){
+    if(!String(resolution || "").trim()){
       throw new Error("Muốn hoàn thành Work Order phải nhập Biện pháp xử lý.");
     }
+
     if(!completedDate){
       throw new Error("Muốn hoàn thành Work Order phải có Ngày hoàn thành.");
     }
   }
+
+  if(
+    sourceType === "MAINTENANCE" &&
+    !String(maintenanceId || "").trim()
+  ){
+    throw new Error("Nguồn MAINTENANCE bắt buộc phải có Phiếu bảo trì.");
+  }
+}
+
+async function validateWorkOrderReferences(data){
+  requireValue(data.customerId, "customerId");
+  requireValue(data.buildingId, "buildingId");
+  requireValue(data.elevatorId, "elevatorId");
+
+  const [customer, building, elevator] = await Promise.all([
+    getCustomer(data.customerId),
+    getBuilding(data.buildingId),
+    getElevator(data.elevatorId)
+  ]);
+
+  if(!customer) throw new Error("Không tìm thấy khách hàng.");
+  if(!building) throw new Error("Không tìm thấy tòa nhà.");
+  if(!elevator) throw new Error("Không tìm thấy thang máy.");
+
+  if(String(building.customerId) !== String(customer.id)){
+    throw new Error("Tòa nhà không thuộc khách hàng đã chọn.");
+  }
+
+  if(String(elevator.buildingId) !== String(building.id)){
+    throw new Error("Thang máy không thuộc tòa nhà đã chọn.");
+  }
+
+  return { customer, building, elevator };
 }
 
 async function validateWorkOrderMaintenance(data){
+  if(data.sourceType !== "MAINTENANCE") return null;
+
   requireValue(data.maintenanceId, "maintenanceId");
 
   const maintenance = await getMaintenance(data.maintenanceId);
+
   if(!maintenance){
     throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(
+    String(maintenance.customerId || "") !== String(data.customerId || "") ||
+    String(maintenance.buildingId || "") !== String(data.buildingId || "") ||
+    String(maintenance.elevatorId || "") !== String(data.elevatorId || "")
+  ){
+    throw new Error(
+      "Phiếu bảo trì không thuộc đúng Customer → Building → Elevator của Work Order."
+    );
   }
 
   if(!maintenance.contractId || !maintenance.elevatorId){
@@ -923,11 +1036,19 @@ async function validateWorkOrderMaintenance(data){
   return maintenance;
 }
 
-async function assertWorkOrderCooldown(maintenanceId, excludeWorkOrderId = ""){
+async function assertWorkOrderCooldown(
+  elevatorId,
+  issueFingerprint,
+  excludeWorkOrderId = ""
+){
+  if(!elevatorId || !issueFingerprint) return;
+
   const q = query(
     collection(db, COLLECTIONS.WORK_ORDERS),
-    where("maintenanceId", "==", String(maintenanceId))
+    where("elevatorId", "==", String(elevatorId)),
+    where("issueFingerprint", "==", String(issueFingerprint))
   );
+
   const snapshot = await getDocs(q);
   const now = Date.now();
 
@@ -949,7 +1070,7 @@ async function assertWorkOrderCooldown(maintenanceId, excludeWorkOrderId = ""){
 
         throw new Error(
           `Phiếu công việc ${workOrderNo} vừa được tạo. ` +
-          `Vui lòng chờ khoảng ${remaining} phút trước khi tạo thêm Work Order cho cùng phiếu bảo trì.`
+          `Vui lòng chờ khoảng ${remaining} phút trước khi tạo thêm Work Order tương tự cho cùng thang máy.`
         );
       }
     }
@@ -961,14 +1082,22 @@ async function syncMaintenanceWorkOrderLink(
   maintenanceId,
   workOrderId,
   workOrderNo,
-  status
+  status,
+  maintenanceSnapshot = null
 ){
-  const maintenanceRef = doc(db, COLLECTIONS.MAINTENANCE, maintenanceId);
-  const maintenanceSnapshot = await transaction.get(maintenanceRef);
+  if(!maintenanceId) return;
 
-  if(!maintenanceSnapshot.exists()) return;
+  const maintenanceRef = doc(
+    db,
+    COLLECTIONS.MAINTENANCE,
+    maintenanceId
+  );
 
-  const current = maintenanceSnapshot.data() || {};
+  const snapshot = maintenanceSnapshot || await transaction.get(maintenanceRef);
+
+  if(!snapshot.exists()) return;
+
+  const current = snapshot.data() || {};
   const currentIds = Array.isArray(current.workOrderIds)
     ? current.workOrderIds.map(String)
     : [];
@@ -1002,11 +1131,16 @@ export async function getWorkOrder(workOrderId){
   };
 }
 
-export async function getWorkOrders(options = {}) {
+export async function getWorkOrders(options = {}){
   const technicianId = String(options?.technicianId || "").trim();
+
   const source = technicianId
-    ? query(collection(db, COLLECTIONS.WORK_ORDERS), where("assignedTechnicianId", "==", technicianId))
+    ? query(
+        collection(db, COLLECTIONS.WORK_ORDERS),
+        where("assignedTechnicianId", "==", technicianId)
+      )
     : collection(db, COLLECTIONS.WORK_ORDERS);
+
   const snapshot = await getDocs(source);
 
   return snapshot.docs.map(item => ({
@@ -1032,144 +1166,243 @@ export async function getWorkOrdersByMaintenance(maintenanceId){
 }
 
 export async function createWorkOrder(data){
-  const maintenance = await validateWorkOrderMaintenance(data);
-  await assertWorkOrderCooldown(maintenance.id);
-
-  const status = normalizeWorkOrderStatus(data.status);
-  const priority = normalizeWorkOrderPriority(data.priority);
+  const sourceType = normalizeWorkOrderSourceType(data.sourceType);
   const type = normalizeWorkOrderType(data.type);
+  const priority = normalizeWorkOrderPriority(data.priority);
+  const status = normalizeWorkOrderStatus(data.status);
+
+  if(!WORK_ORDER_TYPES.includes(data.type || type)){
+    throw new Error("Loại công việc không hợp lệ.");
+  }
+
+  if(!WORK_ORDER_PRIORITIES.includes(data.priority || priority)){
+    throw new Error("Ưu tiên không hợp lệ.");
+  }
+
+  if(!WORK_ORDER_STATUSES.includes(data.status || status)){
+    throw new Error("Trạng thái không hợp lệ.");
+  }
+
+  requireValue(data.customerId, "customerId");
+  requireValue(data.buildingId, "buildingId");
+  requireValue(data.elevatorId, "elevatorId");
 
   const issueTitle = String(data.issueTitle || "").trim();
   const problemDescription = String(data.problemDescription || "").trim();
-  const technicianName = String(data.assignedTechnicianName || "").trim();
-  const openedDate = data.openedDate || new Date().toISOString().slice(0,10);
-  const completedDate = status === "completed"
-    ? (data.completedDate || new Date().toISOString().slice(0,10))
-    : (data.completedDate || "");
-
-  validateWorkOrderState({
-    status,
-    technicianName,
-    resolution:data.resolution,
-    completedDate
-  });
 
   if(!issueTitle) throw new Error("Tiêu đề công việc là bắt buộc.");
   if(!problemDescription) throw new Error("Mô tả vấn đề là bắt buộc.");
 
-  const workOrder = {
-    maintenanceId: maintenance.id,
-    maintenanceTicketNo: maintenance.ticketNo || "",
-    customerId: maintenance.customerId || "",
-    customerName: maintenance.customerName || "",
-    buildingId: maintenance.buildingId || "",
-    buildingName: maintenance.buildingName || "",
-    elevatorId: maintenance.elevatorId || "",
-    elevatorName: maintenance.elevatorName || "",
-    elevatorAssetCode: maintenance.elevatorAssetCode || "",
-    contractId: maintenance.contractId || "",
-    contractCode: maintenance.contractCode || "",
-    periodNumber: Number(maintenance.periodNumber || 0) || null,
+  const technicianId = String(data.assignedTechnicianId || "").trim();
+  const resolution = String(data.resolution || "").trim();
 
-    type,
-    priority,
+  const openedDate =
+    data.openedDate || new Date().toISOString().slice(0,10);
+
+  const completedDate =
+    status === "completed"
+      ? (data.completedDate || new Date().toISOString().slice(0,10))
+      : (data.completedDate || "");
+
+  validateWorkOrderState({
+    sourceType,
     status,
-
-    issueTitle,
-    problemDescription,
-
-    assignedTechnicianId: data.assignedTechnicianId || "",
-    assignedTechnicianName: technicianName,
-
-    openedDate,
-    dueDate: data.dueDate || "",
+    technicianId,
+    resolution,
     completedDate,
+    maintenanceId:data.maintenanceId
+  });
 
-    cause: String(data.cause || "").trim(),
-    resolution: String(data.resolution || "").trim(),
+  const references = await validateWorkOrderReferences(data);
+  const maintenance = await validateWorkOrderMaintenance({
+    ...data,
+    sourceType,
+    customerId:references.customer.id,
+    buildingId:references.building.id,
+    elevatorId:references.elevator.id
+  });
 
-    materials: Array.isArray(data.materials) ? data.materials : [],
-    laborCost: Number(data.laborCost || 0) || 0,
-    materialCost: Number(data.materialCost || 0) || 0,
-    totalCost: Number(data.totalCost || 0) || 0,
+  const maintenanceId = maintenance?.id || "";
+  const maintenanceTicketNo =
+    maintenance?.ticketNo || String(data.maintenanceTicketNo || "");
 
-    attachmentUrls: Array.isArray(data.attachmentUrls)
-      ? data.attachmentUrls
-      : [],
+  const contractId =
+    maintenance?.contractId ||
+    String(data.contractId || "");
 
-    note: String(data.note || "").trim(),
-    source: "maintenance",
+  const contractCode =
+    maintenance?.contractCode ||
+    String(data.contractCode || "");
 
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
+  const customerName =
+    references.customer.name ||
+    String(data.customerName || "");
+
+  const buildingName =
+    references.building.name ||
+    String(data.buildingName || "");
+
+  const elevatorName =
+    references.elevator.name ||
+    String(data.elevatorName || "");
+
+  const elevatorAssetCode =
+    references.elevator.assetCode ||
+    String(data.elevatorAssetCode || "");
+
+  const issueFingerprint = buildWorkOrderIssueFingerprint({
+    type,
+    issueTitle,
+    problemDescription
+  });
+
+  await assertWorkOrderCooldown(
+    references.elevator.id,
+    issueFingerprint
+  );
 
   const workOrderId =
     `wo_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
 
-  const workOrderRef = doc(db, COLLECTIONS.WORK_ORDERS, workOrderId);
-  const counterRef = doc(db, COLLECTIONS.SETTINGS, WORK_ORDER_COUNTER_ID);
+  const workOrderRef = doc(
+    db,
+    COLLECTIONS.WORK_ORDERS,
+    workOrderId
+  );
+
+  const counterRef = doc(
+    db,
+    COLLECTIONS.SETTINGS,
+    WORK_ORDER_COUNTER_ID
+  );
+
+  const maintenanceRef = maintenanceId
+    ? doc(db, COLLECTIONS.MAINTENANCE, maintenanceId)
+    : null;
 
   const saved = await runTransaction(db, async transaction => {
-    // IMPORTANT: Firestore requires every transaction read to happen
-    // before the first transaction write.
+    // IMPORTANT: Firestore transaction requires reads before writes.
     const counterSnapshot = await transaction.get(counterRef);
-    const maintenanceRef = doc(db, COLLECTIONS.MAINTENANCE, maintenance.id);
-    const maintenanceSnapshot = await transaction.get(maintenanceRef);
+
+    const maintenanceSnapshot = maintenanceRef
+      ? await transaction.get(maintenanceRef)
+      : null;
 
     const currentNumber = counterSnapshot.exists()
-      ? Number(counterSnapshot.data().lastNumber || 0)
+      ? Number(
+          counterSnapshot.data().lastNumber ??
+          counterSnapshot.data().value ??
+          0
+        )
       : 0;
 
     const nextNumber = currentNumber + 1;
-    const workOrderNo = `WO-${String(nextNumber).padStart(6, "0")}`;
+    const workOrderNo =
+      `WO-${String(nextNumber).padStart(6, "0")}`;
 
-    let currentIds = [];
-    if(maintenanceSnapshot.exists()){
-      const maintenanceData = maintenanceSnapshot.data() || {};
-      currentIds = Array.isArray(maintenanceData.workOrderIds)
-        ? maintenanceData.workOrderIds.map(String)
-        : [];
-    }
+    const payload = {
+      workOrderNo,
 
-    if(!currentIds.includes(String(workOrderId))){
-      currentIds.push(String(workOrderId));
-    }
+      sourceType,
+      sourceNote:String(data.sourceNote || "").trim(),
+
+      maintenanceId,
+      maintenanceTicketNo,
+
+      customerId:references.customer.id,
+      customerName,
+
+      buildingId:references.building.id,
+      buildingName,
+
+      elevatorId:references.elevator.id,
+      elevatorName,
+      elevatorAssetCode,
+
+      contractId,
+      contractCode,
+
+      type,
+      priority,
+      status,
+
+      issueTitle,
+      problemDescription,
+
+      assignedTechnicianId:technicianId,
+      assignedTechnicianName:
+        String(data.assignedTechnicianName || "").trim(),
+
+      openedDate,
+      dueDate:data.dueDate || "",
+      completedDate,
+
+      cause:String(data.cause || "").trim(),
+      resolution,
+
+      materials:Array.isArray(data.materials)
+        ? data.materials
+        : [],
+
+      laborCost:Number(data.laborCost || 0) || 0,
+      materialCost:Number(data.materialCost || 0) || 0,
+      totalCost:Number(data.totalCost || 0) || 0,
+
+      attachmentUrls:Array.isArray(data.attachmentUrls)
+        ? data.attachmentUrls
+        : [],
+
+      note:String(data.note || "").trim(),
+
+      issueFingerprint,
+
+      createdByUid:String(data.createdByUid || ""),
+      createdByName:String(data.createdByName || ""),
+
+      createdAt:serverTimestamp(),
+      updatedAt:serverTimestamp(),
+
+      completedAt:
+        status === "completed"
+          ? serverTimestamp()
+          : null
+    };
 
     // ---- ALL READS ARE ABOVE. WRITES START HERE. ----
-    transaction.set(counterRef, {
-      lastNumber: nextNumber,
-      prefix: "WO-",
-      updatedAt: serverTimestamp()
-    }, { merge:true });
 
-    transaction.set(workOrderRef, {
-      ...workOrder,
-      workOrderNo,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
+    transaction.set(
+      counterRef,
+      {
+        lastNumber:nextNumber,
+        prefix:"WO-",
+        updatedAt:serverTimestamp()
+      },
+      { merge:true }
+    );
 
-    if(maintenanceSnapshot.exists()){
-      transaction.update(maintenanceRef, {
-        workOrderIds: currentIds,
-        workOrderCount: currentIds.length,
-        latestWorkOrderId: String(workOrderId),
-        latestWorkOrderNo: String(workOrderNo || ""),
-        latestWorkOrderStatus: status || "draft",
-        updatedAt: serverTimestamp()
-      });
+    transaction.set(workOrderRef, payload);
+
+    if(maintenanceSnapshot?.exists()){
+      syncMaintenanceWorkOrderLink(
+        transaction,
+        maintenanceId,
+        workOrderId,
+        workOrderNo,
+        status,
+        maintenanceSnapshot
+      );
     }
 
     return {
       id:workOrderId,
-      workOrderNo
+      workOrderNo,
+      payload
     };
   });
 
   return {
     id:saved.id,
-    ...workOrder,
+    ...saved.payload,
     workOrderNo:saved.workOrderNo
   };
 }
@@ -1183,109 +1416,159 @@ export async function updateWorkOrder(workOrderId, data){
     throw new Error("Không tìm thấy phiếu công việc.");
   }
 
-  const status = normalizeWorkOrderStatus(
-    data.status ?? existing.status
-  );
+  const sourceType =
+    data.sourceType ??
+    existing.sourceType ??
+    "OTHER";
 
-  const priority = normalizeWorkOrderPriority(
-    data.priority ?? existing.priority
-  );
+  const type =
+    data.type ??
+    existing.type ??
+    "REPAIR";
 
-  const type = normalizeWorkOrderType(
-    data.type ?? existing.type
-  );
+  const priority =
+    data.priority ??
+    existing.priority ??
+    "normal";
 
-  const technicianName = String(
-    data.assignedTechnicianName ?? existing.assignedTechnicianName ?? ""
+  const status =
+    data.status ??
+    existing.status ??
+    "draft";
+
+  if(!WORK_ORDER_SOURCE_TYPES.includes(sourceType)){
+    throw new Error("Nguồn Work Order không hợp lệ.");
+  }
+
+  if(!WORK_ORDER_TYPES.includes(type)){
+    throw new Error("Loại công việc không hợp lệ.");
+  }
+
+  if(!WORK_ORDER_PRIORITIES.includes(priority)){
+    throw new Error("Ưu tiên không hợp lệ.");
+  }
+
+  if(!WORK_ORDER_STATUSES.includes(status)){
+    throw new Error("Trạng thái không hợp lệ.");
+  }
+
+  const customerId =
+    data.customerId ??
+    existing.customerId ??
+    "";
+
+  const buildingId =
+    data.buildingId ??
+    existing.buildingId ??
+    "";
+
+  const elevatorId =
+    data.elevatorId ??
+    existing.elevatorId ??
+    "";
+
+  const maintenanceId =
+    data.maintenanceId ??
+    existing.maintenanceId ??
+    "";
+
+  const contractId =
+    data.contractId ??
+    existing.contractId ??
+    "";
+
+  const issueTitle = String(
+    data.issueTitle ??
+    existing.issueTitle ??
+    ""
   ).trim();
 
-  const completedDate = status === "completed"
-    ? (
-        data.completedDate ||
-        existing.completedDate ||
-        new Date().toISOString().slice(0,10)
-      )
-    : (
-        data.completedDate ??
-        existing.completedDate ??
-        ""
-      );
+  const problemDescription = String(
+    data.problemDescription ??
+    existing.problemDescription ??
+    ""
+  ).trim();
+
+  if(!issueTitle) throw new Error("Tiêu đề công việc là bắt buộc.");
+  if(!problemDescription) throw new Error("Mô tả vấn đề là bắt buộc.");
+
+  const technicianId = String(
+    data.assignedTechnicianId ??
+    existing.assignedTechnicianId ??
+    ""
+  ).trim();
+
+  const completedDate =
+    status === "completed"
+      ? (
+          data.completedDate ||
+          existing.completedDate ||
+          new Date().toISOString().slice(0,10)
+        )
+      : (
+          data.completedDate ??
+          existing.completedDate ??
+          ""
+        );
 
   const resolution = String(
-    data.resolution ?? existing.resolution ?? ""
+    data.resolution ??
+    existing.resolution ??
+    ""
   ).trim();
 
   validateWorkOrderState({
+    sourceType,
     status,
-    technicianName,
+    technicianId,
     resolution,
     completedDate,
-    existingStatus:existing.status
+    existingStatus:existing.status,
+    maintenanceId
   });
 
-  const payload = {
+  const references = await validateWorkOrderReferences({
+    customerId,
+    buildingId,
+    elevatorId
+  });
+
+  const maintenance = await validateWorkOrderMaintenance({
+    sourceType,
+    maintenanceId,
+    customerId,
+    buildingId,
+    elevatorId
+  });
+
+  const maintenanceTicketNo =
+    maintenance?.ticketNo ??
+    data.maintenanceTicketNo ??
+    existing.maintenanceTicketNo ??
+    "";
+
+  const finalContractId =
+    maintenance?.contractId ||
+    contractId ||
+    "";
+
+  const finalContractCode =
+    maintenance?.contractCode ||
+    data.contractCode ||
+    existing.contractCode ||
+    "";
+
+  const issueFingerprint = buildWorkOrderIssueFingerprint({
     type,
-    priority,
-    status,
+    issueTitle,
+    problemDescription
+  });
 
-    issueTitle:String(
-      data.issueTitle ?? existing.issueTitle ?? ""
-    ).trim(),
-
-    problemDescription:String(
-      data.problemDescription ?? existing.problemDescription ?? ""
-    ).trim(),
-
-    assignedTechnicianId:
-      data.assignedTechnicianId ??
-      existing.assignedTechnicianId ??
-      "",
-
-    assignedTechnicianName:technicianName,
-
-    openedDate:
-      data.openedDate ??
-      existing.openedDate ??
-      "",
-
-    dueDate:
-      data.dueDate ??
-      existing.dueDate ??
-      "",
-
-    completedDate,
-
-    cause:String(
-      data.cause ?? existing.cause ?? ""
-    ).trim(),
-
-    resolution,
-
-    materials:
-      Array.isArray(data.materials)
-        ? data.materials
-        : (existing.materials || []),
-
-    laborCost:
-      Number(data.laborCost ?? existing.laborCost ?? 0) || 0,
-
-    materialCost:
-      Number(data.materialCost ?? existing.materialCost ?? 0) || 0,
-
-    totalCost:
-      Number(data.totalCost ?? existing.totalCost ?? 0) || 0,
-
-    attachmentUrls:
-      Array.isArray(data.attachmentUrls)
-        ? data.attachmentUrls
-        : (existing.attachmentUrls || []),
-
-    note:String(
-      data.note ?? existing.note ?? ""
-    ).trim(),
-
-    updatedAt:serverTimestamp()
-  };
+  await assertWorkOrderCooldown(
+    elevatorId,
+    issueFingerprint,
+    workOrderId
+  );
 
   const workOrderRef = doc(
     db,
@@ -1293,27 +1576,172 @@ export async function updateWorkOrder(workOrderId, data){
     workOrderId
   );
 
-  const maintenanceRef = doc(
-    db,
-    COLLECTIONS.MAINTENANCE,
-    existing.maintenanceId
-  );
+  const maintenanceRef = maintenanceId
+    ? doc(db, COLLECTIONS.MAINTENANCE, maintenanceId)
+    : null;
 
   await runTransaction(db, async transaction => {
     // IMPORTANT: read first, then write.
-    const maintenanceSnapshot =
-      await transaction.get(maintenanceRef);
+    const currentSnapshot =
+      await transaction.get(workOrderRef);
+
+    if(!currentSnapshot.exists()){
+      throw new Error("Work Order không còn tồn tại.");
+    }
+
+    const current = currentSnapshot.data() || {};
+
+    const maintenanceSnapshot = maintenanceRef
+      ? await transaction.get(maintenanceRef)
+      : null;
+
+    if(
+      current.status === "completed" &&
+      status !== "completed"
+    ){
+      throw new Error(
+        "Work Order đã hoàn thành và không được chuyển ngược trạng thái."
+      );
+    }
+
+    const payload = {
+      sourceType,
+      sourceNote:String(
+        data.sourceNote ??
+        existing.sourceNote ??
+        ""
+      ).trim(),
+
+      maintenanceId,
+      maintenanceTicketNo,
+
+      customerId:references.customer.id,
+      customerName:
+        references.customer.name ||
+        data.customerName ||
+        existing.customerName ||
+        "",
+
+      buildingId:references.building.id,
+      buildingName:
+        references.building.name ||
+        data.buildingName ||
+        existing.buildingName ||
+        "",
+
+      elevatorId:references.elevator.id,
+      elevatorName:
+        references.elevator.name ||
+        data.elevatorName ||
+        existing.elevatorName ||
+        "",
+      elevatorAssetCode:
+        references.elevator.assetCode ||
+        data.elevatorAssetCode ||
+        existing.elevatorAssetCode ||
+        "",
+
+      contractId:finalContractId,
+      contractCode:finalContractCode,
+
+      type,
+      priority,
+      status,
+
+      issueTitle,
+      problemDescription,
+
+      assignedTechnicianId:technicianId,
+      assignedTechnicianName:String(
+        data.assignedTechnicianName ??
+        existing.assignedTechnicianName ??
+        ""
+      ).trim(),
+
+      openedDate:
+        data.openedDate ??
+        existing.openedDate ??
+        "",
+
+      dueDate:
+        data.dueDate ??
+        existing.dueDate ??
+        "",
+
+      completedDate,
+
+      cause:String(
+        data.cause ??
+        existing.cause ??
+        ""
+      ).trim(),
+
+      resolution,
+
+      materials:
+        Array.isArray(data.materials)
+          ? data.materials
+          : (Array.isArray(existing.materials)
+              ? existing.materials
+              : []),
+
+      laborCost:
+        Number(
+          data.laborCost ??
+          existing.laborCost ??
+          0
+        ) || 0,
+
+      materialCost:
+        Number(
+          data.materialCost ??
+          existing.materialCost ??
+          0
+        ) || 0,
+
+      totalCost:
+        Number(
+          data.totalCost ??
+          existing.totalCost ??
+          0
+        ) || 0,
+
+      attachmentUrls:
+        Array.isArray(data.attachmentUrls)
+          ? data.attachmentUrls
+          : (Array.isArray(existing.attachmentUrls)
+              ? existing.attachmentUrls
+              : []),
+
+      note:String(
+        data.note ??
+        existing.note ??
+        ""
+      ).trim(),
+
+      issueFingerprint,
+
+      updatedAt:serverTimestamp(),
+
+      completedAt:
+        status === "completed"
+          ? (current.completedAt || serverTimestamp())
+          : null
+    };
 
     // ---- ALL READS ARE ABOVE. WRITES START HERE. ----
+
     transaction.update(workOrderRef, payload);
 
-    if(maintenanceSnapshot.exists()){
-      transaction.update(maintenanceRef, {
-        latestWorkOrderId:workOrderId,
-        latestWorkOrderNo:existing.workOrderNo || "",
-        latestWorkOrderStatus:status,
-        updatedAt:serverTimestamp()
-      });
+    if(maintenanceSnapshot?.exists()){
+      syncMaintenanceWorkOrderLink(
+        transaction,
+        maintenanceId,
+        workOrderId,
+        current.workOrderNo || "",
+        status,
+        maintenanceSnapshot
+      );
     }
   });
 
