@@ -272,17 +272,35 @@ service cloud.firestore {
 
 
     // =========================================================
-    // WORK ORDERS
+    // WORK ORDERS — V2
     // =========================================================
     //
-    // TECHNICIAN chỉ được đọc/sửa WO được giao.
+    // Work Order độc lập với Maintenance.
+    //
+    // sourceType:
+    //   MAINTENANCE
+    //   CUSTOMER_REPORT
+    //   INCIDENT
+    //   SALES
+    //   MANAGEMENT
+    //   OTHER
+    //
+    // Mọi WO phải có context tài sản:
+    //   customerId
+    //   buildingId
+    //   elevatorId
+    //
+    // Nếu sourceType == MAINTENANCE:
+    //   maintenanceId bắt buộc.
+    //
+    // TECHNICIAN:
+    //   - chỉ đọc/sửa WO được giao cho chính mình.
+    //   - không được thay đổi source/asset/contract/maintenance/
+    //     assignedTechnicianId.
+    //   - chỉ sửa các trường vận hành được phép.
     //
     // Query TECHNICIAN phải dùng:
-    // where(
-    //   "assignedTechnicianId",
-    //   "==",
-    //   users/{uid}.technicianId
-    // )
+    //   where("assignedTechnicianId", "==", users/{uid}.technicianId)
     //
 
     match /workOrders/{workOrderId} {
@@ -298,21 +316,125 @@ service cloud.firestore {
         || isCSKH()
         || isAssignedWorkOrder();
 
-      allow create: if isAdmin()
-        || isManager();
+      // Chỉ ADMIN / MANAGER tạo WO chính thức.
+      allow create: if
+        (isAdmin() || isManager())
+        && request.resource.data.sourceType in [
+          'MAINTENANCE',
+          'CUSTOMER_REPORT',
+          'INCIDENT',
+          'SALES',
+          'MANAGEMENT',
+          'OTHER'
+        ]
+        && request.resource.data.type in [
+          'MAINTENANCE', 'BREAKDOWN', 'REPAIR', 'INSPECTION'
+        ]
+        && request.resource.data.priority in [
+          'low', 'normal', 'high', 'urgent'
+        ]
+        && request.resource.data.status in [
+          'draft', 'assigned', 'in_progress', 'waiting_parts', 'completed', 'cancelled'
+        ]
+        && request.resource.data.customerId != ''
+        && request.resource.data.buildingId != ''
+        && request.resource.data.elevatorId != ''
+        && (
+          request.resource.data.sourceType != 'MAINTENANCE'
+          || (
+            request.resource.data.maintenanceId != ''
+            && exists(
+              /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+            )
+            && get(
+              /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+            ).data.customerId == request.resource.data.customerId
+            && get(
+              /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+            ).data.buildingId == request.resource.data.buildingId
+            && get(
+              /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+            ).data.elevatorId == request.resource.data.elevatorId
+          )
+        );
 
-      allow update: if isAdmin()
-        || isManager()
+      // ADMIN / MANAGER có quyền quản lý toàn bộ WO nhưng vẫn phải
+      // giữ các invariant cốt lõi của Work Order V2.
+      // TECHNICIAN chỉ được sửa WO đang giao cho mình và chỉ được
+      // thay đổi các trường vận hành.
+      allow update: if
+        (
+          (isAdmin() || isManager())
+          && request.resource.data.sourceType in [
+            'MAINTENANCE', 'CUSTOMER_REPORT', 'INCIDENT', 'SALES', 'MANAGEMENT', 'OTHER'
+          ]
+          && request.resource.data.type in [
+            'MAINTENANCE', 'BREAKDOWN', 'REPAIR', 'INSPECTION'
+          ]
+          && request.resource.data.priority in [
+            'low', 'normal', 'high', 'urgent'
+          ]
+          && request.resource.data.status in [
+            'draft', 'assigned', 'in_progress', 'waiting_parts', 'completed', 'cancelled'
+          ]
+          && request.resource.data.customerId != ''
+          && request.resource.data.buildingId != ''
+          && request.resource.data.elevatorId != ''
+          && (
+            request.resource.data.sourceType != 'MAINTENANCE'
+            || (
+              request.resource.data.maintenanceId != ''
+              && exists(
+                /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+              )
+              && get(
+                /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+              ).data.customerId == request.resource.data.customerId
+              && get(
+                /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+              ).data.buildingId == request.resource.data.buildingId
+              && get(
+                /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+              ).data.elevatorId == request.resource.data.elevatorId
+            )
+          )
+        )
         || (
           isAssignedWorkOrder()
           && request.resource.data.assignedTechnicianId
              == resource.data.assignedTechnicianId
           && request.resource.data.assignedTechnicianId
              == technicianIdFromUser()
+          && request.resource.data.sourceType
+             == resource.data.sourceType
+          && request.resource.data.customerId
+             == resource.data.customerId
+          && request.resource.data.buildingId
+             == resource.data.buildingId
+          && request.resource.data.elevatorId
+             == resource.data.elevatorId
+          && request.resource.data.contractId
+             == resource.data.contractId
+          && request.resource.data.maintenanceId
+             == resource.data.maintenanceId
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'type','priority','status','issueTitle','problemDescription','openedDate',
-            'dueDate','completedDate','cause','resolution','materials','laborCost',
-            'materialCost','totalCost','attachmentUrls','note','updatedAt'
+            'type',
+            'priority',
+            'status',
+            'issueTitle',
+            'problemDescription',
+            'openedDate',
+            'dueDate',
+            'completedDate',
+            'cause',
+            'resolution',
+            'materials',
+            'laborCost',
+            'materialCost',
+            'totalCost',
+            'attachmentUrls',
+            'note',
+            'updatedAt'
           ])
         );
 
@@ -374,13 +496,25 @@ service cloud.firestore {
 
 
     // =========================================================
-    // WORK ORDER REQUESTS
+    // WORK ORDER REQUESTS — V2
     // =========================================================
-    // TECHNICIAN không được tạo Work Order trực tiếp.
-    // Chỉ được gửi yêu cầu để ADMIN / MANAGER xử lý.
-    // TECHNICIAN chỉ được đọc các yêu cầu do chính mình gửi.
-    // Query TECHNICIAN nếu dùng list phải ràng buộc:
-    // where("requestedByTechnicianId", "==", technicianIdFromUser())
+    //
+    // TECHNICIAN không tạo Work Order trực tiếp.
+    // TECHNICIAN gửi Request; ADMIN / MANAGER chuyển Request
+    // thành Work Order chính thức và phân công KTV.
+    //
+    // Request độc lập với Maintenance.
+    //
+    // Nếu sourceType == MAINTENANCE:
+    //   maintenanceId bắt buộc và phải thuộc đúng technicianId
+    //   của người gửi request.
+    //
+    // Nếu sourceType != MAINTENANCE:
+    //   maintenanceId có thể rỗng.
+    //
+    // TECHNICIAN chỉ được đọc Request do chính mình gửi.
+    // ADMIN / MANAGER / DIRECTOR / CSKH được đọc danh sách.
+    //
 
     match /workOrderRequests/{requestId} {
       allow get: if isAdmin()
@@ -397,14 +531,59 @@ service cloud.firestore {
         || isDirector()
         || isCSKH();
 
-      allow create: if isTechnician()
-        && request.resource.data.requestedByTechnicianId == technicianIdFromUser()
-        && request.resource.data.requestedByUid == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && get(/databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)).data.technicianId == technicianIdFromUser();
+      allow create: if
+        isTechnician()
+        && request.resource.data.sourceType in [
+          'MAINTENANCE',
+          'CUSTOMER_REPORT',
+          'INCIDENT',
+          'SALES',
+          'MANAGEMENT',
+          'OTHER'
+        ]
+        && request.resource.data.requestedByTechnicianId
+           == technicianIdFromUser()
+        && request.resource.data.requestedByUid
+           == request.auth.uid
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.type in [
+          'MAINTENANCE', 'BREAKDOWN', 'REPAIR', 'INSPECTION'
+        ]
+        && request.resource.data.priority in [
+          'low', 'normal', 'high', 'urgent'
+        ]
+        && request.resource.data.customerId != ''
+        && request.resource.data.buildingId != ''
+        && request.resource.data.elevatorId != ''
+        && (
+          request.resource.data.sourceType != 'MAINTENANCE'
+          || (
+            request.resource.data.maintenanceId != ''
+            && exists(
+              /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+            )
+            && get(
+              /databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)
+            ).data.technicianId == technicianIdFromUser()
+          )
+        );
 
-      allow update: if isAdmin()
-        || isManager();
+      // Chỉ cho phép ADMIN / MANAGER xử lý Request.
+      // Dữ liệu nguồn của Request không được sửa sau khi gửi.
+      allow update: if
+        (isAdmin() || isManager())
+        && request.resource.data.status in [
+          'PENDING', 'APPROVED', 'REJECTED', 'CONVERTED'
+        ]
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'createdWorkOrderId',
+          'createdWorkOrderNo',
+          'processedByUid',
+          'processedByName',
+          'processedAt',
+          'updatedAt'
+        ]);
 
       allow delete: if false;
     }
