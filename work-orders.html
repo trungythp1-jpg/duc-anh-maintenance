@@ -128,14 +128,15 @@ tr:hover td{background:#161613}
           <div><label>Ưu tiên *</label><select id="priority"><option value="low">Thấp</option><option value="normal" selected>Bình thường</option><option value="high">Cao</option><option value="urgent">Khẩn cấp</option></select></div>
           <div class="full"><label>Tiêu đề công việc *</label><input id="issueTitle" required placeholder="Ví dụ: Xử lý tiếng kêu bất thường tại máy kéo"></div>
           <div class="full"><label>Mô tả vấn đề *</label><textarea id="problemDescription" rows="4" required placeholder="Mô tả hiện tượng, vị trí, mức độ..."></textarea></div>
-          <div><label>Trạng thái</label><select id="statusField"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
-          <div>
+          <div id="requestHintWrap" class="full" style="display:none"><div class="muted" style="padding:10px 12px;border:1px solid #40382b;border-radius:10px;background:#151512">Kỹ thuật viên không tạo Work Order trực tiếp. Phiếu này sẽ được gửi thành <strong style="color:var(--gold2)">Yêu cầu tạo Work Order</strong> để ADMIN/MANAGER xem xét và tạo phiếu.</div></div>
+          <div id="statusFieldWrap"><label>Trạng thái</label><select id="statusField"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+          <div id="technicianFieldWrap">
             <label>Kỹ thuật viên</label>
             <select id="technicianId">
               <option value="">Chưa phân công</option>
             </select>
           </div>
-          <div class="full"><label>Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
+          <div id="assignmentReasonWrap" class="full"><label>Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
           <div><label>Ngày mở</label><input id="openedDate" type="date"></div>
           <div><label>Hạn xử lý</label><input id="dueDate" type="date"></div>
           <div><label>Ngày hoàn thành</label><input id="completedDate" type="date"></div>
@@ -148,7 +149,7 @@ tr:hover td{background:#161613}
         </div>
         <div id="workflowHint" class="muted" style="margin-top:10px"></div>
         <div class="section" style="margin-top:18px;padding-top:14px;border-top:1px solid #40382b"><h3 style="margin:0 0 10px;color:var(--gold2)">LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
-
+        
         <div id="err" class="err"></div>
       </div>
       <div class="actions">
@@ -178,6 +179,7 @@ let technicians = [];
 let editingId = "";
 let authUser = null;
 let currentProfile = null;
+let requestMode = false;
 
 const statusText = {
   draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",
@@ -201,18 +203,14 @@ function badgePriority(v){
 function render(){
   const q=$("search").value.trim().toLowerCase();
   const fs=$("filterStatus").value, fp=$("filterPriority").value;
-  const hasFilter=Boolean(q||fs||fp);
-  const filtered=workOrders.filter(w=>{
+  const rows=workOrders.filter(w=>{
     const hay=[w.workOrderNo,w.maintenanceTicketNo,w.customerName,w.buildingName,w.elevatorName,w.issueTitle,w.problemDescription].join(" ").toLowerCase();
     return (!q||hay.includes(q))&&(!fs||w.status===fs)&&(!fp||w.priority===fp);
   });
-  const rows=hasFilter?filtered:filtered.slice(0,5);
-
   $("kTotal").textContent=workOrders.length;
   $("kProgress").textContent=workOrders.filter(w=>["assigned","in_progress","waiting_parts"].includes(w.status)).length;
   $("kDone").textContent=workOrders.filter(w=>w.status==="completed").length;
   $("kUrgent").textContent=workOrders.filter(w=>w.priority==="urgent").length;
-
   $("rows").innerHTML=rows.length?rows.map(w=>`
     <tr>
       <td><strong style="color:var(--gold2)">${esc(w.workOrderNo)}</strong><div class="muted">${esc(typeText[w.type]||w.type)}</div></td>
@@ -223,12 +221,7 @@ function render(){
       <td>${badgeStatus(w.status)}</td>
       <td>${esc(w.assignedTechnicianName||"Chưa phân công")}</td>
       <td><button class="btn" data-open="${esc(w.id)}">Mở</button></td>
-    </tr>`).join(""):`<tr><td colspan="9" class="empty">${hasFilter?"Không tìm thấy Work Order phù hợp.":"Chưa có Work Order."}</td></tr>`;
-
-  const countText=hasFilter
-    ? `Đang hiển thị ${rows.length} Work Order theo bộ lọc`
-    : `Đang hiển thị 5 Work Order gần nhất${workOrders.length>5?` · còn ${workOrders.length-5} Work Order, dùng Tìm kiếm để xem`:""}`;
-  $("status").textContent=countText;
+    </tr>`).join(""):`<tr><td colspan="9" class="empty">Chưa có Work Order.</td></tr>`;
   document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openEdit(b.dataset.open));
 }
 
@@ -345,10 +338,32 @@ function renderTechnicianSelect(selectedId="", selectedName=""){
 }
 function applyTechnicianScopeUI(){
   const isTech=currentRole()==="TECHNICIAN";
-  const addBtn=$("addBtn");
-  if(addBtn) addBtn.disabled=isTech;
+  const newBtn=$("newBtn");
+  if(newBtn){
+    newBtn.disabled=false;
+    newBtn.textContent=isTech ? "＋ Gửi yêu cầu tạo Work Order" : "＋ Tạo Work Order";
+  }
   const maintenanceEl=$("maintenanceId");
   if(maintenanceEl) maintenanceEl.disabled=isTech && Boolean(editingId);
+}
+
+function applyRequestModeUI(){
+  const isRequest=currentRole()==="TECHNICIAN" && requestMode && !editingId;
+  const hideIds=["statusFieldWrap","technicianFieldWrap","assignmentReasonWrap"];
+  hideIds.forEach(id=>{
+    const el=$(id);
+    if(el) el.style.display=isRequest ? "none" : "";
+  });
+  const hint=$("requestHintWrap");
+  if(hint) hint.style.display=isRequest ? "block" : "none";
+  if(isRequest){
+    $("modalTitle").textContent="Gửi yêu cầu tạo Work Order";
+    $("saveBtn").textContent="Gửi yêu cầu";
+    $("statusField").value="draft";
+  }else{
+    $("modalTitle").textContent=editingId ? $("modalTitle").textContent : "Tạo Work Order";
+    $("saveBtn").textContent="Lưu Work Order";
+  }
 }
 function selectedTechnician(){
   return findTechnician($("technicianId").value);
@@ -370,6 +385,7 @@ function updateWorkflowHint(){
 }
 
 function resetForm(){
+  requestMode=false;
   $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
   $("assignmentReason").value="";
   editingId="";
@@ -385,13 +401,18 @@ function resetForm(){
   $("err").className="err";$("err").textContent="";
   fillMaintenanceSelect("");
   renderTechnicianSelect("");
+  applyRequestModeUI();
 }
 
 function openNew(){
-  resetForm();$("modal").classList.add("show");
+  resetForm();
+  requestMode=currentRole()==="TECHNICIAN";
+  applyRequestModeUI();
+  $("modal").classList.add("show");
 }
 function openEdit(id){
   const w=workOrders.find(x=>x.id===id); if(!w)return;
+  requestMode=false;
   editingId=id;
   $("modalTitle").textContent=`Work Order ${w.workOrderNo}`;
   fillMaintenanceSelect(w.maintenanceId);
@@ -406,10 +427,15 @@ function openEdit(id){
   $("note").value=w.note||"";
   updateWorkflowHint();
   $("err").className="err";$("err").textContent="";
+  applyRequestModeUI();
   $("modal").classList.add("show");
   loadAssignmentHistory(editingId);
 }
-function close(){ $("modal").classList.remove("show"); }
+function close(){
+  $("modal").classList.remove("show");
+  requestMode=false;
+  applyRequestModeUI();
+}
 
 $("newBtn").onclick=openNew;$("closeBtn").onclick=close;$("cancelBtn").onclick=close;
 $("maintenanceId").onchange=updateReference;
@@ -417,11 +443,57 @@ $("statusField").onchange=updateWorkflowHint;
 $("technicianId").onchange=updateWorkflowHint;
 ["search","filterStatus","filterPriority"].forEach(id=>$(id).oninput=render);
 
+async function createWorkOrderRequest(){
+  const maintenanceId=$("maintenanceId").value;
+  const maintenance=maintenances.find(x=>String(x.id)===String(maintenanceId));
+  if(!maintenance) throw new Error("Phiếu bảo trì là bắt buộc.");
+  const title=$("issueTitle").value.trim();
+  const description=$("problemDescription").value.trim();
+  if(!title) throw new Error("Tiêu đề công việc là bắt buộc.");
+  if(!description) throw new Error("Mô tả vấn đề là bắt buộc.");
+
+  const technicianId=String(currentProfile?.technicianId||"").trim();
+  if(!technicianId) throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+
+  await addDoc(collection(db,"workOrderRequests"),{
+    maintenanceId:maintenance.id,
+    maintenanceTicketNo:maintenance.ticketNo||"",
+    customerId:maintenance.customerId||"",
+    customerName:maintenance.customerName||"",
+    buildingId:maintenance.buildingId||"",
+    buildingName:maintenance.buildingName||"",
+    elevatorId:maintenance.elevatorId||"",
+    elevatorName:maintenance.elevatorName||"",
+    elevatorAssetCode:maintenance.elevatorAssetCode||"",
+    contractId:maintenance.contractId||"",
+    contractCode:maintenance.contractCode||"",
+    periodNumber:Number(maintenance.periodNumber||0)||null,
+    type:$("type").value||"MAINTENANCE",
+    priority:$("priority").value||"normal",
+    issueTitle:title,
+    problemDescription:description,
+    requestedByTechnicianId:technicianId,
+    requestedByTechnicianName:currentActorName(),
+    requestedByUid:authUser?.uid||"",
+    status:"pending",
+    createdAt:serverTimestamp(),
+    updatedAt:serverTimestamp()
+  });
+}
+
 $("form").onsubmit=async e=>{
   e.preventDefault();
   $("saveBtn").disabled=true;$("saveBtn").textContent="Đang lưu…";
   $("err").className="err";$("err").textContent="";
   try{
+    if(currentRole()==="TECHNICIAN" && requestMode && !editingId){
+      await createWorkOrderRequest();
+      close();
+      $("status").className="status ok";
+      $("status").textContent="Đã gửi yêu cầu tạo Work Order cho quản lý.";
+      return;
+    }
+
     const existingWorkOrder=editingId?workOrders.find(x=>x.id===editingId):null;
     const selectedTech=selectedTechnician();
     const newTechnicianId=$("technicianId").value||"";
@@ -433,8 +505,8 @@ $("form").onsubmit=async e=>{
     }
     const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
     if(currentRole()==="TECHNICIAN") {
-      if(!editingId) { setError("Kỹ thuật viên chỉ được xử lý Work Order đã được phân công."); return; }
-      if(newTechnicianId!==String(oldTechnicianId||"")) { setError("Kỹ thuật viên không được thay đổi người được phân công."); return; }
+      if(!editingId) throw new Error("Kỹ thuật viên không được tạo Work Order trực tiếp.");
+      if(newTechnicianId!==String(oldTechnicianId||"")) throw new Error("Kỹ thuật viên không được thay đổi người được phân công.");
     }
     const assignmentReason=$("assignmentReason").value.trim();
     if(assignmentChanged && editingId && !assignmentReason){
@@ -523,7 +595,7 @@ async function load(){
     }
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>String(b.createdAt?.toMillis?.()||0)-String(a.createdAt?.toMillis?.()||0));
-    render();
+    render();$("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
   }catch(err){
     $("status").className="status error";$("status").textContent=err?.message||String(err);
   }
@@ -540,6 +612,7 @@ onAuthStateChanged(auth,async user=>{
     const snap=await getDoc(doc(db,"users",user.uid));
     currentProfile=snap.exists()?snap.data():null;
     if(!currentProfile) throw new Error("Không tồn tại users/{uid}.");
+    applyTechnicianScopeUI();
     await load();
   }catch(err){
     $("status").className="status error";
