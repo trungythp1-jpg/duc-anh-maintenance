@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Đức Anh Maintenance — KPI V4.7</title>
+<title>Đức Anh Maintenance — KPI V4.9</title>
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/mobile.css">
 <style>
@@ -58,7 +58,39 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .detail-box{background:#171714;border:1px solid #302c25;border-radius:10px;padding:12px}
 .detail-box small{display:block;color:var(--da-muted);margin-bottom:4px}
 .detail-box strong{font-size:17px;color:var(--da-ivory)}
-/* KPI V4.7: khi chọn "Tất cả KTV", chỉ hiển thị dòng tóm tắt; bấm từng KTV mới mở KPI chi tiết. */
+
+/* KPI V4.9: Chi tiết Bảo trì / Work Order thu gọn, chỉ bung khi người dùng bấm vào tiêu đề. */
+.kpi-collapsible-card{overflow:hidden!important}
+.kpi-collapsible-head{
+  width:100%!important;
+  border:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  cursor:pointer!important;
+  text-align:left!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  padding:15px 16px!important;
+}
+.kpi-collapsible-head:focus-visible{outline:2px solid var(--da-gold-light)!important;outline-offset:-2px!important}
+.kpi-collapsible-title{color:var(--da-gold-light)!important;font-size:18px!important;font-weight:700!important}
+.kpi-collapsible-title span{font-weight:500!important;color:var(--da-muted)!important;font-size:14px!important}
+.kpi-collapsible-right{display:flex!important;align-items:center!important;gap:10px!important;flex-shrink:0!important}
+.kpi-collapsible-icon{width:28px!important;height:28px!important;border:1px solid var(--da-gold-soft)!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;color:var(--da-gold-light)!important;font-size:20px!important;line-height:1!important;font-weight:700!important}
+.kpi-collapsible-head[aria-expanded="true"] .kpi-collapsible-icon{background:rgba(214,168,79,.10)!important}
+.kpi-collapsible-body{border-top:1px solid var(--da-border)!important}
+.kpi-collapsible-body[hidden]{display:none!important}
+@media(max-width:700px){
+  .kpi-collapsible-title{font-size:17px!important}
+  .kpi-collapsible-title span{font-size:13px!important}
+  .kpi-collapsible-right .muted{font-size:12px!important}
+  .kpi-collapsible-head{padding:14px!important}
+}
+
+/* KPI V4.9: khi chọn "Tất cả KTV", chỉ hiển thị dòng tóm tắt; bấm từng KTV mới mở KPI chi tiết. */
 .kpi-tech-compact-list{display:none;padding:10px 12px}
 .kpi-tech-compact-item{
   border:1px solid #302c25!important;
@@ -305,7 +337,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
       <h1>KPI vận hành</h1>
       <div class="muted">
         Theo dõi khối lượng Bảo trì và toàn bộ Work Order được phân công.
-        KPI V4.7 là số liệu vận hành, không chấm điểm hay xếp hạng nhân sự.
+        KPI V4.9 là số liệu vận hành, không chấm điểm hay xếp hạng nhân sự.
       </div>
     </div>
     <button class="btn primary" id="refreshBtn" type="button">↻ Cập nhật</button>
@@ -378,29 +410,33 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
     <div class="empty" id="technicianEmpty">Chưa có dữ liệu KPI.</div>
   </div>
 
-  <div class="card">
-    <div class="card-head">
-      <h2>Chi tiết Bảo trì</h2>
-      <span class="muted" id="maintenanceDetailLabel">—</span>
+  <div class="card kpi-collapsible-card">
+    <button type="button" class="card-head kpi-collapsible-head" id="maintenanceToggle" aria-expanded="false" aria-controls="maintenanceDetailBody">
+      <span class="kpi-collapsible-title">Chi tiết Bảo trì <span id="maintenanceProjectCount">(0 công trình)</span></span>
+      <span class="kpi-collapsible-icon" aria-hidden="true">+</span>
+    </button>
+    <div id="maintenanceDetailBody" class="kpi-collapsible-body" hidden>
+      <div id="maintenanceRows" class="kpi-detail-list"></div>
+      <div class="kpi-detail-empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
     </div>
-    <div id="maintenanceRows" class="kpi-detail-list"></div>
-    <div class="kpi-detail-empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
   </div>
 
-  <div class="card">
-    <div class="card-head">
-      <h2>Chi tiết Work Order</h2>
-      <span class="muted" id="detailLabel">—</span>
+  <div class="card kpi-collapsible-card">
+    <button type="button" class="card-head kpi-collapsible-head" id="workOrderToggle" aria-expanded="false" aria-controls="workOrderDetailBody">
+      <span class="kpi-collapsible-title">Chi tiết Work Order <span id="workOrderProjectCount">(0 công trình)</span></span>
+      <span class="kpi-collapsible-icon" aria-hidden="true">+</span>
+    </button>
+    <div id="workOrderDetailBody" class="kpi-collapsible-body" hidden>
+      <div id="detailRows" class="kpi-detail-list"></div>
+      <div class="kpi-detail-empty" id="detailEmpty">Chưa có Work Order trong kỳ.</div>
     </div>
-    <div id="detailRows" class="kpi-detail-list"></div>
-    <div class="kpi-detail-empty" id="detailEmpty">Chưa có Work Order trong kỳ.</div>
   </div>
 
 </main>
 
 <script>
 const bootGateText=document.querySelector("#authGate .muted");
-if(bootGateText) bootGateText.textContent="Đang khởi động KPI V4.7…";
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V4.9…";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -746,13 +782,40 @@ function renderMaintenanceEntry(r){
     </div>
   </details>`;
 }
+function uniqueProjectCount(rows){
+  const keys=new Set();
+  rows.forEach(r=>{
+    const key=String(r.buildingId||r.buildingName||r.customerId||r.customerName||"unknown").trim();
+    if(key) keys.add(key);
+  });
+  return keys.size;
+}
+function setDetailToggle(id,bodyId,open){
+  const btn=$(id),body=$(bodyId);
+  if(!btn||!body)return;
+  btn.setAttribute("aria-expanded",open?"true":"false");
+  body.hidden=!open;
+}
+function bindDetailToggles(){
+  const pairs=[["maintenanceToggle","maintenanceDetailBody"],["workOrderToggle","workOrderDetailBody"]];
+  pairs.forEach(([btnId,bodyId])=>{
+    const btn=$(btnId);
+    if(!btn||btn.dataset.bound==="1")return;
+    btn.dataset.bound="1";
+    btn.addEventListener("click",()=>{
+      const open=btn.getAttribute("aria-expanded")==="true";
+      setDetailToggle(btnId,bodyId,!open);
+    });
+  });
+}
 function renderMaintenanceDetails(){
+  setDetailToggle("maintenanceToggle","maintenanceDetailBody",false);
   const rows=$("maintenanceRows"),empty=$("maintenanceEmpty");
   const q=String($("search").value||"").trim().toLowerCase();
   const source=state.kpis.flatMap(k=>k.maintenance.maintenanceRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
     !q||[r.ticketNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.contractCode].join(" ").toLowerCase().includes(q)
   );
-  $("maintenanceDetailLabel").textContent=`${source.length} lượt bảo trì`;
+  $("maintenanceProjectCount").textContent=`(${uniqueProjectCount(source)} công trình)`;
   if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
   const groups=new Map();
@@ -811,12 +874,13 @@ function renderWorkOrderEntry(r){
   </details>`;
 }
 function renderDetails(){
+  setDetailToggle("workOrderToggle","workOrderDetailBody",false);
   const rows=$("detailRows"),empty=$("detailEmpty");
   const q=String($("search").value||"").trim().toLowerCase();
   const source=state.kpis.flatMap(k=>k.workOrderOriginRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
     !q||[r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.sourceType].join(" ").toLowerCase().includes(q)
   );
-  $("detailLabel").textContent=`${source.length} Work Order`;
+  $("workOrderProjectCount").textContent=`(${uniqueProjectCount(source)} công trình)`;
   if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
   const groups=new Map();
@@ -898,6 +962,7 @@ $("periodValue").addEventListener("change",refresh);
 $("technicianFilter").addEventListener("change",refresh);
 $("search").addEventListener("input",()=>{renderMaintenanceDetails();renderDetails()});
 $("refreshBtn").addEventListener("click",refresh);
+bindDetailToggles();
 $("technicianRows").addEventListener("click",e=>{
   const b=e.target.closest("[data-tech]");
   if(!b)return;
