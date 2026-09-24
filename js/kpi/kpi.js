@@ -1,35 +1,17 @@
 /*
  * ĐỨC ANH MAINTENANCE
- * MODULE 5 — KPI DATA LAYER V1
+ * MODULE 5 — KPI DATA LAYER V4
  *
  * NGUYÊN TẮC KHÓA:
- * - Không sửa schema Work Order hiện tại.
- * - KPI lấy Work Order làm nguồn dữ liệu vận hành chính.
- * - Không tính trực tiếp từ localStorage.
- * - Không xóa dữ liệu KPI.
- * - KPI theo kỹ thuật viên dùng assignedTechnicianId.
- * - Work Order cancelled không tính vào khối lượng KPI.
- * - Kỳ KPI được xác định bằng openedDate.
- * - completedDate dùng để xác định hoàn thành và đúng hạn.
- * - dueDate dùng để xác định quá hạn/đúng hạn.
- *
- * KPI V1:
- * 1. totalWorkOrders       — Tổng WO hợp lệ trong kỳ
- * 2. completedWorkOrders   — WO đã hoàn thành
- * 3. activeWorkOrders      — WO chưa hoàn thành
- * 4. overdueWorkOrders     — WO quá hạn tại thời điểm tính
- * 5. completedOnTime       — WO hoàn thành không muộn hạn
- * 6. completedLate        — WO hoàn thành sau hạn
- * 7. completionRate       — Tỷ lệ hoàn thành
- * 8. onTimeRate           — Tỷ lệ đúng hạn trên WO đã hoàn thành
- * 9. averageProcessingDays— Thời gian xử lý trung bình
- * 10. totalLaborCost       — Tổng chi phí nhân công của WO
- * 11. totalMaterialCost    — Tổng chi phí vật tư của WO
- * 12. totalCost            — Tổng chi phí WO
- *
- * LƯU Ý:
- * - Không chấm điểm hay xếp hạng kỹ thuật viên ở V1.
- * - KPI V1 là số liệu vận hành, không phải đánh giá nhân sự tự động.
+ * - Không sửa schema Work Order.
+ * - KPI lấy Work Order + Maintenance làm nguồn dữ liệu.
+ * - Không dùng localStorage.
+ * - Work Order cancelled không tính.
+ * - Kỳ KPI của Work Order dùng openedDate.
+ * - completedDate dùng cho hoàn thành/đúng hạn.
+ * - dueDate dùng cho quá hạn/đúng hạn.
+ * - KPI không chấm điểm/xếp hạng nhân sự.
+ * - Work Order V2 dùng sourceType; không dùng field source cũ.
  */
 
 import {
@@ -46,6 +28,7 @@ import {
 import { db } from "../core/firebase.js";
 
 const WORK_ORDERS_COLLECTION = "workOrders";
+const MAINTENANCE_COLLECTION = "maintenance";
 const KPI_COLLECTION = "kpi";
 
 const VALID_STATUSES = new Set([
@@ -55,6 +38,15 @@ const VALID_STATUSES = new Set([
   "waiting_parts",
   "completed",
   "cancelled"
+]);
+
+const VALID_SOURCE_TYPES = new Set([
+  "MAINTENANCE",
+  "CUSTOMER_REPORT",
+  "INCIDENT",
+  "SALES",
+  "MANAGEMENT",
+  "OTHER"
 ]);
 
 function requireValue(value, fieldName) {
@@ -95,32 +87,26 @@ function normalizeDate(value) {
 }
 
 function dateToKey(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
 }
 
 function daysBetween(start, end) {
   const a = normalizeDate(start);
   const b = normalizeDate(end);
   if (!a || !b) return null;
-
-  const diff = b.getTime() - a.getTime();
-  return Math.max(0, diff / 86400000);
+  return Math.max(0, (b.getTime() - a.getTime()) / 86400000);
 }
 
 function isWithinPeriod(value, startDate, endDate) {
   const d = normalizeDate(value);
   const start = normalizeDate(startDate);
   const end = normalizeDate(endDate);
-
-  if (!d || !start || !end) return false;
-  return d >= start && d <= end;
+  return !!d && !!start && !!end && d >= start && d <= end;
 }
 
 function round(value, digits = 2) {
@@ -129,57 +115,50 @@ function round(value, digits = 2) {
   return Math.round(Number(value) * factor) / factor;
 }
 
-function normalizeWorkOrder(workOrder) {
+function normalizeWorkOrder(item) {
+  const sourceType = VALID_SOURCE_TYPES.has(String(item.sourceType || "").toUpperCase())
+    ? String(item.sourceType).toUpperCase()
+    : "OTHER";
+
   return {
-    id: workOrder.id,
-    workOrderNo: workOrder.workOrderNo || "",
-    assignedTechnicianId: workOrder.assignedTechnicianId || "",
-    assignedTechnicianName: workOrder.assignedTechnicianName || "",
-    status: VALID_STATUSES.has(workOrder.status)
-      ? workOrder.status
-      : "draft",
-    openedDate: workOrder.openedDate || "",
-    dueDate: workOrder.dueDate || "",
-    completedDate: workOrder.completedDate || "",
-    laborCost: Number(workOrder.laborCost || 0) || 0,
-    materialCost: Number(workOrder.materialCost || 0) || 0,
-    totalCost: Number(workOrder.totalCost || 0) || 0,
-    customerId: workOrder.customerId || "",
-    customerName: workOrder.customerName || "",
-    buildingId: workOrder.buildingId || "",
-    buildingName: workOrder.buildingName || "",
-    elevatorId: workOrder.elevatorId || "",
-    elevatorName: workOrder.elevatorName || "",
-    elevatorAssetCode: workOrder.elevatorAssetCode || "",
-    maintenanceId: workOrder.maintenanceId || "",
-    source: workOrder.source || ""
+    id: item.id,
+    workOrderNo: item.workOrderNo || "",
+    sourceType,
+    sourceNote: item.sourceNote || "",
+    assignedTechnicianId: item.assignedTechnicianId || "",
+    assignedTechnicianName: item.assignedTechnicianName || "",
+    status: VALID_STATUSES.has(item.status) ? item.status : "draft",
+    openedDate: item.openedDate || "",
+    dueDate: item.dueDate || "",
+    completedDate: item.completedDate || "",
+    completedAt: item.completedAt || null,
+    laborCost: Number(item.laborCost || 0) || 0,
+    materialCost: Number(item.materialCost || 0) || 0,
+    totalCost: Number(item.totalCost || 0) || 0,
+    customerId: item.customerId || "",
+    customerName: item.customerName || "",
+    buildingId: item.buildingId || "",
+    buildingName: item.buildingName || "",
+    elevatorId: item.elevatorId || "",
+    elevatorName: item.elevatorName || "",
+    elevatorAssetCode: item.elevatorAssetCode || "",
+    contractId: item.contractId || "",
+    contractCode: item.contractCode || "",
+    maintenanceId: item.maintenanceId || "",
+    maintenanceTicketNo: item.maintenanceTicketNo || "",
+    issueTitle: item.issueTitle || "",
+    problemDescription: item.problemDescription || "",
+    resolution: item.resolution || ""
   };
 }
 
-/* =========================================================
-   WORK ORDERS — READ
-========================================================= */
-
 export async function getAllWorkOrdersForKpi() {
-  const snapshot = await getDocs(
-    collection(db, WORK_ORDERS_COLLECTION)
-  );
-
+  const snapshot = await getDocs(collection(db, WORK_ORDERS_COLLECTION));
   return snapshot.docs.map(item =>
-    normalizeWorkOrder({
-      id: item.id,
-      ...item.data()
-    })
+    normalizeWorkOrder({ id: item.id, ...item.data() })
   );
 }
 
-/*
- * TECHNICIAN SCOPE
- *
- * Firestore rules hiện tại yêu cầu technician query theo:
- * assignedTechnicianId == technicianIdFromUser().
- * Vì vậy hàm này dùng đúng field scope.
- */
 export async function getWorkOrdersForTechnician(technicianId) {
   requireValue(technicianId, "technicianId");
 
@@ -189,21 +168,10 @@ export async function getWorkOrdersForTechnician(technicianId) {
   );
 
   const snapshot = await getDocs(q);
-
   return snapshot.docs.map(item =>
-    normalizeWorkOrder({
-      id: item.id,
-      ...item.data()
-    })
+    normalizeWorkOrder({ id: item.id, ...item.data() })
   );
 }
-
-
-/* =========================================================
-   MAINTENANCE — READ / KPI
-========================================================= */
-
-const MAINTENANCE_COLLECTION = "maintenance";
 
 function normalizeMaintenance(item) {
   return {
@@ -231,15 +199,9 @@ function normalizeMaintenance(item) {
 }
 
 export async function getAllMaintenancesForKpi() {
-  const snapshot = await getDocs(
-    collection(db, MAINTENANCE_COLLECTION)
-  );
-
+  const snapshot = await getDocs(collection(db, MAINTENANCE_COLLECTION));
   return snapshot.docs.map(item =>
-    normalizeMaintenance({
-      id: item.id,
-      ...item.data()
-    })
+    normalizeMaintenance({ id: item.id, ...item.data() })
   );
 }
 
@@ -252,12 +214,8 @@ export async function getMaintenancesForTechnician(technicianId) {
   );
 
   const snapshot = await getDocs(q);
-
   return snapshot.docs.map(item =>
-    normalizeMaintenance({
-      id: item.id,
-      ...item.data()
-    })
+    normalizeMaintenance({ id: item.id, ...item.data() })
   );
 }
 
@@ -304,7 +262,6 @@ function calculateMaintenanceKpi({
 
     if (isCompleted) completed += 1;
     else active += 1;
-
     if (isOverdue) overdue += 1;
     if (isCompletedOnTime) completedOnTime += 1;
     if (isCompletedLate) completedLate += 1;
@@ -331,8 +288,6 @@ function calculateMaintenanceKpi({
   });
 
   const planned = source.length;
-  const completionRate = planned > 0 ? (completed / planned) * 100 : 0;
-  const onTimeRate = completed > 0 ? (completedOnTime / completed) * 100 : 0;
 
   return {
     technicianId: String(technicianId),
@@ -340,7 +295,6 @@ function calculateMaintenanceKpi({
     periodId: String(periodId),
     startDate: dateToKey(periodStart),
     endDate: dateToKey(periodEnd),
-
     plannedMaintenance: planned,
     completedMaintenance: completed,
     activeMaintenance: active,
@@ -348,17 +302,12 @@ function calculateMaintenanceKpi({
     overdueMaintenance: overdue,
     completedMaintenanceOnTime: completedOnTime,
     completedMaintenanceLate: completedLate,
-    maintenanceCompletionRate: round(completionRate),
-    maintenanceOnTimeRate: round(onTimeRate),
-
+    maintenanceCompletionRate: round(planned ? completed / planned * 100 : 0),
+    maintenanceOnTimeRate: round(completed ? completedOnTime / completed * 100 : 0),
     maintenanceIds: rows.map(row => row.id),
     maintenanceRows: rows
   };
 }
-
-/* =========================================================
-   KPI CALCULATION
-========================================================= */
 
 export function calculateTechnicianKpi({
   technicianId,
@@ -381,7 +330,6 @@ export function calculateTechnicianKpi({
   if (!periodStart || !periodEnd) {
     throw new Error("Khoảng thời gian KPI không hợp lệ.");
   }
-
   if (periodStart > periodEnd) {
     throw new Error("startDate không được lớn hơn endDate.");
   }
@@ -410,21 +358,11 @@ export function calculateTechnicianKpi({
 
     const isCompleted = wo.status === "completed";
     const isCompletedOnTime =
-      isCompleted &&
-      !!due &&
-      !!completedDate &&
-      completedDate <= due;
-
+      isCompleted && !!due && !!completedDate && completedDate <= due;
     const isCompletedLate =
-      isCompleted &&
-      !!due &&
-      !!completedDate &&
-      completedDate > due;
-
+      isCompleted && !!due && !!completedDate && completedDate > due;
     const isOverdue =
-      !isCompleted &&
-      !!due &&
-      due < asOf;
+      !isCompleted && !!due && due < asOf;
 
     let processingDays = null;
     if (opened && completedDate) {
@@ -437,7 +375,6 @@ export function calculateTechnicianKpi({
 
     if (isCompleted) completed += 1;
     else active += 1;
-
     if (isOverdue) overdue += 1;
     if (isCompletedOnTime) completedOnTime += 1;
     if (isCompletedLate) completedLate += 1;
@@ -449,6 +386,10 @@ export function calculateTechnicianKpi({
     return {
       id: wo.id,
       workOrderNo: wo.workOrderNo,
+      sourceType: wo.sourceType,
+      sourceNote: wo.sourceNote,
+      maintenanceId: wo.maintenanceId,
+      maintenanceTicketNo: wo.maintenanceTicketNo,
       status: wo.status,
       openedDate: wo.openedDate,
       dueDate: wo.dueDate,
@@ -465,13 +406,6 @@ export function calculateTechnicianKpi({
   });
 
   const total = source.length;
-  const completionRate = total > 0
-    ? (completed / total) * 100
-    : 0;
-
-  const onTimeRate = completed > 0
-    ? (completedOnTime / completed) * 100
-    : 0;
 
   return {
     technicianId: String(technicianId),
@@ -480,103 +414,50 @@ export function calculateTechnicianKpi({
     startDate: dateToKey(periodStart),
     endDate: dateToKey(periodEnd),
     calculatedAt: new Date().toISOString(),
-
     totalWorkOrders: total,
     completedWorkOrders: completed,
     activeWorkOrders: active,
     overdueWorkOrders: overdue,
     completedOnTime,
     completedLate,
-
-    completionRate: round(completionRate),
-    onTimeRate: round(onTimeRate),
-    averageProcessingDays: processingDaysCount > 0
+    completionRate: round(total ? completed / total * 100 : 0),
+    onTimeRate: round(completed ? completedOnTime / completed * 100 : 0),
+    averageProcessingDays: processingDaysCount
       ? round(processingDaysTotal / processingDaysCount)
       : 0,
-
     totalLaborCost: round(laborCost),
     totalMaterialCost: round(materialCost),
     totalCost: round(totalCost),
-
     workOrderIds: rows.map(row => row.id),
     rows
   };
 }
 
-
-/* =========================================================
-   WORK ORDER ORIGIN — KPI V3
-   Không thay đổi schema. Đọc field source hiện có.
-========================================================= */
-
-function normalizeWorkOrderSource(value) {
-  const raw = String(value || "").trim().toLowerCase();
-
-  if (!raw) return "other";
-
-  if (
-    raw === "maintenance" ||
-    raw === "maintenance_report" ||
-    raw === "bao_tri" ||
-    raw === "bảo trì" ||
-    raw === "from_maintenance"
-  ) {
-    return "maintenance";
-  }
-
-  if (
-    raw === "admin" ||
-    raw === "administrator" ||
-    raw === "management" ||
-    raw === "manager" ||
-    raw === "external" ||
-    raw === "customer" ||
-    raw === "hotline" ||
-    raw === "zalo" ||
-    raw === "phone" ||
-    raw === "other_source"
-  ) {
-    return "external";
-  }
-
-  return "other";
-}
-
 function getWorkOrderOrigin(workOrder) {
-  const normalized = normalizeWorkOrderSource(workOrder.source);
+  const sourceType = String(workOrder?.sourceType || "OTHER").toUpperCase();
 
-  if (normalized === "maintenance") {
+  if (sourceType === "MAINTENANCE" || workOrder?.maintenanceId) {
     return {
       type: "maintenance",
+      sourceType,
       label: "Phát sinh từ bảo trì"
     };
   }
 
-  if (workOrder.maintenanceId) {
-    return {
-      type: "maintenance",
-      label: "Phát sinh từ bảo trì"
-    };
-  }
-
-  if (normalized === "external") {
-    return {
-      type: "external",
-      label: "Nguồn khác / Admin tạo"
-    };
-  }
+  const labels = {
+    CUSTOMER_REPORT: "Khách hàng báo",
+    INCIDENT: "Sự cố",
+    SALES: "Kinh doanh",
+    MANAGEMENT: "Quản lý",
+    OTHER: "Khác"
+  };
 
   return {
     type: "other",
-    label: "Nguồn khác"
+    sourceType,
+    label: labels[sourceType] || "Khác"
   };
 }
-
-/* =========================================================
-   COMBINED KPI V2
-   Maintenance = workload chính
-   Work Order = workload phát sinh/đi kèm
-========================================================= */
 
 export function calculateTechnicianKpiV2({
   technicianId,
@@ -610,10 +491,6 @@ export function calculateTechnicianKpiV2({
 
   const maintenanceIdSet = new Set(maintenance.maintenanceIds);
 
-  let maintenanceSourceCount = 0;
-  let externalSourceCount = 0;
-  let otherSourceCount = 0;
-
   const workOrderOriginRows = workOrder.rows.map(row => {
     const source = workOrders.find(item =>
       String(item.id) === String(row.id)
@@ -621,14 +498,9 @@ export function calculateTechnicianKpiV2({
 
     const origin = getWorkOrderOrigin(source || row);
 
-    if (origin.type === "maintenance") maintenanceSourceCount += 1;
-    else if (origin.type === "external") externalSourceCount += 1;
-    else otherSourceCount += 1;
-
     return {
       ...row,
-      source: source?.source || "",
-      maintenanceId: source?.maintenanceId || "",
+      sourceType: origin.sourceType,
       originType: origin.type,
       originLabel: origin.label
     };
@@ -645,33 +517,31 @@ export function calculateTechnicianKpiV2({
       .filter(Boolean)
   );
 
-  /*
-   * Lưu ý:
-   * - maintenanceSourceCount = WO có nguồn/quan hệ từ bảo trì.
-   * - externalSourceCount = WO do nguồn khác đưa vào để Admin tiếp nhận/tạo/phân công.
-   * - Không cộng các loại này vào "tổng workload bảo trì".
-   * - Tất cả vẫn thuộc tổng Work Order vận hành của KTV.
-   */
+  const bySourceType = {};
+  for (const row of workOrderOriginRows) {
+    bySourceType[row.sourceType] =
+      (bySourceType[row.sourceType] || 0) + 1;
+  }
+
   return {
     technicianId: String(technicianId),
     technicianName: technicianName || "",
     periodId: String(periodId),
     startDate: maintenance.startDate,
     endDate: maintenance.endDate,
-
     maintenance,
     workOrder,
-
     workOrdersFromMaintenance: relatedWorkOrders.length,
-    workOrdersFromExternalSource: externalSourceCount,
-    workOrdersFromOtherSource: otherSourceCount,
-
+    workOrdersFromOtherSource: Math.max(
+      0,
+      workOrderOriginRows.length - relatedWorkOrders.length
+    ),
+    workOrdersBySourceType: bySourceType,
     maintenanceWithWorkOrder: maintenanceWithWorkOrderIds.size,
     maintenanceWithoutWorkOrder: Math.max(
       0,
       maintenance.plannedMaintenance - maintenanceWithWorkOrderIds.size
     ),
-
     workOrderGenerationRate: maintenance.completedMaintenance > 0
       ? round(
           relatedWorkOrders.length /
@@ -679,14 +549,9 @@ export function calculateTechnicianKpiV2({
           100
         )
       : 0,
-
     workOrderOriginRows
   };
 }
-
-/* =========================================================
-   KPI SNAPSHOT
-========================================================= */
 
 function makeKpiDocumentId(periodId, technicianId) {
   return `${String(periodId)}__${String(technicianId)}`
@@ -708,18 +573,11 @@ export async function getKpiSnapshot(periodId, technicianId) {
   };
 }
 
-/*
- * Chỉ ADMIN / MANAGER nên gọi hàm này.
- * Firestore rules đã khóa create/update collection kpi.
- */
 export async function saveKpiSnapshot(kpi) {
   requireValue(kpi?.periodId, "periodId");
   requireValue(kpi?.technicianId, "technicianId");
 
-  const id = makeKpiDocumentId(
-    kpi.periodId,
-    kpi.technicianId
-  );
+  const id = makeKpiDocumentId(kpi.periodId, kpi.technicianId);
 
   const payload = {
     ...kpi,
@@ -737,10 +595,6 @@ export async function saveKpiSnapshot(kpi) {
 
   return getKpiSnapshot(kpi.periodId, kpi.technicianId);
 }
-
-/* =========================================================
-   PERIOD HELPERS
-========================================================= */
 
 export function createMonthlyPeriod(year, month) {
   const y = Number(year);
