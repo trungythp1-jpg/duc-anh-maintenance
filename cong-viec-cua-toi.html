@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Đức Anh Maintenance — Công việc của tôi</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/mobile.css">
+<style>
+:root{--bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;--gold2:#f0ca76;--text:#eee9df;--muted:#aaa49a;--border:#3a3428;--ok:#5fca91;--danger:#e35b4f;--blue:#7aa7ff;--purple:#c1a0ff}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text)}body{background:linear-gradient(180deg,#0b0b0a,#080808);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.page{max-width:1400px;margin:auto;padding:22px 16px 60px}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0 0 5px;color:var(--gold2);font-size:30px}.muted{color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}.kpi,.card{background:var(--panel);border:1px solid var(--border);border-radius:14px}.kpi{padding:15px}.kpi b{display:block;color:var(--gold2);font-size:12px}.kpi strong{display:block;font-size:28px;margin-top:5px}
+.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:15px}.field label{display:block;font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:6px}.field input,.field select{width:100%;border:1px solid #4a4438;border-radius:9px;padding:10px;background:var(--panel2);color:var(--text);font:inherit;outline:none}.field input:focus,.field select:focus{border-color:var(--gold)}
+.status{padding:10px 12px;color:var(--muted);font-size:13px}.status.ok{color:#75dda5}.status.error{color:#ff8176}
+.section-title{padding:14px 15px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;gap:10px;align-items:center}.section-title strong{color:var(--gold2)}.count{font-size:12px;color:var(--muted)}
+.task-list{display:grid}.task{display:grid;grid-template-columns:130px 1.2fr 1fr 150px 130px 100px;gap:12px;align-items:center;padding:14px 15px;border-bottom:1px solid #292722}.task:last-child{border-bottom:0}.task:hover{background:#161613}.task-code strong{color:var(--gold2);display:block}.task-code span{color:var(--muted);font-size:12px}.task-main strong{display:block}.task-main span,.task-sub span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.date strong{display:block}.date span{font-size:12px;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}.badge.today{background:rgba(122,167,255,.14);color:#8fb8ff}.badge.overdue{background:rgba(227,91,79,.14);color:#ff8176}.badge.window{background:rgba(95,202,145,.14);color:#75dda5}.badge.upcoming{background:#27261f;color:#c9c1b2}.badge.wo{background:rgba(193,160,255,.14);color:var(--purple)}.badge.done{background:rgba(95,202,145,.14);color:#75dda5}.badge.progress{background:rgba(122,167,255,.14);color:#8fb8ff}.badge.waiting{background:rgba(214,168,79,.15);color:var(--gold2)}
+.btn{border:1px solid #695329;background:#151512;color:var(--text);border-radius:9px;padding:9px 12px;font:inherit;cursor:pointer}.btn:hover{border-color:var(--gold)}.btn.primary{background:linear-gradient(180deg,#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}
+.empty{padding:40px;text-align:center;color:var(--muted)}.note{padding:14px 15px;color:var(--muted);font-size:13px;border-top:1px solid #302b23;background:#10100e;border-radius:0 0 14px 14px}.note strong{color:var(--gold2)}
+@media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.task{grid-template-columns:110px 1fr 1fr 110px}.task .hide-md{display:none}}
+@media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="head">
+    <div><h1>Công việc của tôi</h1><div class="muted">KTV chỉ xem các công việc được phân công cho tài khoản hiện tại.</div></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><b>TỔNG CÔNG VIỆC</b><strong id="kTotal">0</strong></div>
+    <div class="kpi"><b>HÔM NAY</b><strong id="kToday">0</strong></div>
+    <div class="kpi"><b>QUÁ HẠN</b><strong id="kOverdue">0</strong></div>
+    <div class="kpi"><b>ĐANG XỬ LÝ</b><strong id="kProgress">0</strong></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="field"><label for="search">Tìm kiếm</label><input id="search" placeholder="PBM, WO, khách hàng, tòa nhà, thang..."></div>
+    <div class="field"><label for="kind">Loại công việc</label><select id="kind"><option value="">Tất cả</option><option value="maintenance">Bảo trì</option><option value="workorder">Work Order</option></select></div>
+    <div class="field"><label for="view">Hiển thị</label><select id="view"><option value="active">Chưa hoàn thành</option><option value="all">Tất cả</option><option value="today">Hôm nay</option><option value="overdue">Quá hạn</option><option value="window">Trong cửa sổ</option></select></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><strong>LỊCH CÔNG VIỆC</strong><span class="count" id="count">0 công việc</span></div>
+    <div id="status" class="status">Đang xác thực…</div>
+    <div id="tasks" class="task-list"></div>
+    <div id="empty" class="empty" style="display:none">Chưa có công việc được phân công.</div>
+    <div class="note"><strong>Nguyên tắc:</strong> Schedule chỉ đề xuất ngày/cửa sổ. KTV tự sắp xếp ngày làm việc phù hợp. Màn hình này không tự tạo Maintenance hoặc Work Order.</div>
+  </div>
+</main>
+
+<script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { auth } from "./js/core/firebase.js";
+import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { getMaintenances, getWorkOrders } from "./js/core/firestore-v1.js";
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",waiting_parts:"Chờ vật tư",completed:"Hoàn thành",cancelled:"Đã hủy"};
+const todayIso=()=>new Date().toISOString().slice(0,10);
+let profile=null,items=[];
+
+function parseDate(v){if(!v)return null;const d=new Date(`${String(v).slice(0,10)}T00:00:00`);return Number.isNaN(d.getTime())?null:d}
+function diffDays(a,b){const aa=parseDate(a),bb=parseDate(b);if(!aa||!bb)return null;return Math.round((aa-bb)/86400000)}
+function dateLabel(v){const d=parseDate(v);return d?d.toLocaleDateString("vi-VN"):"—"}
+function dayState(date,windowStart,windowEnd){const t=todayIso();if(date<t)return ["overdue","Quá hạn"];if(date===t)return ["today","Hôm nay"];if(windowStart&&windowEnd&&date>=windowStart&&date<=windowEnd)return ["window","Trong cửa sổ"];return ["upcoming","Sắp tới"]}
+function maintenanceItem(m){
+  const date=String(m.scheduledDate||"").slice(0,10);const state=dayState(date,m.windowStart,m.windowEnd);
+  return {kind:"maintenance",id:m.id,date,code:m.ticketNo||"PBM",title:m.customerName||"Khách hàng",sub:m.buildingName||"Tòa nhà",elevator:m.elevatorName||"Thang máy",asset:m.elevatorAssetCode||"",status:m.status||"draft",statusLabel:statusText[m.status]||m.status||"—",state:state[0],stateLabel:state[1],contract:m.contractCode||"—",period:m.periodNumber?`Kỳ ${m.periodNumber}`:"",source:"Bảo trì",action:`maintenance.html?id=${encodeURIComponent(m.id)}`};
+}
+function workOrderItem(w){
+  const date=String(w.dueDate||w.openedDate||"").slice(0,10);let state="upcoming",stateLabel="Sắp tới";if(date) [state,stateLabel]=dayState(date,"","");
+  return {kind:"workorder",id:w.id,date,code:w.workOrderNo||"WO",title:w.customerName||"Khách hàng",sub:w.buildingName||"Tòa nhà",elevator:w.elevatorName||"Thang máy",asset:w.elevatorAssetCode||"",status:w.status||"draft",statusLabel:statusText[w.status]||w.status||"—",state,stateLabel,contract:w.contractCode||"—",period:w.maintenanceTicketNo?`PBM ${w.maintenanceTicketNo}`:"",source:w.sourceType||"Work Order",action:`work-orders.html?id=${encodeURIComponent(w.id)}`};
+}
+function normalize(maintenances,workOrders){
+  const a=(maintenances||[]).filter(x=>String(x.technicianId||"")===String(profile?.technicianId||"")).map(maintenanceItem);
+  const b=(workOrders||[]).filter(x=>String(x.assignedTechnicianId||"")===String(profile?.technicianId||"")).map(workOrderItem);
+  return [...a,...b].sort((x,y)=>String(x.date||"9999-12-31").localeCompare(String(y.date||"9999-12-31"))||String(x.code).localeCompare(String(y.code)));
+}
+function isActive(x){return !["completed","cancelled"].includes(x.status)}
+function filtered(){
+  const q=$("search").value.trim().toLowerCase(),kind=$("kind").value,view=$("view").value;
+  return items.filter(x=>{
+    if(kind&&x.kind!==kind)return false;
+    if(view==="active"&&!isActive(x))return false;
+    if(view==="today"&&x.date!==todayIso())return false;
+    if(view==="overdue"&&x.state!=="overdue")return false;
+    if(view==="window"&&x.state!=="window")return false;
+    if(q){const hay=[x.code,x.title,x.sub,x.elevator,x.asset,x.contract,x.period,x.source,x.statusLabel].join(" ").toLowerCase();if(!hay.includes(q))return false}
+    return true;
+  });
+}
+function render(){
+  const list=filtered();$("count").textContent=`${list.length} công việc`;$('empty').style.display=list.length?"none":"block";
+  $("tasks").innerHTML=list.map(x=>`<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div><span class="badge ${esc(x.state)}">${esc(x.stateLabel)}</span><div style="margin-top:5px"><span class="badge ${x.kind==="workorder"?"wo":x.status==="completed"?"done":"progress"}">${esc(x.statusLabel)}</span></div></div><div class="task-action"><button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button></div></div>`).join("");
+  $("kTotal").textContent=items.length;$("kToday").textContent=items.filter(x=>x.date===todayIso()&&!(["completed","cancelled"].includes(x.status))).length;$("kOverdue").textContent=items.filter(x=>x.state==="overdue"&&isActive(x)).length;$("kProgress").textContent=items.filter(x=>["assigned","in_progress","waiting_parts"].includes(x.status)).length;
+}
+$("search").addEventListener("input",render);$("kind").addEventListener("change",render);$("view").addEventListener("change",render);
+$("tasks").addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(!b)return;const [kind,id]=b.dataset.open.split(":");window.location.href=(kind==="maintenance"?`maintenance.html?id=${encodeURIComponent(id)}`:`work-orders.html?id=${encodeURIComponent(id)}`)});
+async function load(){
+  $("status").textContent="Đang tải công việc…";
+  try{
+    const technicianId=String(profile?.technicianId||"").trim();
+    if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId.");
+    const [m,w]=await Promise.all([getMaintenances({technicianId}),getWorkOrders({technicianId})]);
+    items=normalize(m||[],w||[]);render();$("status").textContent=`Đã tải ${items.length} công việc được phân công.`;$("status").className="status ok";
+  }catch(err){$("status").textContent=err?.message||"Không tải được công việc.";$("status").className="status error"}
+}
+import { db } from "./js/core/firebase.js";
+onAuthStateChanged(auth,async user=>{
+  if(!user){$("status").textContent="Chưa đăng nhập Firebase.";$("status").className="status error";return}
+  try{
+    const s=await getDoc(doc(db,"users",user.uid));
+    profile=s.exists()?s.data():null;
+    if(!profile)throw new Error("Không tồn tại users/{uid}.");
+    if(String(profile.role||"").toUpperCase()!=="TECHNICIAN")throw new Error("Màn hình này dành cho tài khoản KTV.");
+    await load();
+  }catch(err){$("status").textContent=err?.message||"Không tải được dữ liệu.";$("status").className="status error"}
+});
+</script>
+</body>
+</html>
