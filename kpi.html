@@ -133,7 +133,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
 <script>
 /*
- * KPI V6 — BOOTSTRAP TỐI GIẢN, KHÔNG STATIC IMPORT
+ * KPI V7 — BOOTSTRAP CHẨN ĐOÁN TỪNG BƯỚC
  *
  * Vấn đề V4:
  *   Chỉ cần một CDN/module import lỗi là toàn bộ <script type="module">
@@ -149,8 +149,8 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
  */
 
 const bootGateText=document.querySelector("#authGate .muted");
-if(bootGateText) bootGateText.textContent="Đang khởi động KPI V6…";
-console.log("KPI V6 SCRIPT STARTED");
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V7…";
+console.log("KPI V7 SCRIPT STARTED");
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -178,8 +178,13 @@ function withTimeout(promise,ms,label){
 
 function setStatus(msg,type=""){
   const e=$("pageStatus");
-  e.textContent=msg;
-  e.className=`statusline ${type}`;
+  if(e){
+    e.textContent=msg;
+    e.className=`statusline ${type}`;
+  }
+  const gateMsg=document.querySelector("#authGate .muted");
+  if(gateMsg) gateMsg.textContent=msg;
+  console.log("KPI V7 STATUS:",msg);
 }
 function showFatalAuthError(title,message){
   const gate=$("authGate");
@@ -187,10 +192,11 @@ function showFatalAuthError(title,message){
   gate.innerHTML=`
     <div class="auth-box">
       <h2>${esc(title)}</h2>
-      <div class="muted" style="line-height:1.65;margin-bottom:18px">${esc(message)}</div>
+      <div class="muted" style="line-height:1.65;margin-bottom:18px;white-space:pre-wrap">${esc(message)}</div>
       <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
     </div>`;
   $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
+  console.error("KPI V7 FATAL:",title,message);
 }
 
 function role(){return String(state.profile?.role||"").trim().toUpperCase()}
@@ -219,9 +225,9 @@ async function bootstrapCoreFirebase(){
 
   let core;
   try{
-    core=await withTimeout(import("./js/core/firebase.js?v=20260924-kpi-v6"),8000,"Không tải được Firebase core");
+    core=await withTimeout(import("./js/core/firebase.js?v=20260924-kpi-v7"),8000,"Không tải được Firebase core");
   }catch(error){
-    console.error("KPI V5 CORE IMPORT ERROR",error);
+    console.error("KPI V7 CORE IMPORT ERROR",error);
     throw new Error(
       "Không tải được /js/core/firebase.js. " +
       (error?.message||error)
@@ -238,9 +244,9 @@ async function bootstrapCoreFirebase(){
 
   let authSdk;
   try{
-    authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js?v=20260924-kpi-v6"),8000,"Không tải được Firebase Auth SDK");
+    authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js?v=20260924-kpi-v7"),8000,"Không tải được Firebase Auth SDK");
   }catch(error){
-    console.error("KPI V5 AUTH SDK IMPORT ERROR",error);
+    console.error("KPI V7 AUTH SDK IMPORT ERROR",error);
     throw new Error(
       "Không tải được Firebase Auth SDK. " +
       (error?.message||error)
@@ -256,9 +262,9 @@ async function bootstrapCoreFirebase(){
 
   let firestoreSdk;
   try{
-    firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js?v=20260924-kpi-v6"),8000,"Không tải được Firebase Firestore SDK");
+    firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js?v=20260924-kpi-v7"),8000,"Không tải được Firebase Firestore SDK");
   }catch(error){
-    console.error("KPI V5 FIRESTORE SDK IMPORT ERROR",error);
+    console.error("KPI V7 FIRESTORE SDK IMPORT ERROR",error);
     throw new Error(
       "Không tải được Firebase Firestore SDK. " +
       (error?.message||error)
@@ -273,6 +279,7 @@ async function bootstrapCoreFirebase(){
   }
 
   setStatus("Firebase core + Auth + Firestore đã sẵn sàng.");
+  console.log("KPI V7 FIREBASE BOOTSTRAP COMPLETE");
 }
 
 /* =========================================================
@@ -282,7 +289,7 @@ async function loadKpiModules(){
   setStatus("Firebase OK · Đang tải module KPI…");
 
   try{
-    const kpi=await withTimeout(import("./js/kpi-v1.js?v=20260924-kpi-v6"),8000,"Không tải được kpi-v1.js");
+    const kpi=await withTimeout(import("./js/kpi-v1.js?v=20260924-kpi-v7"),8000,"Không tải được kpi-v1.js");
     calculateTechnicianKpi=kpi.calculateTechnicianKpi;
     getAllWorkOrdersForKpi=kpi.getAllWorkOrdersForKpi;
     getWorkOrdersForTechnician=kpi.getWorkOrdersForTechnician;
@@ -295,14 +302,14 @@ async function loadKpiModules(){
     if(typeof createMonthlyPeriod!=="function")throw new Error("Thiếu createMonthlyPeriod.");
     if(typeof createQuarterPeriod!=="function")throw new Error("Thiếu createQuarterPeriod.");
 
-    const tech=await withTimeout(import("./js/core/firestore-v1-technician-v1.js?v=20260924-kpi-v6"),8000,"Không tải được technician module");
+    const tech=await withTimeout(import("./js/core/firestore-v1-technician-v1.js?v=20260924-kpi-v7"),8000,"Không tải được technician module");
     getTechnicians=tech.getTechnicians;
     getTechnician=tech.getTechnician;
 
     if(typeof getTechnicians!=="function")throw new Error("Thiếu getTechnicians.");
     if(typeof getTechnician!=="function")throw new Error("Thiếu getTechnician.");
   }catch(error){
-    console.error("KPI V5 MODULE LOAD ERROR",error);
+    console.error("KPI V7 MODULE LOAD ERROR",error);
     throw new Error(
       "Firebase đã xác thực nhưng module KPI không tải được. " +
       (error?.message||error)
@@ -494,9 +501,10 @@ async function waitForAuth(){
   });
 }
 
-async function startKpiV6(){
+async function startKpiV7(){
+  setStatus("KPI V7 đang bắt đầu…");
   try{
-    setStatus("Đang khởi động KPI V6…");
+    setStatus("Đang khởi động KPI V7…");
 
     await bootstrapCoreFirebase();
 
@@ -538,7 +546,7 @@ async function startKpiV6(){
     $("authGate").classList.add("hidden");
 
   }catch(error){
-    console.error("KPI V6 BOOT ERROR:",error);
+    console.error("KPI V7 BOOT ERROR:",error);
     setStatus(error?.message||"Không thể khởi tạo KPI.","error");
     showFatalAuthError("KPI không thể khởi tạo",error?.message||"Lỗi không xác định.");
   }
@@ -561,7 +569,10 @@ $("technicianRows").addEventListener("click",e=>{
 });
 
 buildPeriodOptions();
-startKpiV6();
+startKpiV7().catch(error=>{
+  console.error("KPI V7 UNHANDLED ERROR",error);
+  showFatalAuthError("KPI V7 gặp lỗi",error?.message||String(error));
+});
 </script>
 </body>
 </html>
