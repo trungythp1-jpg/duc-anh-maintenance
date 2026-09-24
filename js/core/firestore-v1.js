@@ -635,8 +635,47 @@ export async function updateContract(contractId, data) {
 const MAINTENANCE_COUNTER_ID = "maintenanceTicket";
 
 function normalizeMaintenanceStatus(value){
-  const allowed = ["draft","assigned","in_progress","completed","cancelled"];
+  const allowed = [
+    "draft",
+    "assigned",
+    "in_progress",
+    "waiting_confirmation",
+    "completed",
+    "cancelled"
+  ];
   return allowed.includes(value) ? value : "draft";
+}
+
+const MAINTENANCE_CONFIRMATION_HOURS = 18;
+const MAINTENANCE_CONFIRMATION_MS =
+  MAINTENANCE_CONFIRMATION_HOURS * 60 * 60 * 1000;
+
+function addHoursToDate(date, hours){
+  return new Date(date.getTime() + hours * 60 * 60 * 1000);
+}
+
+function toIsoDate(value){
+  const d = value instanceof Date ? value : new Date(value);
+  if(Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
+function assertMaintenanceCompletionReportable(existing){
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(existing.status === "completed"){
+    throw new Error("Phiếu bảo trì đã hoàn thành.");
+  }
+
+  if(existing.status === "cancelled"){
+    throw new Error("Phiếu bảo trì đã hủy.");
+  }
+
+  if(existing.status === "waiting_confirmation"){
+    throw new Error("Phiếu bảo trì đã được báo hoàn thành và đang chờ xác nhận.");
+  }
 }
 
 async function validateMaintenanceReferences(data){
@@ -695,22 +734,6 @@ async function findMaintenanceDuplicate(contractId, periodNumber, excludeId = ""
   ) || null;
 }
 
-function localTodayIso(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function assertMaintenanceScheduledDateNotPast(scheduledDate){
-  const value = String(scheduledDate || "").trim();
-  if(!value) return;
-  if(value < localTodayIso()){
-    throw new Error(`Không thể tạo phiếu bảo trì có ngày dự kiến trước hôm nay (${localTodayIso()}). Phiếu lịch sử phải được ghi nhận theo dữ liệu lịch sử đã có.`);
-  }
-}
-
 async function assertMaintenancePeriodAvailable(contractId, periodNumber, excludeId = ""){
   const duplicate = await findMaintenanceDuplicate(contractId, periodNumber, excludeId);
 
@@ -755,10 +778,6 @@ export async function createMaintenance(data){
     throw new Error("Kỳ bảo trì là bắt buộc. Phiếu bảo trì phải gắn với một kỳ trong lịch.");
   }
 
-  // Không cho tạo phiếu bảo trì mới có ngày dự kiến trong quá khứ.
-  // Các phiếu lịch sử đã tồn tại và thao tác cập nhật phiếu cũ không bị chặn bởi rule này.
-  assertMaintenanceScheduledDateNotPast(data.scheduledDate);
-
   // Chặn trùng với dữ liệu cũ trước khi ghi.
   await assertMaintenancePeriodAvailable(references.contract.id, periodNumber);
 
@@ -779,6 +798,16 @@ export async function createMaintenance(data){
     status,
     technicianId: data.technicianId || "",
     technicianName: data.technicianName || "",
+    completedByTechnicianId: data.completedByTechnicianId || "",
+    completedByTechnicianName: data.completedByTechnicianName || "",
+    completionReportedAt: data.completionReportedAt || null,
+    customerConfirmationStatus: data.customerConfirmationStatus || "not_started",
+    customerConfirmationDeadline: data.customerConfirmationDeadline || null,
+    customerConfirmedBy: data.customerConfirmedBy || "",
+    customerConfirmedAt: data.customerConfirmedAt || null,
+    customerConfirmationNote: data.customerConfirmationNote || "",
+    confirmationEscalatedBy: data.confirmationEscalatedBy || "",
+    confirmationEscalatedAt: data.confirmationEscalatedAt || null,
     checklist: Array.isArray(data.checklist) ? data.checklist : [],
     condition: data.condition || "",
     result: data.result || "",
@@ -859,6 +888,26 @@ export async function updateMaintenance(maintenanceId, data){
     status,
     technicianId: data.technicianId || "",
     technicianName: data.technicianName || "",
+    completedByTechnicianId:
+      data.completedByTechnicianId ?? existing.completedByTechnicianId ?? "",
+    completedByTechnicianName:
+      data.completedByTechnicianName ?? existing.completedByTechnicianName ?? "",
+    completionReportedAt:
+      data.completionReportedAt ?? existing.completionReportedAt ?? null,
+    customerConfirmationStatus:
+      data.customerConfirmationStatus ?? existing.customerConfirmationStatus ?? "not_started",
+    customerConfirmationDeadline:
+      data.customerConfirmationDeadline ?? existing.customerConfirmationDeadline ?? null,
+    customerConfirmedBy:
+      data.customerConfirmedBy ?? existing.customerConfirmedBy ?? "",
+    customerConfirmedAt:
+      data.customerConfirmedAt ?? existing.customerConfirmedAt ?? null,
+    customerConfirmationNote:
+      data.customerConfirmationNote ?? existing.customerConfirmationNote ?? "",
+    confirmationEscalatedBy:
+      data.confirmationEscalatedBy ?? existing.confirmationEscalatedBy ?? "",
+    confirmationEscalatedAt:
+      data.confirmationEscalatedAt ?? existing.confirmationEscalatedAt ?? null,
     checklist: Array.isArray(data.checklist) ? data.checklist : (existing.checklist || []),
     condition: data.condition || "",
     result: data.result || "",
@@ -868,6 +917,172 @@ export async function updateMaintenance(maintenanceId, data){
   };
 
   await updateDoc(doc(db, COLLECTIONS.MAINTENANCE, maintenanceId), payload);
+  return getMaintenance(maintenanceId);
+}
+
+/* =========================
+   MAINTENANCE COMPLETION CONFIRMATION WORKFLOW
+========================= */
+
+/*
+ * KTV chỉ báo đã hoàn thành công việc.
+ * KTV không được tự chuyển phiếu sang "completed".
+ *
+ * completionReportedAt là thời điểm bắt đầu cửa sổ xác nhận 18 giờ.
+ * customerConfirmationDeadline = completionReportedAt + 18 giờ.
+ */
+export async function reportMaintenanceCompletion(maintenanceId, data = {}){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+  assertMaintenanceCompletionReportable(existing);
+
+  const reportedAt = new Date();
+  const deadline = addHoursToDate(
+    reportedAt,
+    MAINTENANCE_CONFIRMATION_HOURS
+  );
+
+  const completedDate =
+    String(data.completedDate || "").trim() ||
+    toIsoDate(reportedAt);
+
+  const payload = {
+    status: "waiting_confirmation",
+    completedDate,
+    completedByTechnicianId:
+      String(data.completedByTechnicianId || existing.technicianId || "").trim(),
+    completedByTechnicianName:
+      String(data.completedByTechnicianName || existing.technicianName || "").trim(),
+    completionReportedAt: serverTimestamp(),
+    customerConfirmationStatus: "pending",
+    customerConfirmationDeadline: deadline,
+    customerConfirmedBy: "",
+    customerConfirmedAt: null,
+    customerConfirmationNote: "",
+    confirmationEscalatedBy: "",
+    confirmationEscalatedAt: null,
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    payload
+  );
+
+  return getMaintenance(maintenanceId);
+}
+
+/*
+ * CSKH xác nhận trong thời hạn 18 giờ.
+ * Hàm này không tự bỏ qua quyền Firestore Rules.
+ * Rules là lớp bảo mật cuối cùng.
+ */
+export async function confirmMaintenanceByCSKH(
+  maintenanceId,
+  data = {}
+){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(existing.status !== "waiting_confirmation"){
+    throw new Error("Phiếu không ở trạng thái chờ CSKH xác nhận.");
+  }
+
+  if(existing.customerConfirmationStatus !== "pending"){
+    throw new Error("Phiếu không còn ở trạng thái chờ xác nhận.");
+  }
+
+  if(
+    existing.customerConfirmationDeadline &&
+    typeof existing.customerConfirmationDeadline.toDate === "function" &&
+    Date.now() > existing.customerConfirmationDeadline.toDate().getTime()
+  ){
+    throw new Error("Đã quá 18 giờ. Phiếu này phải do cấp quản lý xác nhận.");
+  }
+
+  const confirmedBy =
+    String(data.confirmedBy || data.confirmedByName || "").trim();
+
+  if(!confirmedBy){
+    throw new Error("Người xác nhận CSKH là bắt buộc.");
+  }
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    {
+      status: "completed",
+      customerConfirmationStatus: "confirmed",
+      customerConfirmedBy: confirmedBy,
+      customerConfirmedAt: serverTimestamp(),
+      customerConfirmationNote:
+        String(data.note || "").trim(),
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  return getMaintenance(maintenanceId);
+}
+
+/*
+ * Sau 18 giờ, chỉ cấp quản lý được xác nhận.
+ * CSKH không sử dụng API này.
+ */
+export async function confirmMaintenanceAfterExpiry(
+  maintenanceId,
+  data = {}
+){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(existing.status !== "waiting_confirmation"){
+    throw new Error("Phiếu không ở trạng thái chờ xác nhận.");
+  }
+
+  if(existing.customerConfirmationStatus !== "pending"){
+    throw new Error("Phiếu không còn ở trạng thái chờ xác nhận.");
+  }
+
+  if(
+    existing.customerConfirmationDeadline &&
+    typeof existing.customerConfirmationDeadline.toDate === "function" &&
+    Date.now() <= existing.customerConfirmationDeadline.toDate().getTime()
+  ){
+    throw new Error("Phiếu chưa quá 18 giờ. CSKH vẫn còn thời gian xác nhận.");
+  }
+
+  const confirmedBy =
+    String(data.confirmedBy || data.confirmedByName || "").trim();
+
+  if(!confirmedBy){
+    throw new Error("Người xác nhận cấp quản lý là bắt buộc.");
+  }
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    {
+      status: "completed",
+      customerConfirmationStatus: "manager_confirmed",
+      customerConfirmedBy: confirmedBy,
+      customerConfirmedAt: serverTimestamp(),
+      customerConfirmationNote:
+        String(data.note || "").trim(),
+      confirmationEscalatedBy: confirmedBy,
+      confirmationEscalatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+  );
+
   return getMaintenance(maintenanceId);
 }
 
