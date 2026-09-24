@@ -290,7 +290,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.4-gold-black-v5-wo-link">
+<body data-maintenance-build="v1.17-technician-save-fix">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -365,7 +365,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 
 <script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js?v=5";
@@ -471,6 +471,10 @@ function formatAuditTime(value){
 async function loadAssignmentHistory(entityId){
   const box=$("assignmentHistory");
   if(!box)return;
+  if(currentRole()==="TECHNICIAN"){
+    box.innerHTML='<div class="audit-empty">Lịch sử phân công chỉ dành cho quản lý.</div>';
+    return;
+  }
   if(!entityId){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
   box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
   try{
@@ -538,37 +542,7 @@ function renderPeriods(selected=""){
 function syncRefBox(){const c=customers.find(x=>String(x.id)===String($("customerId").value));const b=buildings.find(x=>String(x.id)===String($("buildingId").value));const e=elevators.find(x=>String(x.id)===String($("elevatorId").value));const m=editingId?maintenances.find(x=>String(x.id)===String(editingId)):null;$("refCustomer").textContent=c?.name||"—";$("refBuilding").textContent=b?.name||"—";$("refElevator").textContent=elevatorLabel(e);$("refWorkOrder").textContent=m?.latestWorkOrderNo?`${m.latestWorkOrderNo} · ${statusText[m.latestWorkOrderStatus]||m.latestWorkOrderStatus||"—"}`:"Chưa có"}
 function setScheduledFromPeriod(){const opt=$("periodNumber").selectedOptions[0];if(opt?.dataset.date)$("scheduledDate").value=opt.dataset.date}
 
-function filtered(){
-  const q=$("search").value.trim().toLowerCase(),sf=$("statusFilter").value,yf=$("yearFilter").value,ifv=$("issueFilter").value;
-  const hasFilter=Boolean(q||sf||yf||ifv);
-  const list=maintenances.filter(m=>{
-    const hay=[m.ticketNo,m.customerName,m.buildingName,m.elevatorName,m.elevatorAssetCode,m.contractCode,m.note].join(" ").toLowerCase();
-    if(q&&!hay.includes(q))return false;
-    if(sf&&m.status!==sf)return false;
-    if(yf&&String((m.scheduledDate||"").slice(0,4))!==yf)return false;
-    if(ifv==="yes"&&!m.issueFound)return false;
-    if(ifv==="no"&&m.issueFound)return false;
-    return true;
-  });
-
-  // Mặc định chỉ hiển thị 5 phiếu gần ngày hiện tại nhất.
-  // Khi người dùng tìm kiếm/lọc, hiển thị toàn bộ kết quả phù hợp.
-  list.sort((a,b)=>{
-    const da=String(a.scheduledDate||""),db=String(b.scheduledDate||"");
-    if(!da&&!db)return String(b.ticketNo||"").localeCompare(String(a.ticketNo||""));
-    if(!da)return 1;
-    if(!db)return -1;
-    if(!hasFilter){
-      const today=new Date();today.setHours(0,0,0,0);
-      const ta=Math.abs(new Date(`${da}T00:00:00`).getTime()-today.getTime());
-      const tb=Math.abs(new Date(`${db}T00:00:00`).getTime()-today.getTime());
-      if(ta!==tb)return ta-tb;
-    }
-    return db.localeCompare(da);
-  });
-
-  return hasFilter?list:list.slice(0,5);
-}
+function filtered(){const q=$("search").value.trim().toLowerCase(),sf=$("statusFilter").value,yf=$("yearFilter").value,ifv=$("issueFilter").value;return maintenances.filter(m=>{const hay=[m.ticketNo,m.customerName,m.buildingName,m.elevatorName,m.elevatorAssetCode,m.contractCode,m.note].join(" ").toLowerCase();if(q&&!hay.includes(q))return false;if(sf&&m.status!==sf)return false;if(yf&&String((m.scheduledDate||"").slice(0,4))!==yf)return false;if(ifv==="yes"&&!m.issueFound)return false;if(ifv==="no"&&m.issueFound)return false;return true}).sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")))}
 function badge(status){return `<span class="badge ${esc(status)}">${esc(statusText[status]||status||"—")}</span>`}
 function render(){const list=filtered();$("rows").innerHTML=list.map(m=>{const woNo=m.latestWorkOrderNo||"";const woStatus=m.latestWorkOrderStatus||"";const woHtml=woNo?`<div><strong style="color:var(--da-gold-light)">${esc(woNo)}</strong><span class="muted">${esc(statusText[woStatus]||woStatus||"—")}</span></div>`:'<span class="muted">Chưa có</span>';return `<tr><td><button class="link-btn" data-edit="${esc(m.id)}"><strong>${esc(m.ticketNo||"—")}</strong><span>${esc(m.technicianName||"Chưa phân công")}</span></button></td><td><strong>${esc(m.customerName||nameOf(customers,m.customerId))}</strong><span class="muted">${esc(m.buildingName||nameOf(buildings,m.buildingId))}</span></td><td><strong>${esc(m.elevatorName||nameOf(elevators,m.elevatorId))}</strong><span class="muted">${esc(m.elevatorAssetCode||"")}</span></td><td><strong>${esc(m.contractCode||"—")}</strong><span class="muted">Kỳ ${esc(m.periodNumber||"—")}</span></td><td>${esc(fmtDate(m.scheduledDate))}</td><td>${badge(m.status)}</td><td>${m.issueFound?'<span class="badge issue">Cần xử lý</span>':'<span class="badge done">Bình thường</span>'}</td><td>${woHtml}</td><td><button class="btn" data-edit="${esc(m.id)}" type="button">Mở</button></td></tr>`}).join("");$("empty").style.display=list.length?"none":"block";$("kpiTotal").textContent=maintenances.length;$("kpiProgress").textContent=maintenances.filter(x=>["assigned","in_progress"].includes(x.status)).length;$("kpiDone").textContent=maintenances.filter(x=>x.status==="completed").length;$("kpiIssue").textContent=maintenances.filter(x=>x.issueFound).length;renderYears()}
 function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
@@ -611,13 +585,28 @@ if(assignmentChanged && editingId && !assignmentReason){
   return;
 }
 const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
-let savedMaintenance=null;
 if(editingId){
-  savedMaintenance=await updateMaintenance(editingId,payload);
-  savedMaintenanceId=savedMaintenance?.id||editingId;
+  if(currentRole()==="TECHNICIAN"){
+    // TECHNICIAN chỉ ghi các trường nghiệp vụ được Firestore Rules cho phép.
+    // Không gửi lại Customer/Building/Elevator/Contract vì đó là dữ liệu tham chiếu khóa.
+    const technicianPayload={
+      scheduledDate:payload.scheduledDate,
+      completedDate:payload.completedDate,
+      status:payload.status,
+      checklist:payload.checklist,
+      condition:payload.condition,
+      result:payload.result,
+      issueFound:payload.issueFound,
+      note:payload.note,
+      updatedAt:serverTimestamp()
+    };
+    await updateDoc(doc(db,"maintenance",editingId),technicianPayload);
+  }else{
+    await updateMaintenance(editingId,payload);
+  }
 }else{
-  savedMaintenance=await createMaintenance(payload);
-  savedMaintenanceId=savedMaintenance?.id||"";
+  const created=await createMaintenance(payload);
+  savedMaintenanceId=created?.id||"";
 }
 if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenanceId){
   await writeTechnicianAssignmentAudit({
@@ -630,19 +619,7 @@ if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenance
     reason:assignmentReason
   });
 }
-const wasEditing=Boolean(editingId);
-
-// Firestore đã lưu thành công nên cập nhật mảng hiện tại ngay, thay vì đọc lại
-// toàn bộ Customers/Buildings/Elevators/Contracts/Maintenance/Technicians.
-if(savedMaintenanceId && savedMaintenance){
-  const savedRecord={...savedMaintenance,id:savedMaintenanceId};
-  const existingIndex=maintenances.findIndex(x=>String(x.id)===String(savedMaintenanceId));
-  if(existingIndex>=0) maintenances[existingIndex]=savedRecord;
-  else maintenances.unshift(savedRecord);
-}
-closeModal();
-render();
-setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
+const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
 
 async function runPermissionDiagnostics(user){
   const panel=$("permissionPanel"), list=$("permissionList"), userEl=$("diagUser");
