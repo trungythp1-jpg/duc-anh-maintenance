@@ -67,6 +67,7 @@ tr:hover td{background:#161613}
 .audit-action{color:var(--gold2)!important;font-weight:700;font-size:13px}.audit-time{color:#999!important;font-size:11px}
 .audit-meta{margin-top:5px;font-size:12px;color:#eee!important;line-height:1.55}.audit-meta span{color:#999!important}
 .audit-empty{color:#999!important;font-size:12px;padding:8px 0}
+.tech-readonly{opacity:.82}.tech-readonly input,.tech-readonly select,.tech-readonly textarea{pointer-events:none}.tech-hidden{display:none!important}
 
 @media(max-width:850px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.ref{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){
@@ -136,6 +137,14 @@ tr:hover td{background:#161613}
           <div><small>Khách hàng</small><strong id="refCustomer">—</strong></div>
           <div><small>Tòa nhà</small><strong id="refBuilding">—</strong></div>
           <div><small>Thang máy</small><strong id="refElevator">—</strong></div>
+        </div>
+        <div id="techReportPanel" style="display:none;margin-bottom:15px;padding:14px;border:1px solid #80652e;border-radius:12px;background:#151512">
+          <div style="color:var(--gold2);font-weight:700;font-size:15px;margin-bottom:6px">BÁO CÁO CÔNG VIỆC</div>
+          <div class="muted" style="margin-bottom:12px">KTV chỉ được báo cáo trạng thái. Các thông tin Work Order chỉ được xem.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button type="button" class="btn" id="techIncompleteBtn">Chưa hoàn thành</button>
+            <button type="button" class="btn primary" id="techCompleteBtn">Đã hoàn thành</button>
+          </div>
         </div>
         <div class="grid">
           <div>
@@ -479,6 +488,77 @@ function updateWorkflowHint(){
   $("completedDate").disabled=status!=="completed";
 }
 
+function applyTechnicianView(){
+  const tech=isTech();
+  const editing=Boolean(editingId);
+  const reportMode=tech&&editing;
+  const panel=$("techReportPanel");
+  if(panel) panel.style.display=reportMode?"block":"none";
+
+  // KTV không được sửa dữ liệu nguồn hoặc dữ liệu vận hành của WO.
+  // Chỉ được dùng 2 nút báo cáo ở trên.
+  const editableIds=[
+    "sourceType","sourceNote","maintenanceId","customerId","buildingId",
+    "elevatorId","contractCode","elevatorAssetCode","type","priority",
+    "issueTitle","problemDescription","statusField","technicianId",
+    "assignmentReason","openedDate","dueDate","completedDate","cause",
+    "resolution","laborCost","materialCost","totalCost","note"
+  ];
+  editableIds.forEach(id=>{
+    const el=$(id);
+    if(!el)return;
+    if(tech&&editing){
+      el.disabled=true;
+      el.readOnly=true;
+      el.classList.add("tech-readonly");
+    }else{
+      el.disabled=false;
+      el.readOnly=false;
+      el.classList.remove("tech-readonly");
+    }
+  });
+
+  $("assignmentHistory").closest(".section")?.classList.toggle("tech-hidden",tech);
+  $("saveBtn").classList.toggle("tech-hidden",reportMode);
+  $("cancelBtn").textContent=reportMode?"Đóng":"Hủy";
+}
+
+async function submitTechnicianReport(status){
+  if(!isTech()||!editingId) return;
+  const existing=workOrders.find(x=>x.id===editingId);
+  if(!existing) throw new Error("Không tìm thấy Work Order.");
+  if(String(existing.assignedTechnicianId||"")!==String(currentProfile?.technicianId||"")){
+    throw new Error("Work Order này không được phân công cho tài khoản KTV hiện tại.");
+  }
+  if(existing.status==="completed") throw new Error("Work Order đã hoàn thành và không thể báo cáo lại.");
+
+  const save=$("saveBtn");
+  save.disabled=true;
+  $("techIncompleteBtn").disabled=true;
+  $("techCompleteBtn").disabled=true;
+  $("err").className="err";
+  $("err").textContent="";
+  try{
+    const isCompleted=status==="completed";
+    await updateWorkOrder(editingId,{
+      status,
+      completedDate:isCompleted?new Date().toISOString().slice(0,10):"",
+      resolution:isCompleted?"KTV báo cáo đã hoàn thành":""
+    });
+    close();
+    $("status").className="status ok";
+    $("status").textContent=isCompleted?"KTV đã báo cáo hoàn thành Work Order.":"KTV đã báo cáo chưa hoàn thành Work Order.";
+    void load();
+  }catch(err){
+    $("err").className="err show";
+    $("err").textContent=err?.message||String(err);
+  }finally{
+    save.disabled=false;
+    $("techIncompleteBtn").disabled=false;
+    $("techCompleteBtn").disabled=false;
+  }
+}
+
 async function resetForm(){
   requestMode=false;editingId="";
   window.__activeWorkOrderRequestId="";
@@ -499,14 +579,14 @@ async function resetForm(){
   $("contractCode").value="";
   $("elevatorAssetCode").value="";
   $("modalTitle").textContent="Tạo Work Order";
-  applySourceUI();updateWorkflowHint();applyRequestModeUI();
+  applySourceUI();updateWorkflowHint();applyRequestModeUI();applyTechnicianView();
 }
 
 async function openNew(){
   await resetForm();
   requestMode=isTech();
   if(requestMode) $("sourceType").value="CUSTOMER_REPORT";
-  applySourceUI();applyRequestModeUI();
+  applySourceUI();applyRequestModeUI();applyTechnicianView();
   $("modal").classList.add("show");
 }
 async function openEdit(id){
@@ -547,8 +627,9 @@ async function openEdit(id){
   $("elevatorAssetCode").disabled=false;
 
   applyRequestModeUI();
+  applyTechnicianView();
   $("modal").classList.add("show");
-  loadAssignmentHistory(editingId);
+  if(canManage()) loadAssignmentHistory(editingId);
 }
 
 function openRequest(requestId){
@@ -590,6 +671,7 @@ function openRequest(requestId){
 
 function close(){
   $("modal").classList.remove("show");
+  if($("techReportPanel")) $("techReportPanel").style.display="none";
   requestMode=false;window.__activeWorkOrderRequestId="";
 }
 
@@ -690,6 +772,8 @@ async function createWorkOrderRequest(){
 }
 
 $("newBtn").onclick=()=>openNew().catch(e=>console.error(e));
+$("techIncompleteBtn").onclick=()=>submitTechnicianReport("in_progress");
+$("techCompleteBtn").onclick=()=>submitTechnicianReport("completed");
 $("closeBtn").onclick=close;$("cancelBtn").onclick=close;
 $("sourceType").onchange=async()=>{if(!editingId){applySourceUI();if($("sourceType").value==="MAINTENANCE")await applyMaintenanceSelection();}};
 $("maintenanceId").onchange=()=>applyMaintenanceSelection().catch(e=>showError(e));
@@ -708,6 +792,9 @@ $("form").onsubmit=async e=>{
   $("err").className="err";$("err").textContent="";
 
   try{
+    if(isTech()&&editingId){
+      throw new Error("KTV chỉ được báo cáo bằng nút Chưa hoàn thành hoặc Đã hoàn thành.");
+    }
     if(isTech()&&requestMode&&!editingId){
       await createWorkOrderRequest();
       close();
