@@ -417,7 +417,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
         <div class="section"><h3>LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
         <div class="form-error" id="formError"></div>
       </div>
-      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn" id="reportCompletionBtn" type="button" style="display:none">Báo hoàn thành</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
+      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn" id="reportCompletionBtn" type="button" style="display:none">Báo hoàn thành</button><button class="btn primary" id="confirmCompletionBtn" type="button" style="display:none">Xác nhận hoàn thành</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
     </form>
   </section>
 </div>
@@ -427,7 +427,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/fi
 import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion } from "./js/core/firestore-v1.js?v=5";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH } from "./js/core/firestore-v1.js?v=5";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $=id=>document.getElementById(id);
@@ -519,16 +519,42 @@ function applyTechnicianScopeUI(){
     }
   }
 
+  const currentMaintenance=editingId
+    ? maintenances.find(x=>String(x.id)===String(editingId))
+    : null;
+
   const reportBtn=$("reportCompletionBtn");
   if(reportBtn){
-    const currentMaintenance=editingId
-      ? maintenances.find(x=>String(x.id)===String(editingId))
-      : null;
     const reportable=isTech && Boolean(editingId) &&
       currentMaintenance &&
       !["completed","cancelled","waiting_confirmation"].includes(String(currentMaintenance.status||""));
     reportBtn.style.display=reportable?"inline-flex":"none";
     reportBtn.disabled=false;
+  }
+
+  const confirmBtn=$("confirmCompletionBtn");
+  const isCSKH=currentRole()==="CSKH";
+  const canConfirm=isCSKH && Boolean(editingId) &&
+    currentMaintenance &&
+    String(currentMaintenance.status||"")==="waiting_confirmation" &&
+    String(currentMaintenance.customerConfirmationStatus||"")==="pending";
+  if(confirmBtn){
+    confirmBtn.style.display=canConfirm?"inline-flex":"none";
+    confirmBtn.disabled=false;
+  }
+
+  const saveBtn=$("saveBtn");
+  if(saveBtn){
+    // CSKH không dùng form Lưu phiếu để xác nhận.
+    // Rules chỉ cho phép CSKH cập nhật đúng nhóm trường xác nhận.
+    saveBtn.style.display=canConfirm?"none":"inline-flex";
+  }
+
+  if(canConfirm){
+    ["customerId","buildingId","elevatorId","contractId","periodNumber",
+     "scheduledDate","completedDate","status","technicianId",
+     "assignmentReason","condition","result","issueFound","note"]
+      .forEach(id=>{const el=$(id);if(el)el.disabled=true;});
   }
 }
 async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
@@ -677,6 +703,47 @@ async function reportCompletion(){
   }
 }
 
+async function confirmCompletion(){
+  setError("");
+  if(currentRole()!=="CSKH"){
+    setError("Chỉ CSKH được xác nhận hoàn thành phiếu bảo trì.");
+    return;
+  }
+  if(!editingId){
+    setError("Không xác định được phiếu bảo trì.");
+    return;
+  }
+
+  const m=maintenances.find(x=>String(x.id)===String(editingId));
+  if(!m){
+    setError("Không tìm thấy phiếu bảo trì.");
+    return;
+  }
+  if(String(m.status||"")!=="waiting_confirmation" || String(m.customerConfirmationStatus||"")!=="pending"){
+    setError("Phiếu này không còn ở trạng thái chờ CSKH xác nhận.");
+    return;
+  }
+
+  const btn=$("confirmCompletionBtn");
+  btn.disabled=true;
+  btn.textContent="Đang xác nhận…";
+  try{
+    await confirmMaintenanceByCSKH(editingId,{
+      confirmedBy:currentActorName(),
+      note:""
+    });
+    await loadData();
+    closeModal();
+    setStatus("Đã xác nhận hoàn thành phiếu bảo trì.","ok");
+  }catch(err){
+    console.error(err);
+    setError(err?.message||"Không thể xác nhận hoàn thành phiếu bảo trì.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Xác nhận hoàn thành";
+  }
+}
+
 function resetForm(){
   $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
   $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").min="";$("scheduledDate").value=localTodayIso();renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()
@@ -695,6 +762,7 @@ $("prevPage").addEventListener("click",()=>{if(maintenancePage>1){maintenancePag
 $("nextPage").addEventListener("click",()=>{const totalPages=Math.max(1,Math.ceil(filtered().length/MAINTENANCE_PAGE_SIZE));if(maintenancePage<totalPages){maintenancePage++;render()}});
 $("rows").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit)});
 $("reportCompletionBtn").addEventListener("click",reportCompletion);
+$("confirmCompletionBtn").addEventListener("click",confirmCompletion);
 $("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn").addEventListener("click",closeModal);$("cancelBtn").addEventListener("click",closeModal);$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal()});
 
 $("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}
