@@ -133,115 +133,172 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
 <script type="module">
 /*
- * KPI V4 — Firebase bootstrap độc lập
- * Không import ./js/core/firebase.js ở đầu trang.
- * V4 đọc firebase.js như text -> lấy firebaseConfig -> tự khởi tạo
- * Firebase Auth + Firestore. Nhờ vậy lỗi của core module không thể
- * làm trang KPI treo vô hạn ở màn hình xác thực.
+ * KPI V5 — BOOTSTRAP TỐI GIẢN, KHÔNG STATIC IMPORT
+ *
+ * Vấn đề V4:
+ *   Chỉ cần một CDN/module import lỗi là toàn bộ <script type="module">
+ *   không chạy. Khi đó màn hình auth-gate giữ nguyên mãi.
+ *
+ * V5:
+ *   1. Không có import tĩnh nào.
+ *   2. Dynamic import ./js/core/firebase.js để lấy auth + db hiện tại.
+ *   3. Dynamic import Firebase Auth/Firestore và bắt lỗi riêng từng bước.
+ *   4. Chỉ sau khi Auth thành công mới tải KPI modules.
+ *
+ * Không thay đổi schema Work Order / Firestore.
  */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-
-let auth = null;
-let db = null;
-let calculateTechnicianKpi, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, createMonthlyPeriod, createQuarterPeriod;
-let getTechnicians, getTechnician;
-
-async function loadFirebaseConfigDirect(){
-  const url = "./js/core/firebase.js?v=20260924-kpi-v4";
-  const response = await fetch(url, {cache:"no-store"});
-  if(!response.ok){
-    throw new Error(`Không đọc được ${url} (HTTP ${response.status}).`);
-  }
-
-  const source = await response.text();
-
-  /*
-   * Hỗ trợ dạng:
-   * export const firebaseConfig = {...};
-   * const firebaseConfig = {...};
-   * initializeApp({...});
-   */
-  let match = source.match(/(?:export\\s+)?const\\s+firebaseConfig\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;/);
-  if(!match){
-    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
-  }
-  if(!match){
-    throw new Error(
-      "Đã đọc được firebase.js nhưng không tìm thấy firebaseConfig. " +
-      "Hãy kiểm tra file /js/core/firebase.js."
-    );
-  }
-
-  let config;
-  try{
-    // firebaseConfig là client-side config, không phải service-account secret.
-    config = Function(`"use strict"; return (${match[1]});`)();
-  }catch(error){
-    throw new Error("firebaseConfig trong /js/core/firebase.js không hợp lệ: " + (error?.message || error));
-  }
-
-  const required = ["apiKey","authDomain","projectId","appId"];
-  const missing = required.filter(key => !config?.[key]);
-  if(missing.length){
-    throw new Error("firebaseConfig thiếu: " + missing.join(", "));
-  }
-
-  return config;
-}
-
-async function bootstrapFirebaseDirect(){
-  const config = await loadFirebaseConfigDirect();
-  const app = initializeApp(config, "duc-anh-kpi-v4");
-  auth = getAuth(app);
-  db = getFirestore(app);
-
-  await setPersistence(auth, browserLocalPersistence);
-
-  return {auth, db};
-}
-
-async function loadKpiModules(){
-  try{
-    const kpi = await import("./js/kpi-v1.js?v=20260924-2");
-    calculateTechnicianKpi = kpi.calculateTechnicianKpi;
-    getAllWorkOrdersForKpi = kpi.getAllWorkOrdersForKpi;
-    getWorkOrdersForTechnician = kpi.getWorkOrdersForTechnician;
-    createMonthlyPeriod = kpi.createMonthlyPeriod;
-    createQuarterPeriod = kpi.createQuarterPeriod;
-
-    const tech = await import("./js/core/firestore-v1-technician-v1.js?v=20260924-2");
-    getTechnicians = tech.getTechnicians;
-    getTechnician = tech.getTechnician;
-  }catch(error){
-    console.error("KPI MODULE LOAD ERROR:", error);
-    throw new Error("Không tải được module KPI. Kiểm tra file /js/kpi-v1.js và đường dẫn /js/core/firebase.js. Chi tiết: " + (error?.message || error));
-  }
-}
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+let auth=null;
+let db=null;
+let onAuthStateChangedFn=null;
+let docFn=null;
+let getDocFn=null;
+
+let calculateTechnicianKpi, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, createMonthlyPeriod, createQuarterPeriod;
+let getTechnicians, getTechnician;
+
 const state={user:null,profile:null,technicians:[],workOrders:[],period:null,selectedTechnician:"",kpis:[]};
 
-function setStatus(msg,type=""){const e=$("pageStatus");e.textContent=msg;e.className=`statusline ${type}`}
+function setStatus(msg,type=""){
+  const e=$("pageStatus");
+  e.textContent=msg;
+  e.className=`statusline ${type}`;
+}
+function showFatalAuthError(title,message){
+  const gate=$("authGate");
+  gate.classList.remove("hidden");
+  gate.innerHTML=`
+    <div class="auth-box">
+      <h2>${esc(title)}</h2>
+      <div class="muted" style="line-height:1.65;margin-bottom:18px">${esc(message)}</div>
+      <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
+    </div>`;
+  $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
+}
+
 function role(){return String(state.profile?.role||"").trim().toUpperCase()}
 function iso(d){return d?d.toISOString().slice(0,10):""}
-function fmt(v){if(!v)return"—";const d=new Date(`${String(v).slice(0,10)}T00:00:00`);return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString("vi-VN")}
+function fmt(v){
+  if(!v)return"—";
+  const d=new Date(`${String(v).slice(0,10)}T00:00:00`);
+  return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString("vi-VN");
+}
 function money(v){return new Intl.NumberFormat("vi-VN").format(Number(v)||0)+" đ"}
 function currentYear(){return new Date().getFullYear()}
 function currentMonth(){return new Date().getMonth()+1}
 function statusText(s){return({draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",waiting_parts:"Chờ vật tư",completed:"Hoàn thành",cancelled:"Đã hủy"})[s]||s||"—"}
-function statusClass(s){if(s==="completed")return"done";if(s==="cancelled")return"late";if(["assigned","in_progress","waiting_parts"].includes(s))return"progress";return""}
+function statusClass(s){
+  if(s==="completed")return"done";
+  if(s==="cancelled")return"late";
+  if(["assigned","in_progress","waiting_parts"].includes(s))return"progress";
+  return"";
+}
+
+/* =========================================================
+   STEP 1 — LOAD CORE FIREBASE DYNAMICALLY
+========================================================= */
+async function bootstrapCoreFirebase(){
+  setStatus("Đang tải Firebase core…");
+
+  let core;
+  try{
+    core=await import("./js/core/firebase.js?v=20260924-kpi-v5");
+  }catch(error){
+    console.error("KPI V5 CORE IMPORT ERROR",error);
+    throw new Error(
+      "Không tải được /js/core/firebase.js. " +
+      (error?.message||error)
+    );
+  }
+
+  auth=core?.auth||null;
+  db=core?.db||null;
+
+  if(!auth) throw new Error("firebase.js đã tải nhưng không export auth.");
+  if(!db) throw new Error("firebase.js đã tải nhưng không export db.");
+
+  setStatus("Firebase core OK · Đang tải Firebase Auth…");
+
+  let authSdk;
+  try{
+    authSdk=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js?v=20260924-kpi-v5");
+  }catch(error){
+    console.error("KPI V5 AUTH SDK IMPORT ERROR",error);
+    throw new Error(
+      "Không tải được Firebase Auth SDK. " +
+      (error?.message||error)
+    );
+  }
+
+  onAuthStateChangedFn=authSdk?.onAuthStateChanged;
+  if(typeof onAuthStateChangedFn!=="function"){
+    throw new Error("Firebase Auth SDK không cung cấp onAuthStateChanged.");
+  }
+
+  setStatus("Firebase Auth OK · Đang tải Firestore…");
+
+  let firestoreSdk;
+  try{
+    firestoreSdk=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js?v=20260924-kpi-v5");
+  }catch(error){
+    console.error("KPI V5 FIRESTORE SDK IMPORT ERROR",error);
+    throw new Error(
+      "Không tải được Firebase Firestore SDK. " +
+      (error?.message||error)
+    );
+  }
+
+  docFn=firestoreSdk?.doc;
+  getDocFn=firestoreSdk?.getDoc;
+
+  if(typeof docFn!=="function"||typeof getDocFn!=="function"){
+    throw new Error("Firebase Firestore SDK không cung cấp doc/getDoc.");
+  }
+
+  setStatus("Firebase core + Auth + Firestore đã sẵn sàng.");
+}
+
+/* =========================================================
+   STEP 2 — LOAD KPI DATA MODULES DYNAMICALLY
+========================================================= */
+async function loadKpiModules(){
+  setStatus("Firebase OK · Đang tải module KPI…");
+
+  try{
+    const kpi=await import("./js/kpi-v1.js?v=20260924-kpi-v5");
+    calculateTechnicianKpi=kpi.calculateTechnicianKpi;
+    getAllWorkOrdersForKpi=kpi.getAllWorkOrdersForKpi;
+    getWorkOrdersForTechnician=kpi.getWorkOrdersForTechnician;
+    createMonthlyPeriod=kpi.createMonthlyPeriod;
+    createQuarterPeriod=kpi.createQuarterPeriod;
+
+    if(typeof calculateTechnicianKpi!=="function")throw new Error("Thiếu calculateTechnicianKpi.");
+    if(typeof getAllWorkOrdersForKpi!=="function")throw new Error("Thiếu getAllWorkOrdersForKpi.");
+    if(typeof getWorkOrdersForTechnician!=="function")throw new Error("Thiếu getWorkOrdersForTechnician.");
+    if(typeof createMonthlyPeriod!=="function")throw new Error("Thiếu createMonthlyPeriod.");
+    if(typeof createQuarterPeriod!=="function")throw new Error("Thiếu createQuarterPeriod.");
+
+    const tech=await import("./js/core/firestore-v1-technician-v1.js?v=20260924-kpi-v5");
+    getTechnicians=tech.getTechnicians;
+    getTechnician=tech.getTechnician;
+
+    if(typeof getTechnicians!=="function")throw new Error("Thiếu getTechnicians.");
+    if(typeof getTechnician!=="function")throw new Error("Thiếu getTechnician.");
+  }catch(error){
+    console.error("KPI V5 MODULE LOAD ERROR",error);
+    throw new Error(
+      "Firebase đã xác thực nhưng module KPI không tải được. " +
+      (error?.message||error)
+    );
+  }
+}
+
+/* =========================================================
+   KPI UI / CALCULATION
+========================================================= */
 
 function buildPeriodOptions(){
   const type=$("periodType").value;
@@ -249,17 +306,20 @@ function buildPeriodOptions(){
   if(type==="month"){
     for(let y=currentYear()-2;y<=currentYear()+1;y++){
       for(let m=1;m<=12;m++){
-        const p=createMonthlyPeriod(y,m), o=document.createElement("option");
-        o.value=p.periodId;o.textContent=`Tháng ${m}/${y}`;o.dataset.start=p.startDate;o.dataset.end=p.endDate;sel.appendChild(o);
+        const p=createMonthlyPeriod(y,m),o=document.createElement("option");
+        o.value=p.periodId;o.textContent=`Tháng ${m}/${y}`;
+        o.dataset.start=p.startDate;o.dataset.end=p.endDate;
+        sel.appendChild(o);
       }
     }
-    const target=`${currentYear()}-${String(currentMonth()).padStart(2,"0")}`;
-    sel.value=target;
+    sel.value=`${currentYear()}-${String(currentMonth()).padStart(2,"0")}`;
   }else{
     for(let y=currentYear()-2;y<=currentYear()+1;y++){
       for(let q=1;q<=4;q++){
-        const p=createQuarterPeriod(y,q), o=document.createElement("option");
-        o.value=p.periodId;o.textContent=`Quý ${q}/${y}`;o.dataset.start=p.startDate;o.dataset.end=p.endDate;sel.appendChild(o);
+        const p=createQuarterPeriod(y,q),o=document.createElement("option");
+        o.value=p.periodId;o.textContent=`Quý ${q}/${y}`;
+        o.dataset.start=p.startDate;o.dataset.end=p.endDate;
+        sel.appendChild(o);
       }
     }
     sel.value=`${currentYear()}-Q${Math.floor((currentMonth()-1)/3)+1}`;
@@ -273,29 +333,28 @@ function selectedPeriod(){
     : createQuarterPeriod(Number(o.value.split("-")[0]),Number(o.value.split("-")[1].replace("Q","")));
 }
 function fillTechnicians(){
-  const sel=$("technicianFilter"), old=state.selectedTechnician;
+  const sel=$("technicianFilter"),old=state.selectedTechnician;
   sel.innerHTML='<option value="">Tất cả KTV</option>';
   state.technicians.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","vi")).forEach(t=>{
-    const o=document.createElement("option");o.value=t.id;o.textContent=t.name||t.id;sel.appendChild(o)
+    const o=document.createElement("option");
+    o.value=t.id;o.textContent=t.name||t.id;sel.appendChild(o);
   });
-  if(old && [...sel.options].some(o=>o.value===old))sel.value=old;
+  if(old&&[...sel.options].some(o=>o.value===old))sel.value=old;
 }
-function selectedTechName(id){return state.technicians.find(x=>String(x.id)===String(id))?.name||""}
-
 async function loadTechnicians(){
   if(role()==="TECHNICIAN"){
     const id=String(state.profile?.technicianId||"").trim();
     if(!id)throw new Error("Tài khoản TECHNICIAN chưa có technicianId trong users/{uid}.");
     const t=await getTechnician(id);
     if(!t)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${id}.`);
-    state.technicians=[t];state.selectedTechnician=id;$("technicianFilter").disabled=true;
+    state.technicians=[t];state.selectedTechnician=id;
+    $("technicianFilter").disabled=true;
   }else{
     state.technicians=await getTechnicians()||[];
     $("technicianFilter").disabled=false;
   }
   fillTechnicians();
 }
-
 async function loadWorkOrders(){
   state.period=selectedPeriod();
   if(!state.period)throw new Error("Không xác định được kỳ KPI.");
@@ -306,7 +365,6 @@ async function loadWorkOrders(){
     state.workOrders=await getAllWorkOrdersForKpi();
   }
 }
-
 async function calculate(){
   const p=state.period;
   const list=state.selectedTechnician
@@ -319,13 +377,11 @@ async function calculate(){
       periodId:p.periodId,startDate:p.startDate,endDate:p.endDate,
       workOrders:state.workOrders
     });
-    if(k.totalWorkOrders>0 || state.selectedTechnician)state.kpis.push(k);
+    if(k.totalWorkOrders>0||state.selectedTechnician)state.kpis.push(k);
   }
 }
-
 function aggregate(){
-  const all=state.kpis;
-  return all.reduce((a,k)=>({
+  return state.kpis.reduce((a,k)=>({
     totalWorkOrders:a.totalWorkOrders+k.totalWorkOrders,
     completedWorkOrders:a.completedWorkOrders+k.completedWorkOrders,
     activeWorkOrders:a.activeWorkOrders+k.activeWorkOrders,
@@ -338,10 +394,12 @@ function aggregate(){
   }),{totalWorkOrders:0,completedWorkOrders:0,activeWorkOrders:0,overdueWorkOrders:0,completedOnTime:0,completedLate:0,labor:0,material:0,totalCost:0,processingTotal:0,completedCount:0});
 }
 function renderSummary(){
-  const a=aggregate(), completion=a.totalWorkOrders?(a.completedWorkOrders/a.totalWorkOrders*100):0;
+  const a=aggregate();
+  const completion=a.totalWorkOrders?(a.completedWorkOrders/a.totalWorkOrders*100):0;
   const ontime=a.completedWorkOrders?(a.completedOnTime/a.completedWorkOrders*100):0;
-  $("kTotal").textContent=a.totalWorkOrders;$("kDone").textContent=a.completedWorkOrders;$("kActive").textContent=a.activeWorkOrders;
-  $("kOverdue").textContent=a.overdueWorkOrders;$("kOnTime").textContent=a.completedOnTime;
+  $("kTotal").textContent=a.totalWorkOrders;$("kDone").textContent=a.completedWorkOrders;
+  $("kActive").textContent=a.activeWorkOrders;$("kOverdue").textContent=a.overdueWorkOrders;
+  $("kOnTime").textContent=a.completedOnTime;
   $("kAvg").textContent=(a.completedCount?(a.processingTotal/a.completedCount).toFixed(1):"0");
   $("kDoneSub").textContent=completion.toFixed(1)+"%";
   $("kOnTimeSub").textContent=ontime.toFixed(1)+"%";
@@ -361,12 +419,12 @@ function renderTechRows(){
 function renderDetails(){
   const rows=$("detailRows"),empty=$("detailEmpty"),q=String($("search").value||"").trim().toLowerCase();
   const source=state.kpis.flatMap(k=>k.rows.map(r=>({...r,technicianName:k.technicianName})))
-    .filter(r=>!q || [r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode].join(" ").toLowerCase().includes(q));
+    .filter(r=>!q||[r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode].join(" ").toLowerCase().includes(q));
   $("detailLabel").textContent=`${source.length} Work Order`;
   if(!source.length){rows.innerHTML="";empty.style.display="block";return}
   empty.style.display="none";
   rows.innerHTML=source.map(r=>{
-    let result=r.isCompletedOnTime?'<span class="badge done">Đúng hạn</span>':r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
+    const result=r.isCompletedOnTime?'<span class="badge done">Đúng hạn</span>':r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
     return `<tr>
       <td><strong>${esc(r.workOrderNo||r.id)}</strong></td><td>${esc(r.technicianName||"—")}</td>
       <td>${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
@@ -374,151 +432,122 @@ function renderDetails(){
       <td>${fmt(r.openedDate)}</td><td>${fmt(r.dueDate)}</td><td>${fmt(r.completedDate)}</td>
       <td><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></td><td>${result}</td>
       <td>${r.processingDays==null?"—":Number(r.processingDays).toFixed(1)+" ngày"}</td>
-    </tr>`
+    </tr>`;
   }).join("");
 }
 function render(){renderSummary();renderTechRows();renderDetails()}
-
 async function refresh(){
   try{
     $("refreshBtn").disabled=true;setStatus("Đang tải dữ liệu KPI…");
     await loadWorkOrders();await calculate();render();
     setStatus(`Đã cập nhật KPI · ${state.workOrders.length} Work Order nguồn · Kỳ ${state.period.periodId}`,"ok");
-  }catch(e){console.error(e);setStatus(e?.message||"Không tải được KPI.","error")}
-  finally{$("refreshBtn").disabled=false}
+  }catch(e){
+    console.error(e);setStatus(e?.message||"Không tải được KPI.","error");
+  }finally{$("refreshBtn").disabled=false}
 }
 
-async function init(user){
-  state.user=user;
-  await loadKpiModules();
-  const profileSnap=await getDoc(doc(db,"users",user.uid));
-  if(!profileSnap.exists())throw new Error("Không tồn tại users/{uid}.");
-  state.profile=profileSnap.data()||{};
-  const allowed=["ADMIN","MANAGER","TECHNICIAN"].includes(role());
-  if(!allowed)throw new Error(`Role ${role()||"(trống)"} không được phép xem KPI.`);
-  if(role()==="TECHNICIAN" && !state.profile.technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId.");
-  await loadTechnicians();await refresh();
-  $("authGate").classList.add("hidden");
-}
+/* =========================================================
+   AUTH
+========================================================= */
+async function waitForAuth(){
+  return new Promise((resolve,reject)=>{
+    let settled=false;
+    let unsubscribe=null;
+    let timer=null;
 
-$("periodType").addEventListener("change",async()=>{buildPeriodOptions();await refresh()});
-$("periodValue").addEventListener("change",refresh);
-$("technicianFilter").addEventListener("change",refresh);
-$("search").addEventListener("input",renderDetails);
-$("refreshBtn").addEventListener("click",refresh);
-$("technicianRows").addEventListener("click",e=>{
-  const b=e.target.closest("[data-tech]");if(!b)return;
-  state.selectedTechnician=b.dataset.tech;$("technicianFilter").value=state.selectedTechnician;refresh();
-});
+    const finish=(value,error)=>{
+      if(settled)return;
+      settled=true;
+      if(timer)clearTimeout(timer);
+      try{unsubscribe?.()}catch{}
+      if(error)reject(error);else resolve(value);
+    };
 
-buildPeriodOptions();
-
-/*
- * KPI V4 AUTH FLOW
- * 1. Bootstrap Firebase trực tiếp từ /js/core/firebase.js.
- * 2. Hiển thị lỗi ngay nếu bootstrap thất bại.
- * 3. Chờ Auth tối đa 8 giây.
- * 4. Khi có user mới đọc users/{uid}.
- * 5. Sau khi Auth + profile OK mới tải module KPI.
- */
-function showFatalAuthError(title, message){
-  const gate = $("authGate");
-  gate.classList.remove("hidden");
-  gate.innerHTML = `
-    <div class="auth-box">
-      <h2>${esc(title)}</h2>
-      <div class="muted" style="line-height:1.65;margin-bottom:18px">${esc(message)}</div>
-      <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
-    </div>`;
-  $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
-}
-
-async function startKpiV4(){
-  try{
-    setStatus("Đang khởi tạo Firebase trực tiếp…");
-
-    await bootstrapFirebaseDirect();
-
-    setStatus("Firebase đã khởi tạo · Đang xác thực…");
-
-    const user = await new Promise((resolve,reject)=>{
-      let settled=false;
-      let unsubscribe=null;
-      let timer=null;
-
-      const finish=value=>{
-        if(settled)return;
-        settled=true;
-        if(timer) clearTimeout(timer);
-        try{unsubscribe?.()}catch{}
-        resolve(value);
-      };
-
-      unsubscribe = onAuthStateChanged(
+    try{
+      unsubscribe=onAuthStateChangedFn(
         auth,
-        value=>finish(value || null),
-        error=>{
-          if(settled)return;
-          settled=true;
-          if(timer) clearTimeout(timer);
-          try{unsubscribe?.()}catch{}
-          reject(error);
-        }
+        user=>finish(user||null),
+        error=>finish(null,error)
       );
+    }catch(error){
+      finish(null,error);
+      return;
+    }
 
-      const timer=setTimeout(()=>{
-        if(settled)return;
-        settled=true;
-        try{unsubscribe?.()}catch{}
-        reject(new Error("Firebase Auth không phản hồi sau 8 giây."));
-      },8000);
-    });
+    timer=setTimeout(()=>{
+      finish(null,new Error("Firebase Auth không phản hồi sau 10 giây."));
+    },10000);
+  });
+}
+
+async function startKpiV5(){
+  try{
+    setStatus("Đang khởi động KPI V5…");
+
+    await bootstrapCoreFirebase();
+
+    setStatus("Firebase đã sẵn sàng · Đang xác thực phiên…");
+
+    const user=await waitForAuth();
 
     if(!user){
-      setStatus("Chưa có phiên đăng nhập Firebase.","error");
       showFatalAuthError(
-        "Chưa đăng nhập",
-        "Firebase đã xác nhận trình duyệt hiện không có phiên đăng nhập. Hãy quay lại trang đăng nhập của Đức Anh Maintenance rồi mở lại KPI."
+        "Chưa có phiên đăng nhập",
+        "Firebase đã chạy nhưng trình duyệt hiện không có phiên đăng nhập. Hãy đăng nhập lại tại trang đăng nhập của Đức Anh Maintenance."
       );
       return;
     }
 
-    setStatus(`Đã xác thực · ${user.email || user.uid}`);
-
-    // Đọc users/{uid} bằng Firestore được khởi tạo độc lập.
-    const profileSnap = await getDoc(doc(db,"users",user.uid));
-    if(!profileSnap.exists()){
-      throw new Error("Không tồn tại hồ sơ users/{uid} cho tài khoản này.");
-    }
-
     state.user=user;
-    state.profile=profileSnap.data() || {};
+    setStatus(`Đã xác thực · ${user.email||user.uid}`);
 
-    const r=role();
-    if(!["ADMIN","MANAGER","TECHNICIAN"].includes(r)){
-      throw new Error(`Role ${r || "(trống)"} không được phép xem KPI.`);
+    const profileSnap=await getDocFn(docFn(db,"users",user.uid));
+    if(!profileSnap.exists()){
+      throw new Error("Đã xác thực Firebase nhưng không tồn tại users/{uid}.");
     }
 
-    if(r==="TECHNICIAN" && !state.profile.technicianId){
+    state.profile=profileSnap.data()||{};
+    const r=role();
+
+    if(!["ADMIN","MANAGER","TECHNICIAN"].includes(r)){
+      throw new Error(`Role ${r||"(trống)"} không được phép xem KPI.`);
+    }
+
+    if(r==="TECHNICIAN"&&!state.profile.technicianId){
       throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId.");
     }
 
-    // Chỉ sau khi Auth + users/{uid} thành công mới tải KPI modules.
     await loadKpiModules();
-
     await loadTechnicians();
     await refresh();
 
     $("authGate").classList.add("hidden");
 
   }catch(error){
-    console.error("KPI V4 BOOT ERROR:",error);
-    setStatus(error?.message || "Không thể khởi tạo KPI.","error");
-    showFatalAuthError("KPI không thể khởi tạo", error?.message || "Lỗi không xác định.");
+    console.error("KPI V5 BOOT ERROR:",error);
+    setStatus(error?.message||"Không thể khởi tạo KPI.","error");
+    showFatalAuthError("KPI không thể khởi tạo",error?.message||"Lỗi không xác định.");
   }
 }
 
-startKpiV4();
+/* =========================================================
+   EVENTS
+========================================================= */
+$("periodType").addEventListener("change",async()=>{buildPeriodOptions();await refresh()});
+$("periodValue").addEventListener("change",refresh);
+$("technicianFilter").addEventListener("change",refresh);
+$("search").addEventListener("input",renderDetails);
+$("refreshBtn").addEventListener("click",refresh);
+$("technicianRows").addEventListener("click",e=>{
+  const b=e.target.closest("[data-tech]");
+  if(!b)return;
+  state.selectedTechnician=b.dataset.tech;
+  $("technicianFilter").value=state.selectedTechnician;
+  refresh();
+});
+
+buildPeriodOptions();
+startKpiV5();
 </script>
 </body>
 </html>
