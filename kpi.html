@@ -38,8 +38,11 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .card-head h2{margin:0;color:var(--da-gold-light)!important;font-size:18px}
 .statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
 .statusline.error{color:#ff8176!important}.statusline.ok{color:#75dda5!important}
-.table-wrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.table-wrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .data-table{width:100%;border-collapse:collapse;min-width:1100px}
+.tech-table-wrap{position:relative}
+.tech-table-wrap .data-table th:first-child,.tech-table-wrap .data-table td:first-child{position:sticky;left:0;z-index:2;background:#11110f!important;box-shadow:8px 0 12px rgba(0,0,0,.22)}
+.tech-table-wrap .data-table th:first-child{background:#171714!important;z-index:3}
 .data-table th,.data-table td{padding:11px 12px;border-bottom:1px solid #292722!important;text-align:left;vertical-align:top;font-size:13px}
 .data-table th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--da-gold-light)!important;background:#171714!important}
 .data-table tr:hover td{background:#161613!important}
@@ -63,6 +66,12 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 @media(max-width:650px){
  .page{padding:16px 12px 45px}.page-head{flex-direction:column}.page-head .btn{width:100%}
  .toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:1fr 1fr}
+ .card-head{align-items:flex-start;flex-direction:column}
+ .card-head h2{font-size:17px;line-height:1.3}
+ .tech-table-wrap{margin:0}
+ .tech-table-wrap .data-table{min-width:1050px}
+ .tech-table-wrap .data-table th:first-child,.tech-table-wrap .data-table td:first-child{min-width:145px}
+ .table-wrap:not(.tech-table-wrap){scrollbar-width:thin}
 }
 </style>
 </head>
@@ -127,7 +136,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
       <h2>Tổng hợp Bảo trì + Work Order theo kỹ thuật viên</h2>
       <span class="muted" id="periodLabel">—</span>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap tech-table-wrap">
       <table class="data-table">
         <thead>
           <tr>
@@ -287,6 +296,7 @@ async function loadModules(){
   for(const [name,fn] of Object.entries({calculateTechnicianKpiV2,getAllWorkOrdersForKpi,getWorkOrdersForTechnician,getAllMaintenancesForKpi,getMaintenancesForTechnician,createMonthlyPeriod,createQuarterPeriod})){
     if(typeof fn!=="function")throw new Error(`Thiếu ${name}.`);
   }
+  if(typeof calculateTechnicianKpiV2!=="function")throw new Error("KPI V4 không khớp với file kpi.js hiện tại.");
 
   const tech=await withTimeout(import("./js/core/firestore-v1-technician-v1.js"),8000,"Không tải được technician module");
   getTechnicians=tech.getTechnicians;getTechnician=tech.getTechnician;
@@ -434,7 +444,7 @@ function renderTechRows(){
       <td>${w.activeWorkOrders}</td>
       <td>${w.overdueWorkOrders}</td>
       <td>${w.completedOnTime}</td>
-      <td>${w.averageProcessingDays.toFixed(1)} ngày</td>
+      <td>${Number.isFinite(Number(w.averageProcessingDays))?Number(w.averageProcessingDays).toFixed(1)+" ngày":"—"}</td>
       <td>${money(w.totalCost)}</td>
     </tr>`;
   }).join("");
