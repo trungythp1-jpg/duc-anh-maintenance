@@ -634,25 +634,45 @@ async function runPermissionDiagnostics(user){
 }
 
 async function loadData(){
-  setStatus("Đang kiểm tra đăng nhập & quyền…");
-  const diagnostic=await runPermissionDiagnostics(authUser);
-  if(!diagnostic)throw new Error("Chưa đăng nhập Firebase.");
-  if(diagnostic.failed){
-    customers=diagnostic.customers||[];buildings=diagnostic.buildings||[];elevators=diagnostic.elevators||[];contracts=diagnostic.contracts||[];maintenances=diagnostic.maintenances||[];
-    renderCustomers();renderTechnicians();render();
-    throw new Error("Một hoặc nhiều quyền Firestore chưa hợp lệ. Xem bảng kiểm tra bên dưới.");
+  setStatus("Đang tải dữ liệu…");
+
+  // Đọc profile một lần để xác định quyền/phạm vi dữ liệu.
+  const profileSnap=await getDoc(doc(db,"users",authUser.uid));
+  if(!profileSnap.exists()) throw new Error("Không tồn tại users/{uid}.");
+  currentProfile=profileSnap.data()||{};
+
+  const role=currentRole();
+  const technicianId=String(currentProfile?.technicianId||"").trim();
+  if(role==="TECHNICIAN"&&!technicianId){
+    throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
   }
-  customers=diagnostic.customers||[];buildings=diagnostic.buildings||[];elevators=diagnostic.elevators||[];contracts=diagnostic.contracts||[];maintenances=diagnostic.maintenances||[];
-  if(currentRole()==="TECHNICIAN") {
-    const technicianId=String(currentProfile?.technicianId||"").trim();
-    if(!technicianId) throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
-    const ownTechnician=await getTechnician(technicianId);
-    if(!ownTechnician) throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
-    technicians=[ownTechnician];
+
+  // Các collection độc lập được tải song song để giảm thời gian chờ.
+  const [c,b,e,ct,m,techData]=await Promise.all([
+    getCustomers(),
+    getBuildings(),
+    getElevators(),
+    getContracts(),
+    role==="TECHNICIAN" ? getMaintenances({technicianId}) : getMaintenances(),
+    role==="TECHNICIAN" ? getTechnician(technicianId) : getTechnicians()
+  ]);
+
+  customers=c||[];
+  buildings=b||[];
+  elevators=e||[];
+  contracts=ct||[];
+  maintenances=m||[];
+
+  if(role==="TECHNICIAN") {
+    if(!techData) throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
+    technicians=[techData];
   } else {
-    technicians=await getTechnicians();
+    technicians=techData||[];
   }
-  renderCustomers();renderTechnicians();render();
+
+  renderCustomers();
+  renderTechnicians();
+  render();
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
