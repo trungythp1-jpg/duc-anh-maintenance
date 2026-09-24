@@ -581,11 +581,13 @@ if(assignmentChanged && editingId && !assignmentReason){
   return;
 }
 const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
+let savedMaintenance=null;
 if(editingId){
-  await updateMaintenance(editingId,payload);
+  savedMaintenance=await updateMaintenance(editingId,payload);
+  savedMaintenanceId=savedMaintenance?.id||editingId;
 }else{
-  const created=await createMaintenance(payload);
-  savedMaintenanceId=created?.id||"";
+  savedMaintenance=await createMaintenance(payload);
+  savedMaintenanceId=savedMaintenance?.id||"";
 }
 if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenanceId){
   await writeTechnicianAssignmentAudit({
@@ -598,7 +600,19 @@ if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenance
     reason:assignmentReason
   });
 }
-const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
+const wasEditing=Boolean(editingId);
+
+// Firestore đã lưu thành công nên cập nhật mảng hiện tại ngay, thay vì đọc lại
+// toàn bộ Customers/Buildings/Elevators/Contracts/Maintenance/Technicians.
+if(savedMaintenanceId && savedMaintenance){
+  const savedRecord={...savedMaintenance,id:savedMaintenanceId};
+  const existingIndex=maintenances.findIndex(x=>String(x.id)===String(savedMaintenanceId));
+  if(existingIndex>=0) maintenances[existingIndex]=savedRecord;
+  else maintenances.unshift(savedRecord);
+}
+closeModal();
+render();
+setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
 
 async function runPermissionDiagnostics(user){
   const panel=$("permissionPanel"), list=$("permissionList"), userEl=$("diagUser");
