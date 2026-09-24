@@ -163,6 +163,7 @@ body{
 .badge.cancelled{background:rgba(227,91,79,.14)!important;color:#ff8176!important}
 .badge.draft{background:#27261f!important;color:#c9c1b2!important}
 .badge.issue{background:rgba(214,168,79,.15)!important;color:var(--da-gold-light)!important}
+.badge.waiting_confirmation{background:rgba(214,168,79,.16)!important;color:var(--da-gold-light)!important}
 
 .empty{padding:42px;text-align:center;color:var(--da-muted)!important}
 .statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
@@ -347,7 +348,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.20-display-readability">
+<body data-maintenance-build="v1.23-ktv-completion-workflow">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -365,7 +366,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 
   <div class="toolbar">
     <div class="field"><label for="search">Tìm kiếm</label><input id="search" placeholder="PBM, khách hàng, tòa nhà, thang, hợp đồng…"></div>
-    <div class="field"><label for="statusFilter">Trạng thái</label><select id="statusFilter"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+    <div class="field"><label for="statusFilter">Trạng thái</label><select id="statusFilter"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="waiting_confirmation">Chờ CSKH xác nhận</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
     <div class="field"><label for="yearFilter">Năm</label><select id="yearFilter"><option value="">Tất cả năm</option></select></div>
     <div class="field"><label for="issueFilter">Kết quả</label><select id="issueFilter"><option value="">Tất cả</option><option value="yes">Có vấn đề</option><option value="no">Không vấn đề</option></select></div>
   </div>
@@ -404,7 +405,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
           <div class="field"><label for="periodNumber">Kỳ bảo trì</label><select id="periodNumber" disabled><option value="">Chọn kỳ từ lịch</option></select></div>
           <div class="field"><label for="scheduledDate">Ngày dự kiến *</label><input id="scheduledDate" type="date" required></div>
           <div class="field"><label for="completedDate">Ngày hoàn thành</label><input id="completedDate" type="date"></div>
-          <div class="field"><label for="status">Trạng thái *</label><select id="status"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+          <div class="field"><label for="status">Trạng thái *</label><select id="status"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="waiting_confirmation" disabled>Chờ CSKH xác nhận</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
           <div class="field"><label for="technicianId">Kỹ thuật viên</label><select id="technicianId"><option value="">Chưa phân công</option></select></div>
           <div class="field"><label for="assignmentReason">Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
           <div class="field"><label for="condition">Tình trạng thang</label><select id="condition"><option value="">Chọn</option><option value="normal">Bình thường</option><option value="warning">Có dấu hiệu cần theo dõi</option><option value="issue">Có lỗi / cần xử lý</option></select></div>
@@ -416,7 +417,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
         <div class="section"><h3>LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
         <div class="form-error" id="formError"></div>
       </div>
-      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
+      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn" id="reportCompletionBtn" type="button" style="display:none">Báo hoàn thành</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
     </form>
   </section>
 </div>
@@ -426,13 +427,13 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/fi
 import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance } from "./js/core/firestore-v1.js?v=5";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion } from "./js/core/firestore-v1.js?v=5";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const cycleMonths={monthly:1,bi_monthly:2,quarterly:3};
-const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang thực hiện",completed:"Hoàn thành",cancelled:"Đã hủy"};
+const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang thực hiện",waiting_confirmation:"Chờ CSKH xác nhận",completed:"Hoàn thành",cancelled:"Đã hủy"};
 const checklistItems=[
   ["machine_room","Phòng máy / tủ điều khiển"],["machine","Máy kéo / máy kéo không hộp số"],["controller","Tủ điện / điều khiển"],["brake","Phanh / bộ cứu hộ"],
   ["cabin","Cabin / nút bấm / hiển thị"],["landing","Cửa tầng / khóa cửa"],["shaft","Giếng thang / ray dẫn hướng"],["pit","Hố pit / thiết bị an toàn"],["safety","Thiết bị an toàn / cảnh báo"],["cleaning","Vệ sinh / bôi trơn / điều chỉnh"]
@@ -508,6 +509,27 @@ function applyTechnicianScopeUI(){
   });
   const addBtn=$("addBtn");
   if(addBtn) addBtn.disabled=isTech;
+
+  const statusEl=$("status");
+  if(statusEl){
+    if(isTech && editingId){
+      statusEl.disabled=true;
+    }else{
+      statusEl.disabled=false;
+    }
+  }
+
+  const reportBtn=$("reportCompletionBtn");
+  if(reportBtn){
+    const currentMaintenance=editingId
+      ? maintenances.find(x=>String(x.id)===String(editingId))
+      : null;
+    const reportable=isTech && Boolean(editingId) &&
+      currentMaintenance &&
+      !["completed","cancelled","waiting_confirmation"].includes(String(currentMaintenance.status||""));
+    reportBtn.style.display=reportable?"inline-flex":"none";
+    reportBtn.disabled=false;
+  }
 }
 async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
   await addDoc(collection(db,"auditLogs"),{
@@ -610,6 +632,51 @@ function render(){const list=filtered();const total=list.length;const totalPages
 
 function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
 
+async function reportCompletion(){
+  setError("");
+  if(currentRole()!=="TECHNICIAN"){
+    setError("Chỉ kỹ thuật viên được báo hoàn thành phiếu được phân công.");
+    return;
+  }
+  if(!editingId){
+    setError("Không xác định được phiếu bảo trì.");
+    return;
+  }
+
+  const m=maintenances.find(x=>String(x.id)===String(editingId));
+  if(!m){
+    setError("Không tìm thấy phiếu bảo trì.");
+    return;
+  }
+
+  if(["completed","cancelled","waiting_confirmation"].includes(String(m.status||""))){
+    setError("Phiếu này không thể báo hoàn thành ở trạng thái hiện tại.");
+    return;
+  }
+
+  const btn=$("reportCompletionBtn");
+  btn.disabled=true;
+  btn.textContent="Đang báo…";
+
+  try{
+    await reportMaintenanceCompletion(editingId,{
+      completedDate:$("completedDate").value||localTodayIso(),
+      completedByTechnicianId:String(currentProfile?.technicianId||"").trim(),
+      completedByTechnicianName:currentActorName()
+    });
+
+    await loadData();
+    closeModal();
+    setStatus("Đã báo hoàn thành. Phiếu đang chờ CSKH xác nhận trong 18 giờ.","ok");
+  }catch(err){
+    console.error(err);
+    setError(err?.message||"Không thể báo hoàn thành phiếu bảo trì.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Báo hoàn thành";
+  }
+}
+
 function resetForm(){
   $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
   $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").min="";$("scheduledDate").value=localTodayIso();renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()
@@ -627,6 +694,7 @@ $("periodNumber").addEventListener("change",setScheduledFromPeriod);
 $("prevPage").addEventListener("click",()=>{if(maintenancePage>1){maintenancePage--;render()}});
 $("nextPage").addEventListener("click",()=>{const totalPages=Math.max(1,Math.ceil(filtered().length/MAINTENANCE_PAGE_SIZE));if(maintenancePage<totalPages){maintenancePage++;render()}});
 $("rows").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit)});
+$("reportCompletionBtn").addEventListener("click",reportCompletion);
 $("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn").addEventListener("click",closeModal);$("cancelBtn").addEventListener("click",closeModal);$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal()});
 
 $("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}
