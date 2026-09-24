@@ -148,7 +148,7 @@ tr:hover td{background:#161613}
         </div>
         <div id="workflowHint" class="muted" style="margin-top:10px"></div>
         <div class="section" style="margin-top:18px;padding-top:14px;border-top:1px solid #40382b"><h3 style="margin:0 0 10px;color:var(--gold2)">LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
-        
+
         <div id="err" class="err"></div>
       </div>
       <div class="actions">
@@ -201,14 +201,18 @@ function badgePriority(v){
 function render(){
   const q=$("search").value.trim().toLowerCase();
   const fs=$("filterStatus").value, fp=$("filterPriority").value;
-  const rows=workOrders.filter(w=>{
+  const hasFilter=Boolean(q||fs||fp);
+  const filtered=workOrders.filter(w=>{
     const hay=[w.workOrderNo,w.maintenanceTicketNo,w.customerName,w.buildingName,w.elevatorName,w.issueTitle,w.problemDescription].join(" ").toLowerCase();
     return (!q||hay.includes(q))&&(!fs||w.status===fs)&&(!fp||w.priority===fp);
   });
+  const rows=hasFilter?filtered:filtered.slice(0,5);
+
   $("kTotal").textContent=workOrders.length;
   $("kProgress").textContent=workOrders.filter(w=>["assigned","in_progress","waiting_parts"].includes(w.status)).length;
   $("kDone").textContent=workOrders.filter(w=>w.status==="completed").length;
   $("kUrgent").textContent=workOrders.filter(w=>w.priority==="urgent").length;
+
   $("rows").innerHTML=rows.length?rows.map(w=>`
     <tr>
       <td><strong style="color:var(--gold2)">${esc(w.workOrderNo)}</strong><div class="muted">${esc(typeText[w.type]||w.type)}</div></td>
@@ -219,7 +223,12 @@ function render(){
       <td>${badgeStatus(w.status)}</td>
       <td>${esc(w.assignedTechnicianName||"Chưa phân công")}</td>
       <td><button class="btn" data-open="${esc(w.id)}">Mở</button></td>
-    </tr>`).join(""):`<tr><td colspan="9" class="empty">Chưa có Work Order.</td></tr>`;
+    </tr>`).join(""):`<tr><td colspan="9" class="empty">${hasFilter?"Không tìm thấy Work Order phù hợp.":"Chưa có Work Order."}</td></tr>`;
+
+  const countText=hasFilter
+    ? `Đang hiển thị ${rows.length} Work Order theo bộ lọc`
+    : `Đang hiển thị 5 Work Order gần nhất${workOrders.length>5?` · còn ${workOrders.length-5} Work Order, dùng Tìm kiếm để xem`:""}`;
+  $("status").textContent=countText;
   document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openEdit(b.dataset.open));
 }
 
@@ -514,7 +523,7 @@ async function load(){
     }
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>String(b.createdAt?.toMillis?.()||0)-String(a.createdAt?.toMillis?.()||0));
-    render();$("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
+    render();
   }catch(err){
     $("status").className="status error";$("status").textContent=err?.message||String(err);
   }
