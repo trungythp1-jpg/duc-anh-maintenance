@@ -252,10 +252,18 @@ service cloud.firestore {
              == resource.data.technicianId
           && request.resource.data.technicianId
              == technicianIdFromUser()
+          && request.resource.data.customerId == resource.data.customerId
+          && request.resource.data.buildingId == resource.data.buildingId
+          && request.resource.data.elevatorId == resource.data.elevatorId
+          && request.resource.data.contractId == resource.data.contractId
+          && request.resource.data.periodNumber == resource.data.periodNumber
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'scheduledDate','completedDate','status','checklist','condition','result',
-            'issueFound','note','latestWorkOrderId','latestWorkOrderNo',
-            'latestWorkOrderStatus','workOrderIds','workOrderCount','updatedAt'
+            'customerId','customerName','buildingId','buildingName','elevatorId',
+            'elevatorName','elevatorAssetCode','contractId','contractCode','periodNumber',
+            'scheduledDate','completedDate','status','technicianId','technicianName',
+            'checklist','condition','result','issueFound','note',
+            'latestWorkOrderId','latestWorkOrderNo','latestWorkOrderStatus',
+            'workOrderIds','workOrderCount','updatedAt'
           ])
         );
 
@@ -361,6 +369,43 @@ service cloud.firestore {
       allow create, update: if isAdmin()
         || isManager()
         || isCSKH();
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // WORK ORDER REQUESTS
+    // =========================================================
+    // TECHNICIAN không được tạo Work Order trực tiếp.
+    // Chỉ được gửi yêu cầu để ADMIN / MANAGER xử lý.
+    // TECHNICIAN chỉ được đọc các yêu cầu do chính mình gửi.
+    // Query TECHNICIAN nếu dùng list phải ràng buộc:
+    // where("requestedByTechnicianId", "==", technicianIdFromUser())
+
+    match /workOrderRequests/{requestId} {
+      allow get: if isAdmin()
+        || isManager()
+        || isDirector()
+        || isCSKH()
+        || (
+          isTechnician()
+          && resource.data.requestedByTechnicianId == technicianIdFromUser()
+        );
+
+      allow list: if isAdmin()
+        || isManager()
+        || isDirector()
+        || isCSKH();
+
+      allow create: if isTechnician()
+        && request.resource.data.requestedByTechnicianId == technicianIdFromUser()
+        && request.resource.data.requestedByUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && get(/databases/$(database)/documents/maintenance/$(request.resource.data.maintenanceId)).data.technicianId == technicianIdFromUser();
+
+      allow update: if isAdmin()
+        || isManager();
+
       allow delete: if false;
     }
 
@@ -487,3 +532,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
