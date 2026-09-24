@@ -169,7 +169,7 @@ import {
   createWorkOrder,
   updateWorkOrder
 } from "./js/core/firestore-v1.js?v=wo1.3";
-import { getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
+import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $ = id => document.getElementById(id);
 let maintenances = [];
@@ -332,6 +332,14 @@ function renderTechnicianSelect(selectedId="", selectedName=""){
     }).join("");
   $("technicianId").value=currentId;
   applyAssignmentPermission();
+  applyTechnicianScopeUI();
+}
+function applyTechnicianScopeUI(){
+  const isTech=currentRole()==="TECHNICIAN";
+  const addBtn=$("addBtn");
+  if(addBtn) addBtn.disabled=isTech;
+  const maintenanceEl=$("maintenanceId");
+  if(maintenanceEl) maintenanceEl.disabled=isTech && Boolean(editingId);
 }
 function selectedTechnician(){
   return findTechnician($("technicianId").value);
@@ -415,6 +423,10 @@ $("form").onsubmit=async e=>{
       throw new Error("Bạn không có quyền phân công hoặc thay đổi kỹ thuật viên.");
     }
     const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
+    if(currentRole()==="TECHNICIAN") {
+      if(!editingId) { setError("Kỹ thuật viên chỉ được xử lý Work Order đã được phân công."); return; }
+      if(newTechnicianId!==String(oldTechnicianId||"")) { setError("Kỹ thuật viên không được thay đổi người được phân công."); return; }
+    }
     const assignmentReason=$("assignmentReason").value.trim();
     if(assignmentChanged && editingId && !assignmentReason){
       throw new Error("Khi thay đổi kỹ thuật viên phải nhập lý do.");
@@ -483,11 +495,23 @@ $("form").onsubmit=async e=>{
 async function load(){
   $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
   try{
-    [maintenances,workOrders,technicians]=await Promise.all([
-      getMaintenances(),
-      getWorkOrders(),
-      getTechnicians()
-    ]);
+    if(currentRole()==="TECHNICIAN") {
+      const technicianId=String(currentProfile?.technicianId||"").trim();
+      if(!technicianId) throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+      const ownTechnician=await getTechnician(technicianId);
+      if(!ownTechnician) throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
+      [maintenances,workOrders]=await Promise.all([
+        getMaintenances({ technicianId }),
+        getWorkOrders({ technicianId })
+      ]);
+      technicians=[ownTechnician];
+    } else {
+      [maintenances,workOrders,technicians]=await Promise.all([
+        getMaintenances(),
+        getWorkOrders(),
+        getTechnicians()
+      ]);
+    }
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>String(b.createdAt?.toMillis?.()||0)-String(a.createdAt?.toMillis?.()||0));
     render();$("status").textContent=`Đã tải ${workOrders.length} Work Order · ${maintenances.length} phiếu bảo trì`;
