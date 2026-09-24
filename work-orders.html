@@ -115,6 +115,7 @@ tr:hover td{background:#161613}
   </div>
 
   <div id="status" class="status">Đang tải dữ liệu…</div>
+  <div id="workOrderDisplayHint" class="muted" style="margin:10px 0 8px"></div>
   <div class="card"><div class="table-wrap">
     <table>
       <thead><tr>
@@ -296,7 +297,7 @@ function isTech(){return currentRole()==="TECHNICIAN";}
 function render(){
   const q=$("search").value.trim().toLowerCase();
   const fs=$("filterStatus").value,fp=$("filterPriority").value;
-  const rows=workOrders.filter(w=>{
+  const filteredRows=workOrders.filter(w=>{
     const hay=[
       w.workOrderNo,w.sourceNote,w.maintenanceTicketNo,w.customerName,w.buildingName,
       w.elevatorName,w.elevatorAssetCode,w.issueTitle,w.problemDescription
@@ -304,10 +305,22 @@ function render(){
     return (!q||hay.includes(q))&&(!fs||w.status===fs)&&(!fp||w.priority===fp);
   });
 
+  // Mặc định chỉ hiển thị 5 Work Order gần nhất.
+  // Khi người dùng tìm kiếm/lọc, hiển thị toàn bộ kết quả phù hợp.
+  const isSearching=Boolean(q||fs||fp);
+  const rows=isSearching?filteredRows:filteredRows.slice(0,5);
+
   $("kTotal").textContent=workOrders.length;
   $("kProgress").textContent=workOrders.filter(w=>["assigned","in_progress","waiting_parts"].includes(w.status)).length;
   $("kDone").textContent=workOrders.filter(w=>w.status==="completed").length;
   $("kUrgent").textContent=workOrders.filter(w=>w.priority==="urgent").length;
+
+  const displayHint=$("workOrderDisplayHint");
+  if(displayHint){
+    displayHint.textContent=isSearching
+      ? `Đang hiển thị ${rows.length} kết quả phù hợp`
+      : `Hiển thị 5 Work Order gần nhất · Còn ${Math.max(0,workOrders.length-5)} Work Order, dùng Tìm kiếm để xem`;
+  }
 
   $("rows").innerHTML=rows.length?rows.map(w=>`
     <tr>
@@ -697,8 +710,10 @@ $("form").onsubmit=async e=>{
   try{
     if(isTech()&&requestMode&&!editingId){
       await createWorkOrderRequest();
-      close();await load();
-      $("status").className="status ok";$("status").textContent="Đã gửi yêu cầu tạo Work Order cho ADMIN/MANAGER.";
+      close();
+      $("status").className="status ok";
+      $("status").textContent="Đã gửi yêu cầu tạo Work Order cho ADMIN/MANAGER.";
+      void load();
       return;
     }
 
@@ -759,35 +774,38 @@ $("form").onsubmit=async e=>{
       await updateWorkOrder(editingId,data);
     }else{
       created=await createWorkOrder(data);
-      const activeRequestId=window.__activeWorkOrderRequestId||"";
-      if(activeRequestId&&created?.id){
-        await updateDoc(doc(db,"workOrderRequests",activeRequestId),{
+    }
+
+    // Các ghi log / cập nhật request không nên làm người dùng phải chờ
+    // toàn bộ danh sách Work Order tải lại trước khi thấy kết quả lưu.
+    const postSaveTasks=[];
+    const activeRequestId=window.__activeWorkOrderRequestId||"";
+    if(activeRequestId&&created?.id){
+      postSaveTasks.push(
+        updateDoc(doc(db,"workOrderRequests",activeRequestId),{
           status:"CONVERTED",createdWorkOrderId:created.id,createdWorkOrderNo:created.workOrderNo||"",
           processedByUid:authUser?.uid||"",processedAt:serverTimestamp(),updatedAt:serverTimestamp()
-        });
-        window.__activeWorkOrderRequestId="";
-      }
-      if(assignmentChanged&&created?.id){
-        await writeTechnicianAssignmentAudit({
-          entityType:"workOrder",entityId:created.id,
-          fromTechnicianId:"",fromTechnicianName:"",
+        })
+      );
+    }
+    if(assignmentChanged&&(created?.id||editingId)){
+      postSaveTasks.push(
+        writeTechnicianAssignmentAudit({
+          entityType:"workOrder",entityId:created?.id||editingId,
+          fromTechnicianId:editingId?oldTechnicianId:"",fromTechnicianName:editingId?oldTechnicianName:"",
           toTechnicianId:newTechnicianId,toTechnicianName:newTechnicianName,
           reason:assignmentReason
-        });
-      }
+        })
+      );
     }
+    if(postSaveTasks.length) await Promise.all(postSaveTasks);
+    window.__activeWorkOrderRequestId="";
 
-    if(editingId&&assignmentChanged){
-      await writeTechnicianAssignmentAudit({
-        entityType:"workOrder",entityId:editingId,
-        fromTechnicianId:oldTechnicianId,fromTechnicianName:oldTechnicianName,
-        toTechnicianId:newTechnicianId,toTechnicianName:newTechnicianName,
-        reason:assignmentReason
-      });
-    }
-
-    close();await load();
-    $("status").className="status ok";$("status").textContent="Đã lưu Work Order.";
+    close();
+    $("status").className="status ok";
+    $("status").textContent="Đã lưu Work Order.";
+    // Tải lại danh sách ở background, không giữ nút Lưu ở trạng thái chờ.
+    void load();
   }catch(err){
     $("err").className="err show";$("err").textContent=err?.message||String(err);
   }finally{
@@ -798,22 +816,28 @@ $("form").onsubmit=async e=>{
 async function load(){
   $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
   try{
-    customers=await getCustomers();
-
     if(isTech()){
       const technicianId=String(currentProfile?.technicianId||"").trim();
       if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
-      const own=await getTechnician(technicianId);
+      const ownPromise=getTechnician(technicianId);
+      const dataPromise=Promise.all([
+        getCustomers(),
+        getMaintenances({technicianId}),
+        getWorkOrders({technicianId})
+      ]);
+      const [own,[customerData,maintenanceData,workOrderData]]=await Promise.all([ownPromise,dataPromise]);
       if(!own)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
-      [maintenances,workOrders]=await Promise.all([getMaintenances({technicianId}),getWorkOrders({technicianId})]);
-      technicians=[own];
+      customers=customerData;maintenances=maintenanceData;workOrders=workOrderData;technicians=[own];
     }else{
-      [maintenances,workOrders,technicians]=await Promise.all([getMaintenances(),getWorkOrders(),getTechnicians()]);
+      [customers,maintenances,workOrders,technicians]=await Promise.all([
+        getCustomers(),getMaintenances(),getWorkOrders(),getTechnicians()
+      ]);
     }
 
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
-    render();await loadWorkOrderRequests();
+    render();
+    void loadWorkOrderRequests();
     $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${customers.length} khách hàng`;
   }catch(err){
     $("status").className="status error";$("status").textContent=err?.message||String(err);
