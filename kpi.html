@@ -135,14 +135,26 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
-import {
-  calculateTechnicianKpi,
-  getAllWorkOrdersForKpi,
-  getWorkOrdersForTechnician,
-  createMonthlyPeriod,
-  createQuarterPeriod
-} from "./js/kpi-v1.js";
-import { getTechnicians, getTechnician } from "./js/core/firestore-v1-technician-v1.js";
+let calculateTechnicianKpi, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, createMonthlyPeriod, createQuarterPeriod;
+let getTechnicians, getTechnician;
+
+async function loadKpiModules(){
+  try{
+    const kpi = await import("./js/kpi-v1.js?v=20260924-2");
+    calculateTechnicianKpi = kpi.calculateTechnicianKpi;
+    getAllWorkOrdersForKpi = kpi.getAllWorkOrdersForKpi;
+    getWorkOrdersForTechnician = kpi.getWorkOrdersForTechnician;
+    createMonthlyPeriod = kpi.createMonthlyPeriod;
+    createQuarterPeriod = kpi.createQuarterPeriod;
+
+    const tech = await import("./js/core/firestore-v1-technician-v1.js?v=20260924-2");
+    getTechnicians = tech.getTechnicians;
+    getTechnician = tech.getTechnician;
+  }catch(error){
+    console.error("KPI MODULE LOAD ERROR:", error);
+    throw new Error("Không tải được module KPI. Kiểm tra file /js/kpi-v1.js và đường dẫn /js/core/firebase.js. Chi tiết: " + (error?.message || error));
+  }
+}
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -305,6 +317,7 @@ async function refresh(){
 
 async function init(user){
   state.user=user;
+  await loadKpiModules();
   const profileSnap=await getDoc(doc(db,"users",user.uid));
   if(!profileSnap.exists())throw new Error("Không tồn tại users/{uid}.");
   state.profile=profileSnap.data()||{};
