@@ -716,8 +716,12 @@ export async function getMaintenance(maintenanceId){
   return { id:snapshot.id, ...snapshot.data() };
 }
 
-export async function getMaintenances(){
-  const snapshot = await getDocs(collection(db, COLLECTIONS.MAINTENANCE));
+export async function getMaintenances(options = {}) {
+  const technicianId = String(options?.technicianId || "").trim();
+  const source = technicianId
+    ? query(collection(db, COLLECTIONS.MAINTENANCE), where("technicianId", "==", technicianId))
+    : collection(db, COLLECTIONS.MAINTENANCE);
+  const snapshot = await getDocs(source);
   return snapshot.docs.map(item => ({ id:item.id, ...item.data() }));
 }
 
@@ -998,10 +1002,12 @@ export async function getWorkOrder(workOrderId){
   };
 }
 
-export async function getWorkOrders(){
-  const snapshot = await getDocs(
-    collection(db, COLLECTIONS.WORK_ORDERS)
-  );
+export async function getWorkOrders(options = {}) {
+  const technicianId = String(options?.technicianId || "").trim();
+  const source = technicianId
+    ? query(collection(db, COLLECTIONS.WORK_ORDERS), where("assignedTechnicianId", "==", technicianId))
+    : collection(db, COLLECTIONS.WORK_ORDERS);
+  const snapshot = await getDocs(source);
 
   return snapshot.docs.map(item => ({
     id:item.id,
