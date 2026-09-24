@@ -417,23 +417,19 @@ service cloud.firestore {
              == resource.data.contractId
           && request.resource.data.maintenanceId
              == resource.data.maintenanceId
+          && request.resource.data.status in [
+            'in_progress',
+            'completed'
+          ]
+          && (
+            resource.data.status != 'completed'
+            || request.resource.data.status == 'completed'
+          )
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'type',
-            'priority',
             'status',
-            'issueTitle',
-            'problemDescription',
-            'openedDate',
-            'dueDate',
             'completedDate',
-            'cause',
             'resolution',
-            'materials',
-            'laborCost',
-            'materialCost',
-            'totalCost',
-            'attachmentUrls',
-            'note',
+            'completedAt',
             'updatedAt'
           ])
         );
