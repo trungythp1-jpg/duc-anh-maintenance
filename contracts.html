@@ -363,6 +363,25 @@ body{
 }
 .contract-search:focus{outline:none;border-color:var(--da-gold);box-shadow:0 0 0 2px rgba(214,168,79,.10)}
 .contract-list-note{color:var(--da-muted);font-size:12px}
+.contract-filter{
+  min-height:42px;
+  padding:9px 11px;
+  color:var(--da-text)!important;
+  background:#171717!important;
+  border:1px solid #3a3a3a!important;
+  border-radius:9px;
+  font:inherit;
+  outline:none;
+}
+.contract-filter:focus{
+  border-color:var(--da-gold)!important;
+  box-shadow:0 0 0 2px rgba(217,173,50,.10);
+}
+.contract-clear-filter{
+  min-height:42px;
+  padding:9px 13px;
+  white-space:nowrap;
+}
 
 @media(max-width:1100px){
   .contract-page{padding:18px}
@@ -401,6 +420,8 @@ body{
   .contract-kpi-value{font-size:23px}
   .contract-list-tools{align-items:stretch;flex-direction:column}
   .contract-search{width:100%;max-width:none;min-width:0}
+  .contract-filter,
+  .contract-clear-filter{width:100%}
   .contract-list-note{white-space:normal}
   .table-wrap{overflow-x:auto}
   .contract-table{min-width:850px}
@@ -521,6 +542,35 @@ body{
     <input id="contractSearch" class="contract-search" type="search"
       placeholder="Tìm mã HĐ, tên hợp đồng, khách hàng, tòa nhà, thang máy..."
       autocomplete="off">
+
+    <select id="contractStatusFilter" class="contract-filter">
+      <option value="">Tất cả trạng thái</option>
+      <option value="active">Đang hiệu lực</option>
+      <option value="pending">Chờ hiệu lực</option>
+      <option value="expired">Hết hạn</option>
+    </select>
+
+    <select id="contractMaintenanceFilter" class="contract-filter">
+      <option value="">Tất cả bảo trì</option>
+      <option value="yes">Có bảo trì</option>
+      <option value="no">Không bảo trì</option>
+    </select>
+
+    <select id="contractCycleFilter" class="contract-filter">
+      <option value="">Tất cả chu kỳ</option>
+      <option value="monthly">1 tháng/lần</option>
+      <option value="bi_monthly">2 tháng/lần</option>
+      <option value="quarterly">3 tháng/lần</option>
+    </select>
+
+    <select id="contractYearFilter" class="contract-filter">
+      <option value="">Tất cả năm</option>
+    </select>
+
+    <button id="clearContractFilters" class="secondary-button contract-clear-filter" type="button">
+      Xóa lọc
+    </button>
+
     <div id="contractListNote" class="contract-list-note">Hiển thị 5 hợp đồng gần nhất</div>
   </div>
 
@@ -1114,6 +1164,7 @@ async function loadContracts(){
   $("pageStatus").textContent = "Đang tải hợp đồng...";
   try{
     contracts=await getContracts();
+    populateContractYearFilter();
     render();
     $("pageStatus").textContent =
       `${contracts.length} hợp đồng`;
@@ -1467,6 +1518,72 @@ function contractSearchHaystack(c){
   ].join(" ").toLowerCase();
 }
 
+function populateContractYearFilter(){
+  const select=$("contractYearFilter");
+  if(!select) return;
+
+  const years=new Set();
+
+  contracts.forEach(c=>{
+    [c.signedDate,c.startDate,c.endDate].forEach(value=>{
+      const match=String(value||"").match(/^(\d{4})-/);
+      if(match) years.add(match[1]);
+    });
+  });
+
+  const current=select.value;
+  select.innerHTML=
+    '<option value="">Tất cả năm</option>'+
+    [...years]
+      .sort((a,b)=>Number(b)-Number(a))
+      .map(year=>`<option value="${esc(year)}">${esc(year)}</option>`)
+      .join("");
+
+  if(years.has(current)) select.value=current;
+}
+
+function contractMatchesFilters(c, query){
+  if(query && !contractSearchHaystack(c).includes(query)) return false;
+
+  const statusFilter=$("contractStatusFilter")?.value || "";
+  if(statusFilter && getContractEffectiveStatus(c)!==statusFilter) return false;
+
+  const maintenanceFilter=$("contractMaintenanceFilter")?.value || "";
+  if(maintenanceFilter){
+    const enabled =
+      c.maintenanceEnabled==="yes" ||
+      c.maintenanceEnabled===true ||
+      c.maintenanceEnabled==="true";
+    if((enabled ? "yes" : "no")!==maintenanceFilter) return false;
+  }
+
+  const cycleFilter=$("contractCycleFilter")?.value || "";
+  if(cycleFilter && String(c.maintenanceCycle||"")!==cycleFilter) return false;
+
+  const yearFilter=$("contractYearFilter")?.value || "";
+  if(yearFilter){
+    const haystack=[
+      c.signedDate,
+      c.startDate,
+      c.endDate
+    ].map(v=>String(v||""));
+
+    if(!haystack.some(v=>v.startsWith(`${yearFilter}-`))) return false;
+  }
+
+  return true;
+}
+
+function hasContractFilters(){
+  return Boolean(
+    String($("contractSearch")?.value||"").trim() ||
+    $("contractStatusFilter")?.value ||
+    $("contractMaintenanceFilter")?.value ||
+    $("contractCycleFilter")?.value ||
+    $("contractYearFilter")?.value
+  );
+}
+
 function render(){
   const rows=$("contractRows");
   const query=String($("contractSearch")?.value||"").trim().toLowerCase();
@@ -1489,8 +1606,9 @@ function render(){
     return byCreated!==0 ? byCreated : String(b.code||"").localeCompare(String(a.code||""),"vi");
   });
 
-  const filtered=query
-    ? sortedContracts.filter(c=>contractSearchHaystack(c).includes(query))
+  const filtering=hasContractFilters();
+  const filtered=filtering
+    ? sortedContracts.filter(c=>contractMatchesFilters(c,query))
     : sortedContracts.slice(0,5);
 
   $("emptyState").style.display=filtered.length?"none":"block";
@@ -1501,10 +1619,10 @@ function render(){
     return;
   }
 
-  $("contractListNote").textContent=query
+  $("contractListNote").textContent=filtering
     ? `Tìm thấy ${filtered.length} / ${contracts.length} hợp đồng`
     : contracts.length>5
-      ? `Hiển thị 5 hợp đồng gần nhất · còn ${contracts.length-5} hợp đồng, dùng Tìm kiếm để xem`
+      ? `Hiển thị 5 hợp đồng gần nhất · còn ${contracts.length-5} hợp đồng, dùng Tìm kiếm hoặc Lọc để xem`
       : `Hiển thị ${contracts.length} hợp đồng gần nhất`;
 
   rows.innerHTML=filtered.map(c=>{
@@ -1562,6 +1680,20 @@ async function openEdit(id){
 
 $("addContract").addEventListener("click",openAdd);
 $("contractSearch").addEventListener("input",render);
+
+["contractStatusFilter","contractMaintenanceFilter","contractCycleFilter","contractYearFilter"]
+  .forEach(id=>{
+    $(id).addEventListener("change",render);
+  });
+
+$("clearContractFilters").addEventListener("click",()=>{
+  $("contractSearch").value="";
+  $("contractStatusFilter").value="";
+  $("contractMaintenanceFilter").value="";
+  $("contractCycleFilter").value="";
+  $("contractYearFilter").value="";
+  render();
+});
 
 $("closeDetailModal").addEventListener("click",closeContractDetail);
 $("closeDetailButton").addEventListener("click",closeContractDetail);
