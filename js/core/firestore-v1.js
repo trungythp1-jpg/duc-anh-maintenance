@@ -1058,6 +1058,11 @@ async function assertWorkOrderCooldown(
       const age = now - createdAt.toMillis();
 
       if(age >= 0 && age < WORK_ORDER_COOLDOWN_MS){
+        // Cooldown chỉ áp dụng cho cùng thang + cùng nội dung công việc.
+        // Không chặn hai Work Order khác nhau phát sinh liên tiếp trên cùng thang.
+        const existingFingerprint = String(data?.issueFingerprint || "");
+        if(existingFingerprint !== issueFingerprint) continue;
+
         const workOrderNo = data.workOrderNo || item.id;
         const remaining = Math.max(
           1,
@@ -1066,7 +1071,7 @@ async function assertWorkOrderCooldown(
 
         throw new Error(
           `Phiếu công việc ${workOrderNo} vừa được tạo. ` +
-          `Vui lòng chờ khoảng ${remaining} phút trước khi tạo thêm Work Order tương tự cho cùng thang máy.`
+          `Vui lòng chờ khoảng ${remaining} phút trước khi tạo lại Work Order tương tự cho cùng thang máy.`
         );
       }
     }
