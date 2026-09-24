@@ -174,7 +174,7 @@ async function loadFirebaseConfigDirect(){
    */
   let match = source.match(/(?:export\\s+)?const\\s+firebaseConfig\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;/);
   if(!match){
-    match = source.match(/initializeApp\\s*\\(\\s*(\\{[\\s\\S]*?\\})\\s*\\)/);
+    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
   }
   if(!match){
     throw new Error(
@@ -444,11 +444,12 @@ async function startKpiV4(){
     const user = await new Promise((resolve,reject)=>{
       let settled=false;
       let unsubscribe=null;
+      let timer=null;
 
       const finish=value=>{
         if(settled)return;
         settled=true;
-        clearTimeout(timer);
+        if(timer) clearTimeout(timer);
         try{unsubscribe?.()}catch{}
         resolve(value);
       };
@@ -459,7 +460,7 @@ async function startKpiV4(){
         error=>{
           if(settled)return;
           settled=true;
-          clearTimeout(timer);
+          if(timer) clearTimeout(timer);
           try{unsubscribe?.()}catch{}
           reject(error);
         }
