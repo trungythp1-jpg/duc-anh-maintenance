@@ -132,11 +132,84 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 </main>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "./js/core/firebase.js";
+/*
+ * KPI V4 — Firebase bootstrap độc lập
+ * Không import ./js/core/firebase.js ở đầu trang.
+ * V4 đọc firebase.js như text -> lấy firebaseConfig -> tự khởi tạo
+ * Firebase Auth + Firestore. Nhờ vậy lỗi của core module không thể
+ * làm trang KPI treo vô hạn ở màn hình xác thực.
+ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+let auth = null;
+let db = null;
 let calculateTechnicianKpi, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, createMonthlyPeriod, createQuarterPeriod;
 let getTechnicians, getTechnician;
+
+async function loadFirebaseConfigDirect(){
+  const url = "./js/core/firebase.js?v=20260924-kpi-v4";
+  const response = await fetch(url, {cache:"no-store"});
+  if(!response.ok){
+    throw new Error(`Không đọc được ${url} (HTTP ${response.status}).`);
+  }
+
+  const source = await response.text();
+
+  /*
+   * Hỗ trợ dạng:
+   * export const firebaseConfig = {...};
+   * const firebaseConfig = {...};
+   * initializeApp({...});
+   */
+  let match = source.match(/(?:export\\s+)?const\\s+firebaseConfig\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;/);
+  if(!match){
+    match = source.match(/initializeApp\\s*\\(\\s*(\\{[\\s\\S]*?\\})\\s*\\)/);
+  }
+  if(!match){
+    throw new Error(
+      "Đã đọc được firebase.js nhưng không tìm thấy firebaseConfig. " +
+      "Hãy kiểm tra file /js/core/firebase.js."
+    );
+  }
+
+  let config;
+  try{
+    // firebaseConfig là client-side config, không phải service-account secret.
+    config = Function(`"use strict"; return (${match[1]});`)();
+  }catch(error){
+    throw new Error("firebaseConfig trong /js/core/firebase.js không hợp lệ: " + (error?.message || error));
+  }
+
+  const required = ["apiKey","authDomain","projectId","appId"];
+  const missing = required.filter(key => !config?.[key]);
+  if(missing.length){
+    throw new Error("firebaseConfig thiếu: " + missing.join(", "));
+  }
+
+  return config;
+}
+
+async function bootstrapFirebaseDirect(){
+  const config = await loadFirebaseConfigDirect();
+  const app = initializeApp(config, "duc-anh-kpi-v4");
+  auth = getAuth(app);
+  db = getFirestore(app);
+
+  await setPersistence(auth, browserLocalPersistence);
+
+  return {auth, db};
+}
 
 async function loadKpiModules(){
   try{
@@ -341,58 +414,60 @@ $("technicianRows").addEventListener("click",e=>{
 buildPeriodOptions();
 
 /*
- * KPI V3 — AUTH BOOT ROBUST
- * - Ưu tiên auth.currentUser nếu Firebase đã khôi phục phiên.
- * - Lắng nghe onAuthStateChanged nếu phiên đang được khôi phục.
- * - Timeout 8 giây để không treo vô hạn.
- * - Nếu chưa đăng nhập, cho phép mở login.html.
- * - Nếu init lỗi, hiển thị lỗi ngay trên auth gate.
+ * KPI V4 AUTH FLOW
+ * 1. Bootstrap Firebase trực tiếp từ /js/core/firebase.js.
+ * 2. Hiển thị lỗi ngay nếu bootstrap thất bại.
+ * 3. Chờ Auth tối đa 8 giây.
+ * 4. Khi có user mới đọc users/{uid}.
+ * 5. Sau khi Auth + profile OK mới tải module KPI.
  */
-let authBootTimer = null;
-
-function showAuthMessage(title, message, showLogin=true){
+function showFatalAuthError(title, message){
   const gate = $("authGate");
   gate.classList.remove("hidden");
   gate.innerHTML = `
     <div class="auth-box">
       <h2>${esc(title)}</h2>
-      <div class="muted" style="line-height:1.6;margin-bottom:18px">${esc(message)}</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        ${showLogin ? '<a href="./login.html" class="btn primary" style="text-decoration:none;display:inline-block">Mở trang đăng nhập</a>' : ''}
-        <button class="btn" id="authRetryBtn" type="button">↻ Thử lại</button>
-      </div>
+      <div class="muted" style="line-height:1.65;margin-bottom:18px">${esc(message)}</div>
+      <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
     </div>`;
-  $("authRetryBtn")?.addEventListener("click",()=>location.reload());
+  $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
 }
 
-async function startAuthBoot(){
+async function startKpiV4(){
   try{
-    if(auth.currentUser){
-      await init(auth.currentUser);
-      return;
-    }
+    setStatus("Đang khởi tạo Firebase trực tiếp…");
+
+    await bootstrapFirebaseDirect();
+
+    setStatus("Firebase đã khởi tạo · Đang xác thực…");
 
     const user = await new Promise((resolve,reject)=>{
-      let settled = false;
-      let unsubscribe = null;
+      let settled=false;
+      let unsubscribe=null;
 
-      const finish = value => {
-        if(settled) return;
-        settled = true;
-        if(authBootTimer) clearTimeout(authBootTimer);
+      const finish=value=>{
+        if(settled)return;
+        settled=true;
+        clearTimeout(timer);
+        try{unsubscribe?.()}catch{}
         resolve(value);
       };
 
-      unsubscribe = onAuthStateChanged(auth, value=>{
-        try{unsubscribe?.()}catch{}
-        finish(value || null);
-      }, error=>{
-        try{unsubscribe?.()}catch{}
-        if(authBootTimer) clearTimeout(authBootTimer);
-        reject(error);
-      });
+      unsubscribe = onAuthStateChanged(
+        auth,
+        value=>finish(value || null),
+        error=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          try{unsubscribe?.()}catch{}
+          reject(error);
+        }
+      );
 
-      authBootTimer = setTimeout(()=>{
+      const timer=setTimeout(()=>{
+        if(settled)return;
+        settled=true;
         try{unsubscribe?.()}catch{}
         reject(new Error("Firebase Auth không phản hồi sau 8 giây."));
       },8000);
@@ -400,28 +475,49 @@ async function startAuthBoot(){
 
     if(!user){
       setStatus("Chưa có phiên đăng nhập Firebase.","error");
-      showAuthMessage(
+      showFatalAuthError(
         "Chưa đăng nhập",
-        "Firebase đã xác nhận trình duyệt này chưa có phiên đăng nhập. Hãy đăng nhập lại rồi mở KPI.",
-        true
+        "Firebase đã xác nhận trình duyệt hiện không có phiên đăng nhập. Hãy quay lại trang đăng nhập của Đức Anh Maintenance rồi mở lại KPI."
       );
       return;
     }
 
-    await init(user);
+    setStatus(`Đã xác thực · ${user.email || user.uid}`);
 
-  }catch(e){
-    console.error("KPI_AUTH_BOOT_ERROR:",e);
-    setStatus(e?.message||"Không thể khởi tạo KPI.","error");
-    showAuthMessage(
-      "Không thể khởi tạo KPI",
-      e?.message || "Đã xảy ra lỗi khi kết nối Firebase. Hãy thử lại.",
-      false
-    );
+    // Đọc users/{uid} bằng Firestore được khởi tạo độc lập.
+    const profileSnap = await getDoc(doc(db,"users",user.uid));
+    if(!profileSnap.exists()){
+      throw new Error("Không tồn tại hồ sơ users/{uid} cho tài khoản này.");
+    }
+
+    state.user=user;
+    state.profile=profileSnap.data() || {};
+
+    const r=role();
+    if(!["ADMIN","MANAGER","TECHNICIAN"].includes(r)){
+      throw new Error(`Role ${r || "(trống)"} không được phép xem KPI.`);
+    }
+
+    if(r==="TECHNICIAN" && !state.profile.technicianId){
+      throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId.");
+    }
+
+    // Chỉ sau khi Auth + users/{uid} thành công mới tải KPI modules.
+    await loadKpiModules();
+
+    await loadTechnicians();
+    await refresh();
+
+    $("authGate").classList.add("hidden");
+
+  }catch(error){
+    console.error("KPI V4 BOOT ERROR:",error);
+    setStatus(error?.message || "Không thể khởi tạo KPI.","error");
+    showFatalAuthError("KPI không thể khởi tạo", error?.message || "Lỗi không xác định.");
   }
 }
 
-startAuthBoot();
+startKpiV4();
 </script>
 </body>
 </html>
