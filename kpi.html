@@ -339,11 +339,89 @@ $("technicianRows").addEventListener("click",e=>{
 });
 
 buildPeriodOptions();
-onAuthStateChanged(auth,async user=>{
-  if(!user){setStatus("Chưa đăng nhập Firebase.","error");return}
-  try{await init(user)}
-  catch(e){console.error(e);setStatus(e?.message||"Không thể khởi tạo KPI.","error");$("authGate").classList.add("hidden")}
-});
+
+/*
+ * KPI V3 — AUTH BOOT ROBUST
+ * - Ưu tiên auth.currentUser nếu Firebase đã khôi phục phiên.
+ * - Lắng nghe onAuthStateChanged nếu phiên đang được khôi phục.
+ * - Timeout 8 giây để không treo vô hạn.
+ * - Nếu chưa đăng nhập, cho phép mở login.html.
+ * - Nếu init lỗi, hiển thị lỗi ngay trên auth gate.
+ */
+let authBootTimer = null;
+
+function showAuthMessage(title, message, showLogin=true){
+  const gate = $("authGate");
+  gate.classList.remove("hidden");
+  gate.innerHTML = `
+    <div class="auth-box">
+      <h2>${esc(title)}</h2>
+      <div class="muted" style="line-height:1.6;margin-bottom:18px">${esc(message)}</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        ${showLogin ? '<a href="./login.html" class="btn primary" style="text-decoration:none;display:inline-block">Mở trang đăng nhập</a>' : ''}
+        <button class="btn" id="authRetryBtn" type="button">↻ Thử lại</button>
+      </div>
+    </div>`;
+  $("authRetryBtn")?.addEventListener("click",()=>location.reload());
+}
+
+async function startAuthBoot(){
+  try{
+    if(auth.currentUser){
+      await init(auth.currentUser);
+      return;
+    }
+
+    const user = await new Promise((resolve,reject)=>{
+      let settled = false;
+      let unsubscribe = null;
+
+      const finish = value => {
+        if(settled) return;
+        settled = true;
+        if(authBootTimer) clearTimeout(authBootTimer);
+        resolve(value);
+      };
+
+      unsubscribe = onAuthStateChanged(auth, value=>{
+        try{unsubscribe?.()}catch{}
+        finish(value || null);
+      }, error=>{
+        try{unsubscribe?.()}catch{}
+        if(authBootTimer) clearTimeout(authBootTimer);
+        reject(error);
+      });
+
+      authBootTimer = setTimeout(()=>{
+        try{unsubscribe?.()}catch{}
+        reject(new Error("Firebase Auth không phản hồi sau 8 giây."));
+      },8000);
+    });
+
+    if(!user){
+      setStatus("Chưa có phiên đăng nhập Firebase.","error");
+      showAuthMessage(
+        "Chưa đăng nhập",
+        "Firebase đã xác nhận trình duyệt này chưa có phiên đăng nhập. Hãy đăng nhập lại rồi mở KPI.",
+        true
+      );
+      return;
+    }
+
+    await init(user);
+
+  }catch(e){
+    console.error("KPI_AUTH_BOOT_ERROR:",e);
+    setStatus(e?.message||"Không thể khởi tạo KPI.","error");
+    showAuthMessage(
+      "Không thể khởi tạo KPI",
+      e?.message || "Đã xảy ra lỗi khi kết nối Firebase. Hãy thử lại.",
+      false
+    );
+  }
+}
+
+startAuthBoot();
 </script>
 </body>
 </html>
