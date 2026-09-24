@@ -1753,6 +1753,50 @@ export async function updateWorkOrder(workOrderId, data){
   return getWorkOrder(workOrderId);
 }
 
+export async function reportWorkOrderByTechnician(workOrderId, status) {
+  requireValue(workOrderId, "workOrderId");
+
+  if(!["in_progress", "completed"].includes(status)){
+    throw new Error("Trạng thái báo cáo KTV không hợp lệ.");
+  }
+
+  const workOrderRef = doc(
+    db,
+    COLLECTIONS.WORK_ORDERS,
+    workOrderId
+  );
+
+  const snapshot = await getDoc(workOrderRef);
+  if(!snapshot.exists()){
+    throw new Error("Không tìm thấy Work Order.");
+  }
+
+  const existing = snapshot.data() || {};
+
+  const isCompleted = status === "completed";
+  const today = new Date().toISOString().slice(0,10);
+
+  const payload = {
+    status,
+    completedDate: isCompleted ? (existing.completedDate || today) : "",
+    resolution: isCompleted
+      ? (existing.resolution || "KTV báo cáo đã hoàn thành")
+      : "",
+    completedAt: isCompleted
+      ? (existing.completedAt || serverTimestamp())
+      : null,
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(workOrderRef, payload);
+
+  return {
+    id: workOrderId,
+    ...existing,
+    ...payload
+  };
+}
+
 /* =========================
    GENERIC HELPERS
 ========================= */
