@@ -134,6 +134,12 @@ body{
 }
 .data-table tr:hover td{background:#161613!important}
 .data-table tr:last-child td{border-bottom:0}
+.data-table td strong{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
+.data-table td .muted{display:block;margin-top:4px;line-height:1.3}
+.data-table td .cell-sub{display:block;margin-top:4px;color:var(--da-muted)!important;font-size:12px;line-height:1.3}
+.data-table td .cell-primary{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
+.data-table td .cell-gold{display:block;color:var(--da-gold-light)!important;font-weight:700;line-height:1.35}
+.data-table td .date-cell{display:block;white-space:nowrap;font-weight:600;color:var(--da-text)!important}
 .link-btn{
   border:0;background:none;padding:0;cursor:pointer;
   color:var(--da-text)!important;font:inherit;text-align:left
@@ -287,6 +293,8 @@ select, input, textarea{color-scheme:dark}
 input[type="date"]::-webkit-calendar-picker-indicator{filter:sepia(1) saturate(3) hue-rotate(355deg)}
 input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid #302b23;background:#11110f}.pagination-info{font-size:13px;color:var(--da-muted)}.pagination-actions{display:flex;gap:8px}.pagination .btn{min-width:86px}
+@media(max-width:520px){.pagination{flex-direction:column;align-items:stretch}.pagination-actions{width:100%}.pagination-actions .btn{flex:1}}
 @media(max-width:850px){
   .kpis{grid-template-columns:repeat(2,1fr)}
   .toolbar{grid-template-columns:1fr 1fr}
@@ -339,7 +347,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.18-iphone-save-fix">
+<body data-maintenance-build="v1.20-display-readability">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -369,7 +377,8 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
       <div class="diag-user" id="diagUser">Đang kiểm tra…</div>
       <div class="permission-list" id="permissionList"></div>
     </div>
-    <div class="table-wrap" style="border-top:1px solid #302b23"><table class="data-table"><thead><tr><th>Phiếu</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Hợp đồng / Kỳ</th><th>Lịch</th><th>Trạng thái</th><th>Kết quả</th><th>Work Order</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="table-wrap" style="border-top:1px solid #302b23"><table class="data-table"><thead><tr><th>Phiếu / KTV</th><th>Khách hàng / Tòa nhà</th><th>Thang máy / Mã thang</th><th>Hợp đồng / Kỳ</th><th>Ngày dự kiến</th><th>Trạng thái</th><th>Kết quả</th><th>Work Order</th><th>Thao tác</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="pagination" id="pagination" style="display:none"><div class="pagination-info" id="paginationInfo">—</div><div class="pagination-actions"><button class="btn" id="prevPage" type="button">‹ Trước</button><button class="btn" id="nextPage" type="button">Sau ›</button></div></div>
     <div class="empty" id="empty">Chưa có phiếu bảo trì.</div>
   </div>
 </main>
@@ -430,8 +439,11 @@ const checklistItems=[
 ];
 let customers=[],buildings=[],elevators=[],contracts=[],maintenances=[],technicians=[];
 let editingId=null,authUser=null,currentProfile=null;
+let maintenancePage=1;
+const MAINTENANCE_PAGE_SIZE=10;
 
 function parseDate(v){if(!v)return null;const d=new Date(`${v}T00:00:00`);return Number.isNaN(d.getTime())?null:d}
+function localTodayIso(){const d=new Date();const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
 function addMonths(date,months){const d=new Date(date),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+months);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return d}
 function isoDate(d){return d?d.toISOString().slice(0,10):""}
 function fmtDate(v){const d=parseDate(v);return d?d.toLocaleDateString("vi-VN"):"—"}
@@ -593,27 +605,32 @@ function setScheduledFromPeriod(){const opt=$("periodNumber").selectedOptions[0]
 
 function filtered(){const q=$("search").value.trim().toLowerCase(),sf=$("statusFilter").value,yf=$("yearFilter").value,ifv=$("issueFilter").value;return maintenances.filter(m=>{const hay=[m.ticketNo,m.customerName,m.buildingName,m.elevatorName,m.elevatorAssetCode,m.contractCode,m.note].join(" ").toLowerCase();if(q&&!hay.includes(q))return false;if(sf&&m.status!==sf)return false;if(yf&&String((m.scheduledDate||"").slice(0,4))!==yf)return false;if(ifv==="yes"&&!m.issueFound)return false;if(ifv==="no"&&m.issueFound)return false;return true}).sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")))}
 function badge(status){return `<span class="badge ${esc(status)}">${esc(statusText[status]||status||"—")}</span>`}
-function render(){const list=filtered();$("rows").innerHTML=list.map(m=>{const woNo=m.latestWorkOrderNo||"";const woStatus=m.latestWorkOrderStatus||"";const woHtml=woNo?`<div><strong style="color:var(--da-gold-light)">${esc(woNo)}</strong><span class="muted">${esc(statusText[woStatus]||woStatus||"—")}</span></div>`:'<span class="muted">Chưa có</span>';return `<tr><td><button class="link-btn" data-edit="${esc(m.id)}"><strong>${esc(m.ticketNo||"—")}</strong><span>${esc(m.technicianName||"Chưa phân công")}</span></button></td><td><strong>${esc(m.customerName||nameOf(customers,m.customerId))}</strong><span class="muted">${esc(m.buildingName||nameOf(buildings,m.buildingId))}</span></td><td><strong>${esc(m.elevatorName||nameOf(elevators,m.elevatorId))}</strong><span class="muted">${esc(m.elevatorAssetCode||"")}</span></td><td><strong>${esc(m.contractCode||"—")}</strong><span class="muted">Kỳ ${esc(m.periodNumber||"—")}</span></td><td>${esc(fmtDate(m.scheduledDate))}</td><td>${badge(m.status)}</td><td>${m.issueFound?'<span class="badge issue">Cần xử lý</span>':'<span class="badge done">Bình thường</span>'}</td><td>${woHtml}</td><td><button class="btn" data-edit="${esc(m.id)}" type="button">Mở</button></td></tr>`}).join("");$("empty").style.display=list.length?"none":"block";$("kpiTotal").textContent=maintenances.length;$("kpiProgress").textContent=maintenances.filter(x=>["assigned","in_progress"].includes(x.status)).length;$("kpiDone").textContent=maintenances.filter(x=>x.status==="completed").length;$("kpiIssue").textContent=maintenances.filter(x=>x.issueFound).length;renderYears()}
+function render(){const list=filtered();const total=list.length;const totalPages=Math.max(1,Math.ceil(total/MAINTENANCE_PAGE_SIZE));if(maintenancePage>totalPages)maintenancePage=totalPages;const start=(maintenancePage-1)*MAINTENANCE_PAGE_SIZE;const pageItems=list.slice(start,start+MAINTENANCE_PAGE_SIZE);$("rows").innerHTML=pageItems.map(m=>{const woNo=m.latestWorkOrderNo||"";const woStatus=m.latestWorkOrderStatus||"";const woHtml=woNo?`<div><strong class="cell-gold">${esc(woNo)}</strong><span class="cell-sub">${esc(statusText[woStatus]||woStatus||"—")}</span></div>`:'<span class="muted">Chưa có</span>';return `<tr><td><button class="link-btn" data-edit="${esc(m.id)}"><strong>${esc(m.ticketNo||"—")}</strong><span>${esc(m.technicianName||"Chưa phân công")}</span></button></td><td><strong>${esc(m.customerName||nameOf(customers,m.customerId))}</strong><span class="cell-sub">${esc(m.buildingName||nameOf(buildings,m.buildingId))}</span></td><td><strong>${esc(m.elevatorName||nameOf(elevators,m.elevatorId))}</strong><span class="cell-sub">${esc(m.elevatorAssetCode||"Chưa có mã thang")}</span></td><td><strong class="cell-gold">${esc(m.contractCode||"—")}</strong><span class="cell-sub">Kỳ ${esc(m.periodNumber||"—")}</span></td><td><span class="date-cell">${esc(fmtDate(m.scheduledDate))}</span></td><td>${badge(m.status)}</td><td>${m.issueFound?'<span class="badge issue">Cần xử lý</span>':'<span class="badge done">Bình thường</span>'}</td><td>${woHtml}</td><td><button class="btn" data-edit="${esc(m.id)}" type="button">Mở</button></td></tr>`}).join("");$("empty").style.display=total?"none":"block";const pager=$("pagination");pager.style.display=total>MAINTENANCE_PAGE_SIZE?"flex":"none";$("paginationInfo").textContent=total?`Hiển thị ${start+1}–${Math.min(start+MAINTENANCE_PAGE_SIZE,total)} / ${total} phiếu`:"0 phiếu";$("prevPage").disabled=maintenancePage<=1;$("nextPage").disabled=maintenancePage>=totalPages;$("kpiTotal").textContent=maintenances.length;$("kpiProgress").textContent=maintenances.filter(x=>["assigned","in_progress"].includes(x.status)).length;$("kpiDone").textContent=maintenances.filter(x=>x.status==="completed").length;$("kpiIssue").textContent=maintenances.filter(x=>x.issueFound).length;renderYears()}
+
 function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
 
 function resetForm(){
   $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
-  $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").value=isoDate(new Date());renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()
+  $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").min="";$("scheduledDate").value=localTodayIso();renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()
 }
 function openModal(){ $("modal").classList.add("show");document.body.style.overflow="hidden" }
 function closeModal(){ $("modal").classList.remove("show");document.body.style.overflow="";resetForm() }
-async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("assignmentReason").value="";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal();applyTechnicianScopeUI();await loadAssignmentHistory(editingId)}
+async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").min="";$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("assignmentReason").value="";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal();applyTechnicianScopeUI();await loadAssignmentHistory(editingId)}
 
 $("customerId").addEventListener("change",()=>{renderBuildings();renderElevators();renderContracts();renderPeriods();syncRefBox()});
 $("buildingId").addEventListener("change",()=>{renderElevators();renderContracts();renderPeriods();syncRefBox()});
 $("elevatorId").addEventListener("change",()=>{renderContracts();renderPeriods();syncRefBox()});
 $("contractId").addEventListener("change",()=>{renderPeriods()});
 $("periodNumber").addEventListener("change",setScheduledFromPeriod);
-["search","statusFilter","yearFilter","issueFilter"].forEach(id=>$(id).addEventListener("input",render));
+["search","statusFilter","yearFilter","issueFilter"].forEach(id=>$(id).addEventListener("input",()=>{maintenancePage=1;render()}));
+$("prevPage").addEventListener("click",()=>{if(maintenancePage>1){maintenancePage--;render()}});
+$("nextPage").addEventListener("click",()=>{const totalPages=Math.max(1,Math.ceil(filtered().length/MAINTENANCE_PAGE_SIZE));if(maintenancePage<totalPages){maintenancePage++;render()}});
 $("rows").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit)});
 $("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn").addEventListener("click",closeModal);$("cancelBtn").addEventListener("click",closeModal);$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal()});
 
-$("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;
+$("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}
+if(!editingId && $("scheduledDate").value < localTodayIso()){setError(`Không thể tạo phiếu bảo trì có ngày dự kiến trước hôm nay (${fmtDate(localTodayIso())}). Phiếu lịch sử phải được ghi nhận theo dữ liệu lịch sử đã có.`);return}
+if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;
 const selectedTech=selectedTechnician();
 const newTechnicianId=selectedTech?.technicianId||selectedTech?.id||"";
 const newTechnicianName=selectedTech?.name||"";
@@ -738,6 +755,7 @@ async function loadData(){
 
   renderCustomers();
   renderTechnicians();
+  maintenancePage=1;
   render();
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
