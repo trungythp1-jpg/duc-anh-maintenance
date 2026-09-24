@@ -133,7 +133,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
 <script>
 /*
- * KPI V8 — BOOTSTRAP CHẨN ĐOÁN TỪNG BƯỚC
+ * KPI V9 — BOOTSTRAP CHẨN ĐOÁN TỪNG BƯỚC
  *
  * Vấn đề V4:
  *   Chỉ cần một CDN/module import lỗi là toàn bộ <script type="module">
@@ -149,8 +149,8 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
  */
 
 const bootGateText=document.querySelector("#authGate .muted");
-if(bootGateText) bootGateText.textContent="Đang khởi động KPI V8…";
-console.log("KPI V8 SCRIPT STARTED");
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V9…";
+console.log("KPI V9 SCRIPT STARTED");
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -184,7 +184,7 @@ function setStatus(msg,type=""){
   }
   const gateMsg=document.querySelector("#authGate .muted");
   if(gateMsg) gateMsg.textContent=msg;
-  console.log("KPI V8 STATUS:",msg);
+  console.log("KPI V9 STATUS:",msg);
 }
 function showFatalAuthError(title,message){
   const gate=$("authGate");
@@ -196,7 +196,7 @@ function showFatalAuthError(title,message){
       <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
     </div>`;
   $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
-  console.error("KPI V8 FATAL:",title,message);
+  console.error("KPI V9 FATAL:",title,message);
 }
 
 function role(){return String(state.profile?.role||"").trim().toUpperCase()}
@@ -228,7 +228,7 @@ async function bootstrapCoreFirebase(){
   try{
     core=await withTimeout(import("./js/core/firebase.js?v=20260924-kpi-v8"),8000,"Không tải được Firebase core");
   }catch(error){
-    console.error("KPI V8 CORE IMPORT ERROR",error);
+    console.error("KPI V9 CORE IMPORT ERROR",error);
     throw new Error(
       "Không tải được /js/core/firebase.js. " +
       (error?.message||error)
@@ -247,7 +247,7 @@ async function bootstrapCoreFirebase(){
   try{
     authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js?v=20260924-kpi-v8"),8000,"Không tải được Firebase Auth SDK");
   }catch(error){
-    console.error("KPI V8 AUTH SDK IMPORT ERROR",error);
+    console.error("KPI V9 AUTH SDK IMPORT ERROR",error);
     throw new Error(
       "Không tải được Firebase Auth SDK. " +
       (error?.message||error)
@@ -265,7 +265,7 @@ async function bootstrapCoreFirebase(){
   try{
     firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js?v=20260924-kpi-v8"),8000,"Không tải được Firebase Firestore SDK");
   }catch(error){
-    console.error("KPI V8 FIRESTORE SDK IMPORT ERROR",error);
+    console.error("KPI V9 FIRESTORE SDK IMPORT ERROR",error);
     throw new Error(
       "Không tải được Firebase Firestore SDK. " +
       (error?.message||error)
@@ -280,7 +280,7 @@ async function bootstrapCoreFirebase(){
   }
 
   setStatus("Firebase core + Auth + Firestore đã sẵn sàng.");
-  console.log("KPI V8 FIREBASE BOOTSTRAP COMPLETE");
+  console.log("KPI V9 FIREBASE BOOTSTRAP COMPLETE");
 }
 
 /* =========================================================
@@ -310,7 +310,7 @@ async function loadKpiModules(){
     if(typeof getTechnicians!=="function")throw new Error("Thiếu getTechnicians.");
     if(typeof getTechnician!=="function")throw new Error("Thiếu getTechnician.");
   }catch(error){
-    console.error("KPI V8 MODULE LOAD ERROR",error);
+    console.error("KPI V9 MODULE LOAD ERROR",error);
     throw new Error(
       "Firebase đã xác thực nhưng module KPI không tải được. " +
       (error?.message||error)
@@ -503,10 +503,10 @@ async function waitForAuth(){
 }
 
 async function startKpiV8(){
-  setStatus("KPI V8 đang bắt đầu…");
+  setStatus("KPI V9 đang bắt đầu…");
   await new Promise(resolve=>setTimeout(resolve,80));
   try{
-    setStatus("Đang khởi động KPI V8…");
+    setStatus("Đang khởi động KPI V9…");
 
     await bootstrapCoreFirebase();
 
@@ -542,13 +542,14 @@ async function startKpiV8(){
     }
 
     await loadKpiModules();
+    buildPeriodOptions();
     await loadTechnicians();
     await refresh();
 
     $("authGate").classList.add("hidden");
 
   }catch(error){
-    console.error("KPI V8 BOOT ERROR:",error);
+    console.error("KPI V9 BOOT ERROR:",error);
     setStatus(error?.message||"Không thể khởi tạo KPI.","error");
     showFatalAuthError("KPI không thể khởi tạo",error?.message||"Lỗi không xác định.");
   }
@@ -570,10 +571,9 @@ $("technicianRows").addEventListener("click",e=>{
   refresh();
 });
 
-buildPeriodOptions();
-startKpiV8().catch(error=>{
-  console.error("KPI V8 UNHANDLED ERROR",error);
-  showFatalAuthError("KPI V8 gặp lỗi",error?.message||String(error));
+startKpiV9().catch(error=>{
+  console.error("KPI V9 UNHANDLED ERROR",error);
+  showFatalAuthError("KPI V9 gặp lỗi",error?.message||String(error));
 });
 </script>
 </body>
