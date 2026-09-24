@@ -40,7 +40,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .card-head h2{margin:0;color:var(--da-gold-light)!important;font-size:18px}
 .statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
 .statusline.error{color:#ff8176!important}.statusline.ok{color:#75dda5!important}
-.table-wrap{overflow:auto}
+.table-wrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .data-table{width:100%;border-collapse:collapse;min-width:980px}
 .data-table th,.data-table td{padding:11px 12px;border-bottom:1px solid #292722!important;text-align:left;vertical-align:top;font-size:13px}
 .data-table th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--da-gold-light)!important;background:#171714!important}
@@ -80,7 +80,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
   <div class="page-head">
     <div>
       <h1>KPI vận hành</h1>
-      <div class="muted">Theo dõi khối lượng và tiến độ Work Order theo kỳ. Không chấm điểm hay xếp hạng nhân sự.</div>
+      <div class="muted">Theo dõi khối lượng Bảo trì và toàn bộ Work Order được phân công, gồm WO phát sinh từ bảo trì và WO do Admin tiếp nhận từ nguồn khác. Không chấm điểm hay xếp hạng nhân sự.</div>
     </div>
     <button class="btn primary" id="refreshBtn" type="button">↻ Cập nhật</button>
   </div>
@@ -100,30 +100,55 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="label">TỔNG WORK ORDER</div><div class="value" id="kTotal">0</div><div class="sub">Không tính WO đã hủy</div></div>
-    <div class="kpi"><div class="label">HOÀN THÀNH</div><div class="value" id="kDone">0</div><div class="sub" id="kDoneSub">0%</div></div>
-    <div class="kpi"><div class="label">ĐANG XỬ LÝ</div><div class="value" id="kActive">0</div><div class="sub">Chưa hoàn thành</div></div>
-    <div class="kpi"><div class="label">QUÁ HẠN</div><div class="value" id="kOverdue">0</div><div class="sub">Tại thời điểm tính</div></div>
-    <div class="kpi"><div class="label">ĐÚNG HẠN</div><div class="value" id="kOnTime">0</div><div class="sub" id="kOnTimeSub">0%</div></div>
-    <div class="kpi"><div class="label">THỜI GIAN XỬ LÝ TB</div><div class="value" id="kAvg">0</div><div class="sub">Ngày / WO đã hoàn thành</div></div>
+    <div class="kpi"><div class="label">BẢO TRÌ KẾ HOẠCH</div><div class="value" id="kPlan">0</div><div class="sub">Số lượt được phân</div></div>
+    <div class="kpi"><div class="label">ĐÃ BẢO TRÌ</div><div class="value" id="kMaintDone">0</div><div class="sub" id="kMaintDoneSub">0%</div></div>
+    <div class="kpi"><div class="label">CÒN LẠI</div><div class="value" id="kMaintRemain">0</div><div class="sub">Chưa hoàn thành</div></div>
+    <div class="kpi"><div class="label">WO PHÁT SINH</div><div class="value" id="kWoTotal">0</div><div class="sub">Trong kỳ</div></div>
+    <div class="kpi"><div class="label">WO HOÀN THÀNH</div><div class="value" id="kWoDone">0</div><div class="sub" id="kWoDoneSub">0%</div></div>
+    <div class="kpi"><div class="label">WO ĐANG XỬ LÝ</div><div class="value" id="kWoActive">0</div><div class="sub" id="kWoExtraSub">—</div></div>
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Tổng hợp theo kỹ thuật viên</h2><span class="muted" id="periodLabel">—</span></div>
+    <div class="card-head">
+      <h2>Nguồn Work Order</h2>
+      <span class="muted">Không phải WO nào cũng phát sinh từ bảo trì</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-box"><small>WO từ bảo trì</small><strong id="kWoFromMaintenance">0</strong></div>
+      <div class="detail-box"><small>WO nguồn khác / Admin tạo</small><strong id="kWoFromExternal">0</strong></div>
+      <div class="detail-box"><small>WO nguồn khác chưa phân loại</small><strong id="kWoFromOther">0</strong></div>
+      <div class="detail-box"><small>Tổng WO của KTV</small><strong id="kWoSourceTotal">0</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Tổng hợp Bảo trì + Work Order theo kỹ thuật viên</h2><span class="muted" id="periodLabel">—</span></div>
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Kỹ thuật viên</th><th>Tổng WO</th><th>Hoàn thành</th><th>Đang xử lý</th><th>Quá hạn</th><th>Đúng hạn</th><th>Tỷ lệ hoàn thành</th><th>Tỷ lệ đúng hạn</th><th>Chi phí</th></tr></thead>
+        <thead><tr><th>Kỹ thuật viên</th><th>KH bảo trì</th><th>Đã BT</th><th>Còn lại</th><th>% BT</th><th>Tổng WO</th><th>WO từ bảo trì</th><th>WO nguồn khác</th><th>WO hoàn thành</th><th>WO đang xử lý</th><th>WO quá hạn</th><th>WO đúng hạn</th><th>Chi phí WO</th></tr></thead>
         <tbody id="technicianRows"></tbody>
       </table>
     </div>
     <div class="empty" id="technicianEmpty">Chưa có dữ liệu KPI.</div>
   </div>
 
+  
   <div class="card">
-    <div class="card-head"><h2>Chi tiết Work Order</h2><span class="muted" id="detailLabel">—</span></div>
+    <div class="card-head"><h2>Chi tiết Bảo trì</h2><span class="muted" id="maintenanceDetailLabel">—</span></div>
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Work Order</th><th>Kỹ thuật viên</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Mở ngày</th><th>Hạn</th><th>Hoàn thành</th><th>Trạng thái</th><th>Kết quả hạn</th><th>Xử lý</th></tr></thead>
+        <thead><tr><th>Phiếu bảo trì</th><th>Kỹ thuật viên</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Lịch bảo trì</th><th>Hoàn thành</th><th>Trạng thái</th><th>Kết quả</th></tr></thead>
+        <tbody id="maintenanceRows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
+  </div>
+
+<div class="card">
+    <div class="card-head"><h2>Chi tiết Work Order phát sinh</h2><span class="muted" id="detailLabel">—</span></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Work Order</th><th>Kỹ thuật viên</th><th>Nguồn WO</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Mở ngày</th><th>Hạn</th><th>Hoàn thành</th><th>Trạng thái</th><th>Kết quả hạn</th><th>Xử lý</th></tr></thead>
         <tbody id="detailRows"></tbody>
       </table>
     </div>
@@ -133,7 +158,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 
 <script>
 /*
- * KPI V12 — BOOTSTRAP CHẨN ĐOÁN TỪNG BƯỚC
+ * KPI V3 — BOOTSTRAP CHẨN ĐOÁN TỪNG BƯỚC
  *
  * Vấn đề V4:
  *   Chỉ cần một CDN/module import lỗi là toàn bộ <script type="module">
@@ -149,8 +174,8 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
  */
 
 const bootGateText=document.querySelector("#authGate .muted");
-if(bootGateText) bootGateText.textContent="Đang khởi động KPI V12…";
-console.log("KPI V12 SCRIPT STARTED");
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V3…";
+console.log("KPI V3 SCRIPT STARTED");
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -161,10 +186,10 @@ let onAuthStateChangedFn=null;
 let docFn=null;
 let getDocFn=null;
 
-let calculateTechnicianKpi, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, createMonthlyPeriod, createQuarterPeriod;
+let calculateTechnicianKpiV2, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, getAllMaintenancesForKpi, getMaintenancesForTechnician, createMonthlyPeriod, createQuarterPeriod;
 let getTechnicians, getTechnician;
 
-const state={user:null,profile:null,technicians:[],workOrders:[],period:null,selectedTechnician:"",kpis:[]};
+const state={user:null,profile:null,technicians:[],workOrders:[],maintenances:[],period:null,selectedTechnician:"",kpis:[]};
 
 function withTimeout(promise,ms,label){
   return Promise.race([
@@ -184,7 +209,7 @@ function setStatus(msg,type=""){
   }
   const gateMsg=document.querySelector("#authGate .muted");
   if(gateMsg) gateMsg.textContent=msg;
-  console.log("KPI V12 STATUS:",msg);
+  console.log("KPI V3 STATUS:",msg);
 }
 function showFatalAuthError(title,message){
   const gate=$("authGate");
@@ -196,7 +221,7 @@ function showFatalAuthError(title,message){
       <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
     </div>`;
   $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
-  console.error("KPI V12 FATAL:",title,message);
+  console.error("KPI V3 FATAL:",title,message);
 }
 
 function role(){return String(state.profile?.role||"").trim().toUpperCase()}
@@ -228,7 +253,7 @@ async function bootstrapCoreFirebase(){
   try{
     core=await withTimeout(import("./js/core/firebase.js"),8000,"Không tải được Firebase core");
   }catch(error){
-    console.error("KPI V12 CORE IMPORT ERROR",error);
+    console.error("KPI V3 CORE IMPORT ERROR",error);
     throw new Error(
       "Không tải được /js/core/firebase.js. " +
       (error?.message||error)
@@ -247,7 +272,7 @@ async function bootstrapCoreFirebase(){
   try{
     authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"),8000,"Không tải được Firebase Auth SDK");
   }catch(error){
-    console.error("KPI V12 AUTH SDK IMPORT ERROR",error);
+    console.error("KPI V3 AUTH SDK IMPORT ERROR",error);
     throw new Error(
       "Không tải được Firebase Auth SDK. " +
       (error?.message||error)
@@ -265,7 +290,7 @@ async function bootstrapCoreFirebase(){
   try{
     firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js"),8000,"Không tải được Firebase Firestore SDK");
   }catch(error){
-    console.error("KPI V12 FIRESTORE SDK IMPORT ERROR",error);
+    console.error("KPI V3 FIRESTORE SDK IMPORT ERROR",error);
     throw new Error(
       "Không tải được Firebase Firestore SDK. " +
       (error?.message||error)
@@ -280,7 +305,7 @@ async function bootstrapCoreFirebase(){
   }
 
   setStatus("Firebase core + Auth + Firestore đã sẵn sàng.");
-  console.log("KPI V12 FIREBASE BOOTSTRAP COMPLETE");
+  console.log("KPI V3 FIREBASE BOOTSTRAP COMPLETE");
 }
 
 /* =========================================================
@@ -290,16 +315,20 @@ async function loadKpiModules(){
   setStatus("Firebase OK · Đang tải module KPI…");
 
   try{
-    const kpi=await withTimeout(import("./js/kpi/kpi.js"),8000,"Không tải được kpi-v1.js");
-    calculateTechnicianKpi=kpi.calculateTechnicianKpi;
+    const kpi=await withTimeout(import("./js/kpi/kpi.js"),8000,"Không tải được kpi-v3.js");
+    calculateTechnicianKpiV2=kpi.calculateTechnicianKpiV2;
     getAllWorkOrdersForKpi=kpi.getAllWorkOrdersForKpi;
     getWorkOrdersForTechnician=kpi.getWorkOrdersForTechnician;
+    getAllMaintenancesForKpi=kpi.getAllMaintenancesForKpi;
+    getMaintenancesForTechnician=kpi.getMaintenancesForTechnician;
     createMonthlyPeriod=kpi.createMonthlyPeriod;
     createQuarterPeriod=kpi.createQuarterPeriod;
 
-    if(typeof calculateTechnicianKpi!=="function")throw new Error("Thiếu calculateTechnicianKpi.");
+    if(typeof calculateTechnicianKpiV2!=="function")throw new Error("Thiếu calculateTechnicianKpiV2.");
     if(typeof getAllWorkOrdersForKpi!=="function")throw new Error("Thiếu getAllWorkOrdersForKpi.");
     if(typeof getWorkOrdersForTechnician!=="function")throw new Error("Thiếu getWorkOrdersForTechnician.");
+    if(typeof getAllMaintenancesForKpi!=="function")throw new Error("Thiếu getAllMaintenancesForKpi.");
+    if(typeof getMaintenancesForTechnician!=="function")throw new Error("Thiếu getMaintenancesForTechnician.");
     if(typeof createMonthlyPeriod!=="function")throw new Error("Thiếu createMonthlyPeriod.");
     if(typeof createQuarterPeriod!=="function")throw new Error("Thiếu createQuarterPeriod.");
 
@@ -310,7 +339,7 @@ async function loadKpiModules(){
     if(typeof getTechnicians!=="function")throw new Error("Thiếu getTechnicians.");
     if(typeof getTechnician!=="function")throw new Error("Thiếu getTechnician.");
   }catch(error){
-    console.error("KPI V12 MODULE LOAD ERROR",error);
+    console.error("KPI V3 MODULE LOAD ERROR",error);
     throw new Error(
       "Firebase đã xác thực nhưng module KPI không tải được. " +
       (error?.message||error)
@@ -378,92 +407,228 @@ async function loadTechnicians(){
   }
   fillTechnicians();
 }
-async function loadWorkOrders(){
+async function loadOperationalData(){
   state.period=selectedPeriod();
   if(!state.period)throw new Error("Không xác định được kỳ KPI.");
   state.selectedTechnician=$("technicianFilter").value||"";
+
   if(role()==="TECHNICIAN"){
     state.workOrders=await getWorkOrdersForTechnician(state.selectedTechnician);
+    state.maintenances=await getMaintenancesForTechnician(state.selectedTechnician);
   }else{
     state.workOrders=await getAllWorkOrdersForKpi();
+    state.maintenances=await getAllMaintenancesForKpi();
   }
 }
+
 async function calculate(){
   const p=state.period;
   const list=state.selectedTechnician
     ? state.technicians.filter(t=>String(t.id)===String(state.selectedTechnician))
     : state.technicians;
+
   state.kpis=[];
+
   for(const t of list){
-    const k=calculateTechnicianKpi({
-      technicianId:t.id,technicianName:t.name||"",
-      periodId:p.periodId,startDate:p.startDate,endDate:p.endDate,
+    const k=calculateTechnicianKpiV2({
+      technicianId:t.id,
+      technicianName:t.name||"",
+      periodId:p.periodId,
+      startDate:p.startDate,
+      endDate:p.endDate,
+      maintenances:state.maintenances,
       workOrders:state.workOrders
     });
-    if(k.totalWorkOrders>0||state.selectedTechnician)state.kpis.push(k);
+
+    if(
+      k.maintenance.plannedMaintenance>0 ||
+      k.workOrder.totalWorkOrders>0 ||
+      state.selectedTechnician
+    ){
+      state.kpis.push(k);
+    }
   }
 }
+
 function aggregate(){
   return state.kpis.reduce((a,k)=>({
-    totalWorkOrders:a.totalWorkOrders+k.totalWorkOrders,
-    completedWorkOrders:a.completedWorkOrders+k.completedWorkOrders,
-    activeWorkOrders:a.activeWorkOrders+k.activeWorkOrders,
-    overdueWorkOrders:a.overdueWorkOrders+k.overdueWorkOrders,
-    completedOnTime:a.completedOnTime+k.completedOnTime,
-    completedLate:a.completedLate+k.completedLate,
-    labor:a.labor+k.totalLaborCost,material:a.material+k.totalMaterialCost,totalCost:a.totalCost+k.totalCost,
-    processingTotal:a.processingTotal+(k.averageProcessingDays*k.completedWorkOrders),
-    completedCount:a.completedCount+k.completedWorkOrders
-  }),{totalWorkOrders:0,completedWorkOrders:0,activeWorkOrders:0,overdueWorkOrders:0,completedOnTime:0,completedLate:0,labor:0,material:0,totalCost:0,processingTotal:0,completedCount:0});
+    planned:a.planned+k.maintenance.plannedMaintenance,
+    maintDone:a.maintDone+k.maintenance.completedMaintenance,
+    maintRemain:a.maintRemain+k.maintenance.remainingMaintenance,
+    maintOverdue:a.maintOverdue+k.maintenance.overdueMaintenance,
+    woTotal:a.woTotal+k.workOrder.totalWorkOrders,
+    woDone:a.woDone+k.workOrder.completedWorkOrders,
+    woActive:a.woActive+k.workOrder.activeWorkOrders,
+    woOverdue:a.woOverdue+k.workOrder.overdueWorkOrders,
+    woOnTime:a.woOnTime+k.workOrder.completedOnTime,
+    woFromMaintenance:a.woFromMaintenance+k.workOrdersFromMaintenance,
+    woFromExternal:a.woFromExternal+k.workOrdersFromExternalSource,
+    woFromOther:a.woFromOther+k.workOrdersFromOtherSource,
+    labor:a.labor+k.workOrder.totalLaborCost,
+    material:a.material+k.workOrder.totalMaterialCost,
+    totalCost:a.totalCost+k.workOrder.totalCost
+  }),{
+    planned:0,maintDone:0,maintRemain:0,maintOverdue:0,
+    woTotal:0,woDone:0,woActive:0,woOverdue:0,woOnTime:0,
+    woFromMaintenance:0,woFromExternal:0,woFromOther:0,
+    labor:0,material:0,totalCost:0
+  });
 }
+
 function renderSummary(){
   const a=aggregate();
-  const completion=a.totalWorkOrders?(a.completedWorkOrders/a.totalWorkOrders*100):0;
-  const ontime=a.completedWorkOrders?(a.completedOnTime/a.completedWorkOrders*100):0;
-  $("kTotal").textContent=a.totalWorkOrders;$("kDone").textContent=a.completedWorkOrders;
-  $("kActive").textContent=a.activeWorkOrders;$("kOverdue").textContent=a.overdueWorkOrders;
-  $("kOnTime").textContent=a.completedOnTime;
-  $("kAvg").textContent=(a.completedCount?(a.processingTotal/a.completedCount).toFixed(1):"0");
-  $("kDoneSub").textContent=completion.toFixed(1)+"%";
-  $("kOnTimeSub").textContent=ontime.toFixed(1)+"%";
+  const maintRate=a.planned?(a.maintDone/a.planned*100):0;
+  const woRate=a.woTotal?(a.woDone/a.woTotal*100):0;
+
+  $("kPlan").textContent=a.planned;
+  $("kMaintDone").textContent=a.maintDone;
+  $("kMaintRemain").textContent=a.maintRemain;
+  $("kWoTotal").textContent=a.woTotal;
+  $("kWoDone").textContent=a.woDone;
+  $("kWoActive").textContent=a.woActive;
+
+  $("kMaintDoneSub").textContent=maintRate.toFixed(1)+"%";
+  $("kWoDoneSub").textContent=woRate.toFixed(1)+"%";
+  $("kWoExtraSub").textContent=`Quá hạn ${a.woOverdue} · Đúng hạn ${a.woOnTime}`;
+
+  $("kWoFromMaintenance").textContent=a.woFromMaintenance;
+  $("kWoFromExternal").textContent=a.woFromExternal;
+  $("kWoFromOther").textContent=a.woFromOther;
+  $("kWoSourceTotal").textContent=a.woTotal;
+
   $("periodLabel").textContent=`${fmt(state.period.startDate)} → ${fmt(state.period.endDate)}`;
 }
+
 function renderTechRows(){
   const rows=$("technicianRows"),empty=$("technicianEmpty");
-  if(!state.kpis.length){rows.innerHTML="";empty.style.display="block";return}
+  if(!state.kpis.length){
+    rows.innerHTML="";
+    empty.style.display="block";
+    return;
+  }
+
   empty.style.display="none";
-  rows.innerHTML=state.kpis.map(k=>`<tr>
-    <td><a class="link" data-tech="${esc(k.technicianId)}">${esc(k.technicianName||k.technicianId)}</a></td>
-    <td>${k.totalWorkOrders}</td><td>${k.completedWorkOrders}</td><td>${k.activeWorkOrders}</td>
-    <td>${k.overdueWorkOrders}</td><td>${k.completedOnTime}</td>
-    <td>${k.completionRate.toFixed(1)}%</td><td>${k.onTimeRate.toFixed(1)}%</td><td>${money(k.totalCost)}</td>
-  </tr>`).join("");
-}
-function renderDetails(){
-  const rows=$("detailRows"),empty=$("detailEmpty"),q=String($("search").value||"").trim().toLowerCase();
-  const source=state.kpis.flatMap(k=>k.rows.map(r=>({...r,technicianName:k.technicianName})))
-    .filter(r=>!q||[r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode].join(" ").toLowerCase().includes(q));
-  $("detailLabel").textContent=`${source.length} Work Order`;
-  if(!source.length){rows.innerHTML="";empty.style.display="block";return}
-  empty.style.display="none";
-  rows.innerHTML=source.map(r=>{
-    const result=r.isCompletedOnTime?'<span class="badge done">Đúng hạn</span>':r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
+
+  rows.innerHTML=state.kpis.map(k=>{
+    const m=k.maintenance;
+    const w=k.workOrder;
     return `<tr>
-      <td><strong>${esc(r.workOrderNo||r.id)}</strong></td><td>${esc(r.technicianName||"—")}</td>
+      <td><a class="link" data-tech="${esc(k.technicianId)}">${esc(k.technicianName||k.technicianId)}</a></td>
+      <td><strong>${m.plannedMaintenance}</strong></td>
+      <td>${m.completedMaintenance}</td>
+      <td>${m.remainingMaintenance}</td>
+      <td>${m.maintenanceCompletionRate.toFixed(1)}%</td>
+      <td><strong>${w.totalWorkOrders}</strong></td>
+      <td>${w.completedWorkOrders}</td>
+      <td>${w.activeWorkOrders}</td>
+      <td>${w.overdueWorkOrders}</td>
+      <td>${w.completedOnTime}</td>
+      <td>${money(w.totalCost)}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderMaintenanceDetails(){
+  const rows=$("maintenanceRows"),empty=$("maintenanceEmpty");
+  const q=String($("search").value||"").trim().toLowerCase();
+
+  const source=state.kpis.flatMap(k=>
+    k.maintenance.maintenanceRows.map(r=>({...r,technicianName:k.technicianName}))
+  ).filter(r=>
+    !q ||
+    [
+      r.ticketNo,r.technicianName,r.customerName,r.buildingName,
+      r.elevatorName,r.elevatorAssetCode,r.contractCode
+    ].join(" ").toLowerCase().includes(q)
+  );
+
+  $("maintenanceDetailLabel").textContent=`${source.length} lượt bảo trì`;
+
+  if(!source.length){
+    rows.innerHTML="";
+    empty.style.display="block";
+    return;
+  }
+
+  empty.style.display="none";
+
+  rows.innerHTML=source.map(r=>{
+    const result=r.isCompletedOnTime
+      ? '<span class="badge done">Đúng lịch</span>'
+      : r.isCompletedLate
+      ? '<span class="badge late">Hoàn thành trễ</span>'
+      : r.isOverdue
+      ? '<span class="badge late">Quá hạn</span>'
+      : '<span class="badge">—</span>';
+
+    return `<tr>
+      <td><strong>${esc(r.ticketNo||r.id)}</strong></td>
+      <td>${esc(r.technicianName||"—")}</td>
       <td>${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
       <td>${esc(r.elevatorName||"—")}<br><span class="muted">${esc(r.elevatorAssetCode||"")}</span></td>
-      <td>${fmt(r.openedDate)}</td><td>${fmt(r.dueDate)}</td><td>${fmt(r.completedDate)}</td>
-      <td><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></td><td>${result}</td>
+      <td>${fmt(r.scheduledDate)}</td>
+      <td>${fmt(r.completedDate)}</td>
+      <td><span class="badge ${r.status==="completed"?"done":r.isOverdue?"late":"progress"}">${esc(r.status==="completed"?"Hoàn thành":r.status==="assigned"?"Đã phân công":r.status==="in_progress"?"Đang thực hiện":"Chưa hoàn thành")}</span></td>
+      <td>${result}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderDetails(){
+  const rows=$("detailRows"),empty=$("detailEmpty");
+  const q=String($("search").value||"").trim().toLowerCase();
+
+  const source=state.kpis.flatMap(k=>
+    k.workOrderOriginRows.map(r=>({...r,technicianName:k.technicianName}))
+  ).filter(r=>
+    !q ||
+    [
+      r.workOrderNo,r.technicianName,r.customerName,
+      r.buildingName,r.elevatorName,r.elevatorAssetCode
+    ].join(" ").toLowerCase().includes(q)
+  );
+
+  $("detailLabel").textContent=`${source.length} Work Order`;
+
+  if(!source.length){
+    rows.innerHTML="";
+    empty.style.display="block";
+    return;
+  }
+
+  empty.style.display="none";
+
+  rows.innerHTML=source.map(r=>{
+    const result=r.isCompletedOnTime
+      ? '<span class="badge done">Đúng hạn</span>'
+      : r.isCompletedLate
+      ? '<span class="badge late">Hoàn thành trễ</span>'
+      : r.isOverdue
+      ? '<span class="badge late">Quá hạn</span>'
+      : '<span class="badge">—</span>';
+
+    return `<tr>
+      <td><strong>${esc(r.workOrderNo||r.id)}</strong></td>
+      <td>${esc(r.technicianName||"—")}</td>
+      <td><span class="badge ${r.originType==="maintenance"?"done":r.originType==="external"?"warn":""}">${esc(r.originLabel||"Nguồn khác")}</span></td>
+      <td>${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
+      <td>${esc(r.elevatorName||"—")}<br><span class="muted">${esc(r.elevatorAssetCode||"")}</span></td>
+      <td>${fmt(r.openedDate)}</td>
+      <td>${fmt(r.dueDate)}</td>
+      <td>${fmt(r.completedDate)}</td>
+      <td><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></td>
+      <td>${result}</td>
       <td>${r.processingDays==null?"—":Number(r.processingDays).toFixed(1)+" ngày"}</td>
     </tr>`;
   }).join("");
 }
-function render(){renderSummary();renderTechRows();renderDetails()}
+
+function render(){renderSummary();renderTechRows();renderMaintenanceDetails();renderDetails()}
 async function refresh(){
   try{
     $("refreshBtn").disabled=true;setStatus("Đang tải dữ liệu KPI…");
-    await loadWorkOrders();await calculate();render();
-    setStatus(`Đã cập nhật KPI · ${state.workOrders.length} Work Order nguồn · Kỳ ${state.period.periodId}`,"ok");
+    await loadOperationalData();await calculate();render();
+    setStatus(`Đã cập nhật KPI · ${state.maintenances.length} lượt bảo trì + ${state.workOrders.length} Work Order nguồn · Kỳ ${state.period.periodId}`,"ok");
   }catch(e){
     console.error(e);setStatus(e?.message||"Không tải được KPI.","error");
   }finally{$("refreshBtn").disabled=false}
@@ -503,11 +668,11 @@ async function waitForAuth(){
   });
 }
 
-async function startKpiV12(){
-  setStatus("KPI V12 đang bắt đầu…");
+async function startKpiV3(){
+  setStatus("KPI V3 đang bắt đầu…");
   await new Promise(resolve=>setTimeout(resolve,80));
   try{
-    setStatus("Đang khởi động KPI V12…");
+    setStatus("Đang khởi động KPI V3…");
 
     await bootstrapCoreFirebase();
 
@@ -550,7 +715,7 @@ async function startKpiV12(){
     $("authGate").classList.add("hidden");
 
   }catch(error){
-    console.error("KPI V12 BOOT ERROR:",error);
+    console.error("KPI V3 BOOT ERROR:",error);
     setStatus(error?.message||"Không thể khởi tạo KPI.","error");
     showFatalAuthError("KPI không thể khởi tạo",error?.message||"Lỗi không xác định.");
   }
@@ -562,7 +727,7 @@ async function startKpiV12(){
 $("periodType").addEventListener("change",async()=>{buildPeriodOptions();if(typeof createMonthlyPeriod==="function")await refresh()});
 $("periodValue").addEventListener("change",refresh);
 $("technicianFilter").addEventListener("change",refresh);
-$("search").addEventListener("input",renderDetails);
+$("search").addEventListener("input",()=>{renderMaintenanceDetails();renderDetails()});
 $("refreshBtn").addEventListener("click",refresh);
 $("technicianRows").addEventListener("click",e=>{
   const b=e.target.closest("[data-tech]");
@@ -572,9 +737,9 @@ $("technicianRows").addEventListener("click",e=>{
   refresh();
 });
 
-startKpiV12().catch(error=>{
-  console.error("KPI V12 UNHANDLED ERROR",error);
-  showFatalAuthError("KPI V12 gặp lỗi",error?.message||String(error));
+startKpiV3().catch(error=>{
+  console.error("KPI V3 UNHANDLED ERROR",error);
+  showFatalAuthError("KPI V3 gặp lỗi",error?.message||String(error));
 });
 </script>
 </body>
