@@ -3,7 +3,7 @@ import {
   collection, doc, getDoc, getDocs, query, where, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-import { db } from "./core/firebase.js";
+import { db } from "../core/firebase.js";
 
 const WORK_ORDERS_COLLECTION = "workOrders";
 const KPI_COLLECTION = "kpi";
