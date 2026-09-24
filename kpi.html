@@ -11,25 +11,23 @@
   --da-bg:#090909;--da-panel:#11110f;--da-panel-2:#171714;--da-gold:#d6a84f;
   --da-gold-light:#f0ca76;--da-gold-soft:#9e7a37;--da-ivory:#f5f1e7;
   --da-text:#eee9df;--da-muted:#aaa49a;--da-border:#3a3428;
-  --da-ok:#5fca91;--da-danger:#e35b4f;--da-blue:#7aa7ff
 }
 *{box-sizing:border-box}
 html,body{background:var(--da-bg);color:var(--da-text)}
 body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09),transparent 30%),linear-gradient(180deg,#0b0b0a 0%,#080808 100%)}
-.app-header{background:#090909!important;border-bottom:1px solid var(--da-gold-soft)!important;color:var(--da-ivory)!important}
+.app-header{background:#090909!important;border-bottom:1px solid var(--da-gold-soft)!important}
 .app-header .brand{color:var(--da-gold-light)!important;font-weight:700}
-.page{max-width:1450px;margin:0 auto;padding:24px 18px 60px}
+.page{max-width:1500px;margin:0 auto;padding:24px 18px 60px}
 .page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
 .page-head h1{margin:0 0 6px;font-size:30px;color:var(--da-gold-light)!important}
 .muted{color:var(--da-muted)!important}
 .btn{border:1px solid var(--da-gold-soft)!important;background:#151512!important;color:var(--da-ivory)!important;border-radius:10px;padding:10px 14px;cursor:pointer;font:inherit}
 .btn.primary{background:linear-gradient(180deg,#e0b65c,#bd8e34)!important;color:#111!important;border-color:var(--da-gold)!important;font-weight:700}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.toolbar{background:#11110f!important;border:1px solid var(--da-border)!important;border-radius:14px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1.1fr 1fr 1fr 1.5fr;gap:10px}
+.toolbar{background:#11110f!important;border:1px solid var(--da-border)!important;border-radius:14px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1.3fr 1.2fr 1.7fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-size:13px;font-weight:600;color:var(--da-gold-light)!important}
 .field input,.field select{width:100%;border:1px solid #4a4438!important;border-radius:9px;padding:10px 11px;background:#171714!important;color:var(--da-text)!important;font:inherit;outline:none}
-.field input:focus,.field select:focus{border-color:var(--da-gold)!important;box-shadow:0 0 0 2px rgba(214,168,79,.1)}
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
 .kpi{background:linear-gradient(180deg,#151512,#10100e)!important;border:1px solid var(--da-border)!important;border-radius:14px;padding:14px}
 .kpi .label{font-size:12px;color:var(--da-gold-light)!important}
@@ -41,7 +39,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
 .statusline.error{color:#ff8176!important}.statusline.ok{color:#75dda5!important}
 .table-wrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-.data-table{width:100%;border-collapse:collapse;min-width:980px}
+.data-table{width:100%;border-collapse:collapse;min-width:1100px}
 .data-table th,.data-table td{padding:11px 12px;border-bottom:1px solid #292722!important;text-align:left;vertical-align:top;font-size:13px}
 .data-table th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--da-gold-light)!important;background:#171714!important}
 .data-table tr:hover td{background:#161613!important}
@@ -50,9 +48,10 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .badge.progress{background:rgba(122,167,255,.14)!important;color:#8fb8ff!important}
 .badge.late{background:rgba(227,91,79,.14)!important;color:#ff8176!important}
 .badge.warn{background:rgba(214,168,79,.15)!important;color:var(--da-gold-light)!important}
+.badge.sales{background:rgba(180,130,220,.14)!important;color:#d4a9ef!important}
 .link{color:var(--da-gold-light);cursor:pointer;text-decoration:none}
 .empty{padding:38px;text-align:center;color:var(--da-muted)!important}
-.detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 16px}
+.detail-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:14px 16px}
 .detail-box{background:#171714;border:1px solid #302c25;border-radius:10px;padding:12px}
 .detail-box small{display:block;color:var(--da-muted);margin-bottom:4px}
 .detail-box strong{font-size:17px;color:var(--da-ivory)}
@@ -60,9 +59,7 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .auth-box{max-width:420px;width:100%;padding:28px;border:1px solid var(--da-gold-soft);border-radius:16px;background:#11110f;text-align:center}
 .auth-box h2{color:var(--da-gold-light);margin-top:0}
 .auth-gate.hidden{display:none}
-.permission{display:none;padding:14px 16px;color:#ff9a90;background:#17100f;border-bottom:1px solid #6c302c}
-.permission.show{display:block}
-@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:650px){
  .page{padding:16px 12px 45px}.page-head{flex-direction:column}.page-head .btn{width:100%}
  .toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:1fr 1fr}
@@ -80,7 +77,10 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
   <div class="page-head">
     <div>
       <h1>KPI vận hành</h1>
-      <div class="muted">Theo dõi khối lượng Bảo trì và toàn bộ Work Order được phân công, gồm WO phát sinh từ bảo trì và WO do Admin tiếp nhận từ nguồn khác. Không chấm điểm hay xếp hạng nhân sự.</div>
+      <div class="muted">
+        Theo dõi khối lượng Bảo trì và toàn bộ Work Order được phân công.
+        KPI V1/V4 là số liệu vận hành, không chấm điểm hay xếp hạng nhân sự.
+      </div>
     </div>
     <button class="btn primary" id="refreshBtn" type="button">↻ Cập nhật</button>
   </div>
@@ -91,19 +91,18 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
     </div>
     <div class="field"><label for="periodValue">Kỳ KPI</label><select id="periodValue"></select></div>
     <div class="field"><label for="technicianFilter">Kỹ thuật viên</label><select id="technicianFilter"><option value="">Tất cả KTV</option></select></div>
-    <div class="field"><label for="search">Tìm trong chi tiết</label><input id="search" placeholder="WO, khách hàng, tòa nhà, thang…"></div>
+    <div class="field"><label for="search">Tìm trong chi tiết</label><input id="search" placeholder="WO, phiếu bảo trì, khách hàng, tòa nhà, thang…"></div>
   </div>
 
   <div class="card">
     <div class="statusline" id="pageStatus">Đang tải…</div>
-    <div class="permission" id="permission">Tài khoản này không có quyền xem dữ liệu KPI.</div>
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="label">BẢO TRÌ KẾ HOẠCH</div><div class="value" id="kPlan">0</div><div class="sub">Số lượt được phân</div></div>
+    <div class="kpi"><div class="label">BẢO TRÌ KẾ HOẠCH</div><div class="value" id="kPlan">0</div><div class="sub">Số lượt trong kỳ</div></div>
     <div class="kpi"><div class="label">ĐÃ BẢO TRÌ</div><div class="value" id="kMaintDone">0</div><div class="sub" id="kMaintDoneSub">0%</div></div>
-    <div class="kpi"><div class="label">CÒN LẠI</div><div class="value" id="kMaintRemain">0</div><div class="sub">Chưa hoàn thành</div></div>
-    <div class="kpi"><div class="label">WO PHÁT SINH</div><div class="value" id="kWoTotal">0</div><div class="sub">Trong kỳ</div></div>
+    <div class="kpi"><div class="label">BẢO TRÌ CÒN LẠI</div><div class="value" id="kMaintRemain">0</div><div class="sub">Chưa hoàn thành</div></div>
+    <div class="kpi"><div class="label">TỔNG WORK ORDER</div><div class="value" id="kWoTotal">0</div><div class="sub">Trong kỳ</div></div>
     <div class="kpi"><div class="label">WO HOÀN THÀNH</div><div class="value" id="kWoDone">0</div><div class="sub" id="kWoDoneSub">0%</div></div>
     <div class="kpi"><div class="label">WO ĐANG XỬ LÝ</div><div class="value" id="kWoActive">0</div><div class="sub" id="kWoExtraSub">—</div></div>
   </div>
@@ -111,44 +110,76 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
   <div class="card">
     <div class="card-head">
       <h2>Nguồn Work Order</h2>
-      <span class="muted">Không phải WO nào cũng phát sinh từ bảo trì</span>
+      <span class="muted">Theo sourceType của Work Order V2</span>
     </div>
     <div class="detail-grid">
-      <div class="detail-box"><small>WO từ bảo trì</small><strong id="kWoFromMaintenance">0</strong></div>
-      <div class="detail-box"><small>WO nguồn khác / Admin tạo</small><strong id="kWoFromExternal">0</strong></div>
-      <div class="detail-box"><small>WO nguồn khác chưa phân loại</small><strong id="kWoFromOther">0</strong></div>
-      <div class="detail-box"><small>Tổng WO của KTV</small><strong id="kWoSourceTotal">0</strong></div>
+      <div class="detail-box"><small>Bảo trì</small><strong id="kSourceMaintenance">0</strong></div>
+      <div class="detail-box"><small>Khách hàng báo</small><strong id="kSourceCustomer">0</strong></div>
+      <div class="detail-box"><small>Sự cố</small><strong id="kSourceIncident">0</strong></div>
+      <div class="detail-box"><small>Kinh doanh</small><strong id="kSourceSales">0</strong></div>
+      <div class="detail-box"><small>Quản lý</small><strong id="kSourceManagement">0</strong></div>
+      <div class="detail-box"><small>Khác</small><strong id="kSourceOther">0</strong></div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Tổng hợp Bảo trì + Work Order theo kỹ thuật viên</h2><span class="muted" id="periodLabel">—</span></div>
+    <div class="card-head">
+      <h2>Tổng hợp Bảo trì + Work Order theo kỹ thuật viên</h2>
+      <span class="muted" id="periodLabel">—</span>
+    </div>
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Kỹ thuật viên</th><th>KH bảo trì</th><th>Đã BT</th><th>Còn lại</th><th>% BT</th><th>Tổng WO</th><th>WO từ bảo trì</th><th>WO nguồn khác</th><th>WO hoàn thành</th><th>WO đang xử lý</th><th>WO quá hạn</th><th>WO đúng hạn</th><th>Chi phí WO</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Kỹ thuật viên</th>
+            <th>KH bảo trì</th>
+            <th>Đã BT</th>
+            <th>Còn lại</th>
+            <th>% BT</th>
+            <th>Tổng WO</th>
+            <th>WO hoàn thành</th>
+            <th>WO đang xử lý</th>
+            <th>WO quá hạn</th>
+            <th>WO đúng hạn</th>
+            <th>TB xử lý</th>
+            <th>Chi phí WO</th>
+          </tr>
+        </thead>
         <tbody id="technicianRows"></tbody>
       </table>
     </div>
     <div class="empty" id="technicianEmpty">Chưa có dữ liệu KPI.</div>
   </div>
 
-  
   <div class="card">
     <div class="card-head"><h2>Chi tiết Bảo trì</h2><span class="muted" id="maintenanceDetailLabel">—</span></div>
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Phiếu bảo trì</th><th>Kỹ thuật viên</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Lịch bảo trì</th><th>Hoàn thành</th><th>Trạng thái</th><th>Kết quả</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Phiếu bảo trì</th><th>Kỹ thuật viên</th><th>Khách hàng / Tòa nhà</th>
+            <th>Thang máy</th><th>Lịch bảo trì</th><th>Hoàn thành</th>
+            <th>Trạng thái</th><th>Kết quả</th>
+          </tr>
+        </thead>
         <tbody id="maintenanceRows"></tbody>
       </table>
     </div>
     <div class="empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
   </div>
 
-<div class="card">
-    <div class="card-head"><h2>Chi tiết Work Order phát sinh</h2><span class="muted" id="detailLabel">—</span></div>
+  <div class="card">
+    <div class="card-head"><h2>Chi tiết Work Order</h2><span class="muted" id="detailLabel">—</span></div>
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr><th>Work Order</th><th>Kỹ thuật viên</th><th>Nguồn WO</th><th>Khách hàng / Tòa nhà</th><th>Thang máy</th><th>Mở ngày</th><th>Hạn</th><th>Hoàn thành</th><th>Trạng thái</th><th>Kết quả hạn</th><th>Xử lý</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Work Order</th><th>Kỹ thuật viên</th><th>Nguồn</th>
+            <th>Khách hàng / Tòa nhà</th><th>Thang máy</th>
+            <th>Mở ngày</th><th>Hạn</th><th>Hoàn thành</th>
+            <th>Trạng thái</th><th>Kết quả hạn</th><th>Xử lý</th>
+          </tr>
+        </thead>
         <tbody id="detailRows"></tbody>
       </table>
     </div>
@@ -157,75 +188,38 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 </main>
 
 <script>
-/*
- * KPI V3 — BOOTSTRAP CHẨN ĐOÁN TỪNG BƯỚC
- *
- * Vấn đề V4:
- *   Chỉ cần một CDN/module import lỗi là toàn bộ <script type="module">
- *   không chạy. Khi đó màn hình auth-gate giữ nguyên mãi.
- *
- * V5:
- *   1. Không có import tĩnh nào.
- *   2. Dynamic import ./js/core/firebase.js để lấy auth + db hiện tại.
- *   3. Dynamic import Firebase Auth/Firestore và bắt lỗi riêng từng bước.
- *   4. Chỉ sau khi Auth thành công mới tải KPI modules.
- *
- * Không thay đổi schema Work Order / Firestore.
- */
-
 const bootGateText=document.querySelector("#authGate .muted");
-if(bootGateText) bootGateText.textContent="Đang khởi động KPI V3…";
-console.log("KPI V3 SCRIPT STARTED");
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V4…";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 
-let auth=null;
-let db=null;
-let onAuthStateChangedFn=null;
-let docFn=null;
-let getDocFn=null;
-
-let calculateTechnicianKpiV2, getAllWorkOrdersForKpi, getWorkOrdersForTechnician, getAllMaintenancesForKpi, getMaintenancesForTechnician, createMonthlyPeriod, createQuarterPeriod;
-let getTechnicians, getTechnician;
+let auth=null,db=null,onAuthStateChangedFn=null,docFn=null,getDocFn=null;
+let calculateTechnicianKpiV2,getAllWorkOrdersForKpi,getWorkOrdersForTechnician,getAllMaintenancesForKpi,getMaintenancesForTechnician,createMonthlyPeriod,createQuarterPeriod;
+let getTechnicians,getTechnician;
 
 const state={user:null,profile:null,technicians:[],workOrders:[],maintenances:[],period:null,selectedTechnician:"",kpis:[]};
 
 function withTimeout(promise,ms,label){
   return Promise.race([
     promise,
-    new Promise((_,reject)=>setTimeout(
-      ()=>reject(new Error(label+" sau "+Math.round(ms/1000)+" giây.")),
-      ms
-    ))
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+" sau "+Math.round(ms/1000)+" giây.")),ms))
   ]);
 }
-
 function setStatus(msg,type=""){
   const e=$("pageStatus");
-  if(e){
-    e.textContent=msg;
-    e.className=`statusline ${type}`;
-  }
+  if(e){e.textContent=msg;e.className=`statusline ${type}`;}
   const gateMsg=document.querySelector("#authGate .muted");
   if(gateMsg) gateMsg.textContent=msg;
-  console.log("KPI V3 STATUS:",msg);
+  console.log("KPI V4:",msg);
 }
-function showFatalAuthError(title,message){
+function showFatal(title,message){
   const gate=$("authGate");
   gate.classList.remove("hidden");
-  gate.innerHTML=`
-    <div class="auth-box">
-      <h2>${esc(title)}</h2>
-      <div class="muted" style="line-height:1.65;margin-bottom:18px;white-space:pre-wrap">${esc(message)}</div>
-      <button class="btn primary" id="retryAuthBtn" type="button">↻ Thử lại</button>
-    </div>`;
-  $("retryAuthBtn")?.addEventListener("click",()=>location.reload());
-  console.error("KPI V3 FATAL:",title,message);
+  gate.innerHTML=`<div class="auth-box"><h2>${esc(title)}</h2><div class="muted" style="line-height:1.65;margin-bottom:18px;white-space:pre-wrap">${esc(message)}</div><button class="btn primary" id="retryBtn">↻ Thử lại</button></div>`;
+  $("retryBtn")?.addEventListener("click",()=>location.reload());
 }
-
 function role(){return String(state.profile?.role||"").trim().toUpperCase()}
-function iso(d){return d?d.toISOString().slice(0,10):""}
 function fmt(v){
   if(!v)return"—";
   const d=new Date(`${String(v).slice(0,10)}T00:00:00`);
@@ -241,148 +235,90 @@ function statusClass(s){
   if(["assigned","in_progress","waiting_parts"].includes(s))return"progress";
   return"";
 }
+function sourceLabel(s){
+  return({
+    MAINTENANCE:"Bảo trì",
+    CUSTOMER_REPORT:"Khách hàng báo",
+    INCIDENT:"Sự cố",
+    SALES:"Kinh doanh",
+    MANAGEMENT:"Quản lý",
+    OTHER:"Khác"
+  })[String(s||"OTHER").toUpperCase()]||"Khác";
+}
+function sourceClass(s){
+  s=String(s||"OTHER").toUpperCase();
+  if(s==="MAINTENANCE")return"done";
+  if(s==="CUSTOMER_REPORT")return"warn";
+  if(s==="INCIDENT")return"late";
+  if(s==="SALES")return"sales";
+  if(s==="MANAGEMENT")return"progress";
+  return"";
+}
 
-/* =========================================================
-   STEP 1 — LOAD CORE FIREBASE DYNAMICALLY
-========================================================= */
-async function bootstrapCoreFirebase(){
+async function bootstrapCore(){
   setStatus("Đang tải Firebase core…");
-  await new Promise(resolve=>setTimeout(resolve,80));
+  const core=await withTimeout(import("./js/core/firebase.js"),8000,"Không tải được Firebase core");
+  auth=core?.auth;db=core?.db;
+  if(!auth||!db)throw new Error("firebase.js không export auth/db.");
 
-  let core;
-  try{
-    core=await withTimeout(import("./js/core/firebase.js"),8000,"Không tải được Firebase core");
-  }catch(error){
-    console.error("KPI V3 CORE IMPORT ERROR",error);
-    throw new Error(
-      "Không tải được /js/core/firebase.js. " +
-      (error?.message||error)
-    );
-  }
-
-  auth=core?.auth||null;
-  db=core?.db||null;
-
-  if(!auth) throw new Error("firebase.js đã tải nhưng không export auth.");
-  if(!db) throw new Error("firebase.js đã tải nhưng không export db.");
-
-  setStatus("Firebase core OK · Đang tải Firebase Auth…");
-
-  let authSdk;
-  try{
-    authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"),8000,"Không tải được Firebase Auth SDK");
-  }catch(error){
-    console.error("KPI V3 AUTH SDK IMPORT ERROR",error);
-    throw new Error(
-      "Không tải được Firebase Auth SDK. " +
-      (error?.message||error)
-    );
-  }
-
+  setStatus("Firebase core OK · Đang tải Auth…");
+  const authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"),8000,"Không tải được Firebase Auth SDK");
   onAuthStateChangedFn=authSdk?.onAuthStateChanged;
-  if(typeof onAuthStateChangedFn!=="function"){
-    throw new Error("Firebase Auth SDK không cung cấp onAuthStateChanged.");
-  }
+  if(typeof onAuthStateChangedFn!=="function")throw new Error("Thiếu onAuthStateChanged.");
 
   setStatus("Firebase Auth OK · Đang tải Firestore…");
-
-  let firestoreSdk;
-  try{
-    firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js"),8000,"Không tải được Firebase Firestore SDK");
-  }catch(error){
-    console.error("KPI V3 FIRESTORE SDK IMPORT ERROR",error);
-    throw new Error(
-      "Không tải được Firebase Firestore SDK. " +
-      (error?.message||error)
-    );
-  }
-
-  docFn=firestoreSdk?.doc;
-  getDocFn=firestoreSdk?.getDoc;
-
-  if(typeof docFn!=="function"||typeof getDocFn!=="function"){
-    throw new Error("Firebase Firestore SDK không cung cấp doc/getDoc.");
-  }
-
-  setStatus("Firebase core + Auth + Firestore đã sẵn sàng.");
-  console.log("KPI V3 FIREBASE BOOTSTRAP COMPLETE");
+  const firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js"),8000,"Không tải được Firestore SDK");
+  docFn=firestoreSdk?.doc;getDocFn=firestoreSdk?.getDoc;
+  if(typeof docFn!=="function"||typeof getDocFn!=="function")throw new Error("Thiếu doc/getDoc.");
+  setStatus("Firebase core + Auth + Firestore OK.");
 }
 
-/* =========================================================
-   STEP 2 — LOAD KPI DATA MODULES DYNAMICALLY
-========================================================= */
-async function loadKpiModules(){
-  setStatus("Firebase OK · Đang tải module KPI…");
+async function loadModules(){
+  setStatus("Đang tải module KPI V4…");
+  const kpi=await withTimeout(import("./js/kpi/kpi.js"),8000,"Không tải được /js/kpi/kpi.js");
+  calculateTechnicianKpiV2=kpi.calculateTechnicianKpiV2;
+  getAllWorkOrdersForKpi=kpi.getAllWorkOrdersForKpi;
+  getWorkOrdersForTechnician=kpi.getWorkOrdersForTechnician;
+  getAllMaintenancesForKpi=kpi.getAllMaintenancesForKpi;
+  getMaintenancesForTechnician=kpi.getMaintenancesForTechnician;
+  createMonthlyPeriod=kpi.createMonthlyPeriod;
+  createQuarterPeriod=kpi.createQuarterPeriod;
 
-  try{
-    const kpi=await withTimeout(import("./js/kpi/kpi.js"),8000,"Không tải được kpi-v3.js");
-    calculateTechnicianKpiV2=kpi.calculateTechnicianKpiV2;
-    getAllWorkOrdersForKpi=kpi.getAllWorkOrdersForKpi;
-    getWorkOrdersForTechnician=kpi.getWorkOrdersForTechnician;
-    getAllMaintenancesForKpi=kpi.getAllMaintenancesForKpi;
-    getMaintenancesForTechnician=kpi.getMaintenancesForTechnician;
-    createMonthlyPeriod=kpi.createMonthlyPeriod;
-    createQuarterPeriod=kpi.createQuarterPeriod;
-
-    if(typeof calculateTechnicianKpiV2!=="function")throw new Error("Thiếu calculateTechnicianKpiV2.");
-    if(typeof getAllWorkOrdersForKpi!=="function")throw new Error("Thiếu getAllWorkOrdersForKpi.");
-    if(typeof getWorkOrdersForTechnician!=="function")throw new Error("Thiếu getWorkOrdersForTechnician.");
-    if(typeof getAllMaintenancesForKpi!=="function")throw new Error("Thiếu getAllMaintenancesForKpi.");
-    if(typeof getMaintenancesForTechnician!=="function")throw new Error("Thiếu getMaintenancesForTechnician.");
-    if(typeof createMonthlyPeriod!=="function")throw new Error("Thiếu createMonthlyPeriod.");
-    if(typeof createQuarterPeriod!=="function")throw new Error("Thiếu createQuarterPeriod.");
-
-    const tech=await withTimeout(import("./js/core/firestore-v1-technician-v1.js"),8000,"Không tải được technician module");
-    getTechnicians=tech.getTechnicians;
-    getTechnician=tech.getTechnician;
-
-    if(typeof getTechnicians!=="function")throw new Error("Thiếu getTechnicians.");
-    if(typeof getTechnician!=="function")throw new Error("Thiếu getTechnician.");
-  }catch(error){
-    console.error("KPI V3 MODULE LOAD ERROR",error);
-    throw new Error(
-      "Firebase đã xác thực nhưng module KPI không tải được. " +
-      (error?.message||error)
-    );
+  for(const [name,fn] of Object.entries({calculateTechnicianKpiV2,getAllWorkOrdersForKpi,getWorkOrdersForTechnician,getAllMaintenancesForKpi,getMaintenancesForTechnician,createMonthlyPeriod,createQuarterPeriod})){
+    if(typeof fn!=="function")throw new Error(`Thiếu ${name}.`);
   }
-}
 
-/* =========================================================
-   KPI UI / CALCULATION
-========================================================= */
+  const tech=await withTimeout(import("./js/core/firestore-v1-technician-v1.js"),8000,"Không tải được technician module");
+  getTechnicians=tech.getTechnicians;getTechnician=tech.getTechnician;
+  if(typeof getTechnicians!=="function"||typeof getTechnician!=="function")throw new Error("Thiếu API kỹ thuật viên.");
+}
 
 function buildPeriodOptions(){
-  if(typeof createMonthlyPeriod!=="function"||typeof createQuarterPeriod!=="function") return;
-  const type=$("periodType").value;
-  const sel=$("periodValue");sel.innerHTML="";
+  const type=$("periodType").value,sel=$("periodValue");
+  sel.innerHTML="";
   if(type==="month"){
-    for(let y=currentYear()-2;y<=currentYear()+1;y++){
-      for(let m=1;m<=12;m++){
-        const p=createMonthlyPeriod(y,m),o=document.createElement("option");
-        o.value=p.periodId;o.textContent=`Tháng ${m}/${y}`;
-        o.dataset.start=p.startDate;o.dataset.end=p.endDate;
-        sel.appendChild(o);
-      }
+    for(let y=currentYear()-2;y<=currentYear()+1;y++)for(let m=1;m<=12;m++){
+      const p=createMonthlyPeriod(y,m),o=document.createElement("option");
+      o.value=p.periodId;o.textContent=p.label;sel.appendChild(o);
     }
     sel.value=`${currentYear()}-${String(currentMonth()).padStart(2,"0")}`;
   }else{
-    for(let y=currentYear()-2;y<=currentYear()+1;y++){
-      for(let q=1;q<=4;q++){
-        const p=createQuarterPeriod(y,q),o=document.createElement("option");
-        o.value=p.periodId;o.textContent=`Quý ${q}/${y}`;
-        o.dataset.start=p.startDate;o.dataset.end=p.endDate;
-        sel.appendChild(o);
-      }
+    for(let y=currentYear()-2;y<=currentYear()+1;y++)for(let q=1;q<=4;q++){
+      const p=createQuarterPeriod(y,q),o=document.createElement("option");
+      o.value=p.periodId;o.textContent=p.label;sel.appendChild(o);
     }
     sel.value=`${currentYear()}-Q${Math.floor((currentMonth()-1)/3)+1}`;
   }
 }
 function selectedPeriod(){
-  const o=$("periodValue").selectedOptions[0];
-  if(!o)return null;
-  return $("periodType").value==="month"
-    ? createMonthlyPeriod(Number(o.value.split("-")[0]),Number(o.value.split("-")[1]))
-    : createQuarterPeriod(Number(o.value.split("-")[0]),Number(o.value.split("-")[1].replace("Q","")));
+  const value=$("periodValue").value;
+  if(!value)return null;
+  if($("periodType").value==="month"){
+    const [y,m]=value.split("-").map(Number);
+    return createMonthlyPeriod(y,m);
+  }
+  const [y,qRaw]=value.split("-");
+  return createQuarterPeriod(Number(y),Number(qRaw.replace("Q","")));
 }
 function fillTechnicians(){
   const sel=$("technicianFilter"),old=state.selectedTechnician;
@@ -396,9 +332,9 @@ function fillTechnicians(){
 async function loadTechnicians(){
   if(role()==="TECHNICIAN"){
     const id=String(state.profile?.technicianId||"").trim();
-    if(!id)throw new Error("Tài khoản TECHNICIAN chưa có technicianId trong users/{uid}.");
+    if(!id)throw new Error("Tài khoản TECHNICIAN chưa có technicianId.");
     const t=await getTechnician(id);
-    if(!t)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${id}.`);
+    if(!t)throw new Error(`Không tìm thấy kỹ thuật viên ${id}.`);
     state.technicians=[t];state.selectedTechnician=id;
     $("technicianFilter").disabled=true;
   }else{
@@ -420,7 +356,6 @@ async function loadOperationalData(){
     state.maintenances=await getAllMaintenancesForKpi();
   }
 }
-
 async function calculate(){
   const p=state.period;
   const list=state.selectedTechnician
@@ -428,7 +363,6 @@ async function calculate(){
     : state.technicians;
 
   state.kpis=[];
-
   for(const t of list){
     const k=calculateTechnicianKpiV2({
       technicianId:t.id,
@@ -439,79 +373,56 @@ async function calculate(){
       maintenances:state.maintenances,
       workOrders:state.workOrders
     });
-
-    if(
-      k.maintenance.plannedMaintenance>0 ||
-      k.workOrder.totalWorkOrders>0 ||
-      state.selectedTechnician
-    ){
+    if(k.maintenance.plannedMaintenance>0||k.workOrder.totalWorkOrders>0||state.selectedTechnician){
       state.kpis.push(k);
     }
   }
 }
-
 function aggregate(){
-  return state.kpis.reduce((a,k)=>({
-    planned:a.planned+k.maintenance.plannedMaintenance,
-    maintDone:a.maintDone+k.maintenance.completedMaintenance,
-    maintRemain:a.maintRemain+k.maintenance.remainingMaintenance,
-    maintOverdue:a.maintOverdue+k.maintenance.overdueMaintenance,
-    woTotal:a.woTotal+k.workOrder.totalWorkOrders,
-    woDone:a.woDone+k.workOrder.completedWorkOrders,
-    woActive:a.woActive+k.workOrder.activeWorkOrders,
-    woOverdue:a.woOverdue+k.workOrder.overdueWorkOrders,
-    woOnTime:a.woOnTime+k.workOrder.completedOnTime,
-    woFromMaintenance:a.woFromMaintenance+k.workOrdersFromMaintenance,
-    woFromExternal:a.woFromExternal+k.workOrdersFromExternalSource,
-    woFromOther:a.woFromOther+k.workOrdersFromOtherSource,
-    labor:a.labor+k.workOrder.totalLaborCost,
-    material:a.material+k.workOrder.totalMaterialCost,
-    totalCost:a.totalCost+k.workOrder.totalCost
-  }),{
-    planned:0,maintDone:0,maintRemain:0,maintOverdue:0,
-    woTotal:0,woDone:0,woActive:0,woOverdue:0,woOnTime:0,
-    woFromMaintenance:0,woFromExternal:0,woFromOther:0,
-    labor:0,material:0,totalCost:0
+  return state.kpis.reduce((a,k)=>{
+    a.planned+=k.maintenance.plannedMaintenance;
+    a.maintDone+=k.maintenance.completedMaintenance;
+    a.maintRemain+=k.maintenance.remainingMaintenance;
+    a.woTotal+=k.workOrder.totalWorkOrders;
+    a.woDone+=k.workOrder.completedWorkOrders;
+    a.woActive+=k.workOrder.activeWorkOrders;
+    a.woOverdue+=k.workOrder.overdueWorkOrders;
+    a.woOnTime+=k.workOrder.completedOnTime;
+    a.woCost+=k.workOrder.totalCost;
+    for(const [type,count] of Object.entries(k.workOrdersBySourceType||{})){
+      a.sources[type]=(a.sources[type]||0)+count;
+    }
+    return a;
+  },{
+    planned:0,maintDone:0,maintRemain:0,woTotal:0,woDone:0,woActive:0,
+    woOverdue:0,woOnTime:0,woCost:0,sources:{}
   });
 }
-
 function renderSummary(){
   const a=aggregate();
-  const maintRate=a.planned?(a.maintDone/a.planned*100):0;
-  const woRate=a.woTotal?(a.woDone/a.woTotal*100):0;
-
   $("kPlan").textContent=a.planned;
   $("kMaintDone").textContent=a.maintDone;
   $("kMaintRemain").textContent=a.maintRemain;
   $("kWoTotal").textContent=a.woTotal;
   $("kWoDone").textContent=a.woDone;
   $("kWoActive").textContent=a.woActive;
-
-  $("kMaintDoneSub").textContent=maintRate.toFixed(1)+"%";
-  $("kWoDoneSub").textContent=woRate.toFixed(1)+"%";
+  $("kMaintDoneSub").textContent=(a.planned?a.maintDone/a.planned*100:0).toFixed(1)+"%";
+  $("kWoDoneSub").textContent=(a.woTotal?a.woDone/a.woTotal*100:0).toFixed(1)+"%";
   $("kWoExtraSub").textContent=`Quá hạn ${a.woOverdue} · Đúng hạn ${a.woOnTime}`;
-
-  $("kWoFromMaintenance").textContent=a.woFromMaintenance;
-  $("kWoFromExternal").textContent=a.woFromExternal;
-  $("kWoFromOther").textContent=a.woFromOther;
-  $("kWoSourceTotal").textContent=a.woTotal;
-
+  $("kSourceMaintenance").textContent=a.sources.MAINTENANCE||0;
+  $("kSourceCustomer").textContent=a.sources.CUSTOMER_REPORT||0;
+  $("kSourceIncident").textContent=a.sources.INCIDENT||0;
+  $("kSourceSales").textContent=a.sources.SALES||0;
+  $("kSourceManagement").textContent=a.sources.MANAGEMENT||0;
+  $("kSourceOther").textContent=a.sources.OTHER||0;
   $("periodLabel").textContent=`${fmt(state.period.startDate)} → ${fmt(state.period.endDate)}`;
 }
-
 function renderTechRows(){
   const rows=$("technicianRows"),empty=$("technicianEmpty");
-  if(!state.kpis.length){
-    rows.innerHTML="";
-    empty.style.display="block";
-    return;
-  }
-
+  if(!state.kpis.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
-
   rows.innerHTML=state.kpis.map(k=>{
-    const m=k.maintenance;
-    const w=k.workOrder;
+    const m=k.maintenance,w=k.workOrder;
     return `<tr>
       <td><a class="link" data-tech="${esc(k.technicianId)}">${esc(k.technicianName||k.technicianId)}</a></td>
       <td><strong>${m.plannedMaintenance}</strong></td>
@@ -523,208 +434,113 @@ function renderTechRows(){
       <td>${w.activeWorkOrders}</td>
       <td>${w.overdueWorkOrders}</td>
       <td>${w.completedOnTime}</td>
+      <td>${w.averageProcessingDays.toFixed(1)} ngày</td>
       <td>${money(w.totalCost)}</td>
     </tr>`;
   }).join("");
 }
-
 function renderMaintenanceDetails(){
   const rows=$("maintenanceRows"),empty=$("maintenanceEmpty");
   const q=String($("search").value||"").trim().toLowerCase();
-
-  const source=state.kpis.flatMap(k=>
-    k.maintenance.maintenanceRows.map(r=>({...r,technicianName:k.technicianName}))
-  ).filter(r=>
-    !q ||
-    [
-      r.ticketNo,r.technicianName,r.customerName,r.buildingName,
-      r.elevatorName,r.elevatorAssetCode,r.contractCode
-    ].join(" ").toLowerCase().includes(q)
+  const source=state.kpis.flatMap(k=>k.maintenance.maintenanceRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
+    !q||[r.ticketNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.contractCode].join(" ").toLowerCase().includes(q)
   );
-
   $("maintenanceDetailLabel").textContent=`${source.length} lượt bảo trì`;
-
-  if(!source.length){
-    rows.innerHTML="";
-    empty.style.display="block";
-    return;
-  }
-
+  if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
-
   rows.innerHTML=source.map(r=>{
-    const result=r.isCompletedOnTime
-      ? '<span class="badge done">Đúng lịch</span>'
-      : r.isCompletedLate
-      ? '<span class="badge late">Hoàn thành trễ</span>'
-      : r.isOverdue
-      ? '<span class="badge late">Quá hạn</span>'
-      : '<span class="badge">—</span>';
-
+    const result=r.isCompletedOnTime?'<span class="badge done">Đúng lịch</span>':
+      r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':
+      r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
     return `<tr>
       <td><strong>${esc(r.ticketNo||r.id)}</strong></td>
       <td>${esc(r.technicianName||"—")}</td>
       <td>${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
       <td>${esc(r.elevatorName||"—")}<br><span class="muted">${esc(r.elevatorAssetCode||"")}</span></td>
-      <td>${fmt(r.scheduledDate)}</td>
-      <td>${fmt(r.completedDate)}</td>
+      <td>${fmt(r.scheduledDate)}</td><td>${fmt(r.completedDate)}</td>
       <td><span class="badge ${r.status==="completed"?"done":r.isOverdue?"late":"progress"}">${esc(r.status==="completed"?"Hoàn thành":r.status==="assigned"?"Đã phân công":r.status==="in_progress"?"Đang thực hiện":"Chưa hoàn thành")}</span></td>
       <td>${result}</td>
     </tr>`;
   }).join("");
 }
-
 function renderDetails(){
   const rows=$("detailRows"),empty=$("detailEmpty");
   const q=String($("search").value||"").trim().toLowerCase();
-
-  const source=state.kpis.flatMap(k=>
-    k.workOrderOriginRows.map(r=>({...r,technicianName:k.technicianName}))
-  ).filter(r=>
-    !q ||
-    [
-      r.workOrderNo,r.technicianName,r.customerName,
-      r.buildingName,r.elevatorName,r.elevatorAssetCode
-    ].join(" ").toLowerCase().includes(q)
+  const source=state.kpis.flatMap(k=>k.workOrderOriginRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
+    !q||[r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.sourceType].join(" ").toLowerCase().includes(q)
   );
-
   $("detailLabel").textContent=`${source.length} Work Order`;
-
-  if(!source.length){
-    rows.innerHTML="";
-    empty.style.display="block";
-    return;
-  }
-
+  if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
-
   rows.innerHTML=source.map(r=>{
-    const result=r.isCompletedOnTime
-      ? '<span class="badge done">Đúng hạn</span>'
-      : r.isCompletedLate
-      ? '<span class="badge late">Hoàn thành trễ</span>'
-      : r.isOverdue
-      ? '<span class="badge late">Quá hạn</span>'
-      : '<span class="badge">—</span>';
-
+    const result=r.isCompletedOnTime?'<span class="badge done">Đúng hạn</span>':
+      r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':
+      r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
     return `<tr>
       <td><strong>${esc(r.workOrderNo||r.id)}</strong></td>
       <td>${esc(r.technicianName||"—")}</td>
-      <td><span class="badge ${r.originType==="maintenance"?"done":r.originType==="external"?"warn":""}">${esc(r.originLabel||"Nguồn khác")}</span></td>
+      <td><span class="badge ${sourceClass(r.sourceType)}">${esc(sourceLabel(r.sourceType))}</span></td>
       <td>${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
       <td>${esc(r.elevatorName||"—")}<br><span class="muted">${esc(r.elevatorAssetCode||"")}</span></td>
-      <td>${fmt(r.openedDate)}</td>
-      <td>${fmt(r.dueDate)}</td>
-      <td>${fmt(r.completedDate)}</td>
+      <td>${fmt(r.openedDate)}</td><td>${fmt(r.dueDate)}</td><td>${fmt(r.completedDate)}</td>
       <td><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></td>
       <td>${result}</td>
       <td>${r.processingDays==null?"—":Number(r.processingDays).toFixed(1)+" ngày"}</td>
     </tr>`;
   }).join("");
 }
-
 function render(){renderSummary();renderTechRows();renderMaintenanceDetails();renderDetails()}
 async function refresh(){
   try{
-    $("refreshBtn").disabled=true;setStatus("Đang tải dữ liệu KPI…");
-    await loadOperationalData();await calculate();render();
-    setStatus(`Đã cập nhật KPI · ${state.maintenances.length} lượt bảo trì + ${state.workOrders.length} Work Order nguồn · Kỳ ${state.period.periodId}`,"ok");
+    $("refreshBtn").disabled=true;
+    setStatus("Đang tải dữ liệu KPI…");
+    await loadOperationalData();
+    await calculate();
+    render();
+    setStatus(`Đã cập nhật KPI · ${state.maintenances.length} lượt bảo trì + ${state.workOrders.length} Work Order · Kỳ ${state.period.periodId}`,"ok");
   }catch(e){
-    console.error(e);setStatus(e?.message||"Không tải được KPI.","error");
+    console.error(e);
+    setStatus(e?.message||"Không tải được KPI.","error");
   }finally{$("refreshBtn").disabled=false}
 }
-
-/* =========================================================
-   AUTH
-========================================================= */
 async function waitForAuth(){
   return new Promise((resolve,reject)=>{
-    let settled=false;
-    let unsubscribe=null;
-    let timer=null;
-
+    let settled=false,unsubscribe=null;
+    const timer=setTimeout(()=>finish(null,new Error("Firebase Auth không phản hồi sau 10 giây.")),10000);
     const finish=(value,error)=>{
       if(settled)return;
-      settled=true;
-      if(timer)clearTimeout(timer);
+      settled=true;clearTimeout(timer);
       try{unsubscribe?.()}catch{}
-      if(error)reject(error);else resolve(value);
+      error?reject(error):resolve(value);
     };
-
     try{
-      unsubscribe=onAuthStateChangedFn(
-        auth,
-        user=>finish(user||null),
-        error=>finish(null,error)
-      );
-    }catch(error){
-      finish(null,error);
-      return;
-    }
-
-    timer=setTimeout(()=>{
-      finish(null,new Error("Firebase Auth không phản hồi sau 10 giây."));
-    },10000);
+      unsubscribe=onAuthStateChangedFn(auth,user=>finish(user||null),error=>finish(null,error));
+    }catch(error){finish(null,error)}
   });
 }
-
-async function startKpiV3(){
-  setStatus("KPI V3 đang bắt đầu…");
-  await new Promise(resolve=>setTimeout(resolve,80));
+async function start(){
   try{
-    setStatus("Đang khởi động KPI V3…");
-
-    await bootstrapCoreFirebase();
-
-    setStatus("Firebase đã sẵn sàng · Đang xác thực phiên…");
-
+    await bootstrapCore();
     const user=await waitForAuth();
-
-    if(!user){
-      showFatalAuthError(
-        "Chưa có phiên đăng nhập",
-        "Firebase đã chạy nhưng trình duyệt hiện không có phiên đăng nhập. Hãy đăng nhập lại tại trang đăng nhập của Đức Anh Maintenance."
-      );
-      return;
-    }
-
+    if(!user){showFatal("Chưa có phiên đăng nhập","Firebase không có phiên đăng nhập hiện tại. Hãy đăng nhập lại.");return;}
     state.user=user;
-    setStatus(`Đã xác thực · ${user.email||user.uid}`);
-
     const profileSnap=await getDocFn(docFn(db,"users",user.uid));
-    if(!profileSnap.exists()){
-      throw new Error("Đã xác thực Firebase nhưng không tồn tại users/{uid}.");
-    }
-
+    if(!profileSnap.exists())throw new Error("Không tồn tại users/{uid} cho tài khoản hiện tại.");
     state.profile=profileSnap.data()||{};
     const r=role();
-
-    if(!["ADMIN","MANAGER","TECHNICIAN"].includes(r)){
-      throw new Error(`Role ${r||"(trống)"} không được phép xem KPI.`);
-    }
-
-    if(r==="TECHNICIAN"&&!state.profile.technicianId){
-      throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId.");
-    }
-
-    await loadKpiModules();
+    if(!["ADMIN","MANAGER","TECHNICIAN"].includes(r))throw new Error(`Role ${r||"(trống)"} không được phép xem KPI.`);
+    if(r==="TECHNICIAN"&&!state.profile.technicianId)throw new Error("Tài khoản TECHNICIAN chưa có technicianId.");
+    await loadModules();
     buildPeriodOptions();
     await loadTechnicians();
     await refresh();
-
     $("authGate").classList.add("hidden");
-
   }catch(error){
-    console.error("KPI V3 BOOT ERROR:",error);
-    setStatus(error?.message||"Không thể khởi tạo KPI.","error");
-    showFatalAuthError("KPI không thể khởi tạo",error?.message||"Lỗi không xác định.");
+    console.error("KPI V4 BOOT ERROR",error);
+    showFatal("KPI không thể khởi tạo",error?.message||String(error));
   }
 }
-
-/* =========================================================
-   EVENTS
-========================================================= */
-$("periodType").addEventListener("change",async()=>{buildPeriodOptions();if(typeof createMonthlyPeriod==="function")await refresh()});
+$("periodType").addEventListener("change",()=>{buildPeriodOptions();refresh()});
 $("periodValue").addEventListener("change",refresh);
 $("technicianFilter").addEventListener("change",refresh);
 $("search").addEventListener("input",()=>{renderMaintenanceDetails();renderDetails()});
@@ -736,11 +552,7 @@ $("technicianRows").addEventListener("click",e=>{
   $("technicianFilter").value=state.selectedTechnician;
   refresh();
 });
-
-startKpiV3().catch(error=>{
-  console.error("KPI V3 UNHANDLED ERROR",error);
-  showFatalAuthError("KPI V3 gặp lỗi",error?.message||String(error));
-});
+start();
 </script>
 </body>
 </html>
