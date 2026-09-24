@@ -904,10 +904,6 @@ function normalizeWorkOrderType(value){
   return WORK_ORDER_TYPES.includes(value) ? value : "REPAIR";
 }
 
-function normalizeWorkOrderSourceType(value){
-  return WORK_ORDER_SOURCE_TYPES.includes(value) ? value : "OTHER";
-}
-
 function workOrderStatusLabel(value){
   return {
     draft:"Nháp",
@@ -1043,10 +1039,10 @@ async function assertWorkOrderCooldown(
 ){
   if(!elevatorId || !issueFingerprint) return;
 
+  // Query by elevator only to avoid requiring a Firestore composite index.
   const q = query(
     collection(db, COLLECTIONS.WORK_ORDERS),
-    where("elevatorId", "==", String(elevatorId)),
-    where("issueFingerprint", "==", String(issueFingerprint))
+    where("elevatorId", "==", String(elevatorId))
   );
 
   const snapshot = await getDocs(q);
@@ -1077,15 +1073,15 @@ async function assertWorkOrderCooldown(
   }
 }
 
-async function syncMaintenanceWorkOrderLink(
+function syncMaintenanceWorkOrderLink(
   transaction,
   maintenanceId,
   workOrderId,
   workOrderNo,
   status,
-  maintenanceSnapshot = null
+  maintenanceSnapshot
 ){
-  if(!maintenanceId) return;
+  if(!maintenanceId || !maintenanceSnapshot) return;
 
   const maintenanceRef = doc(
     db,
@@ -1093,7 +1089,7 @@ async function syncMaintenanceWorkOrderLink(
     maintenanceId
   );
 
-  const snapshot = maintenanceSnapshot || await transaction.get(maintenanceRef);
+  const snapshot = maintenanceSnapshot;
 
   if(!snapshot.exists()) return;
 
@@ -1166,20 +1162,24 @@ export async function getWorkOrdersByMaintenance(maintenanceId){
 }
 
 export async function createWorkOrder(data){
-  const sourceType = normalizeWorkOrderSourceType(data.sourceType);
-  const type = normalizeWorkOrderType(data.type);
-  const priority = normalizeWorkOrderPriority(data.priority);
-  const status = normalizeWorkOrderStatus(data.status);
+  const sourceType = data.sourceType;
+  const type = data.type;
+  const priority = data.priority;
+  const status = data.status;
 
-  if(!WORK_ORDER_TYPES.includes(data.type || type)){
+  if(!WORK_ORDER_SOURCE_TYPES.includes(sourceType)){
+    throw new Error("Nguồn Work Order không hợp lệ.");
+  }
+
+  if(!WORK_ORDER_TYPES.includes(type)){
     throw new Error("Loại công việc không hợp lệ.");
   }
 
-  if(!WORK_ORDER_PRIORITIES.includes(data.priority || priority)){
+  if(!WORK_ORDER_PRIORITIES.includes(priority)){
     throw new Error("Ưu tiên không hợp lệ.");
   }
 
-  if(!WORK_ORDER_STATUSES.includes(data.status || status)){
+  if(!WORK_ORDER_STATUSES.includes(status)){
     throw new Error("Trạng thái không hợp lệ.");
   }
 
