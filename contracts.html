@@ -122,6 +122,13 @@ body{
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .form-group{display:flex;flex-direction:column;gap:7px}
 .form-group.full{grid-column:1/-1}
+.field-hint{
+  color:#777;
+  font-size:11px;
+  line-height:1.4;
+  margin-top:-2px;
+}
+
 .form-group label{
   font-size:13px;
   font-weight:700;
@@ -265,112 +272,48 @@ body{
    into a narrow content area beside the sidebar.
 ========================================================= */
 
-@media(max-width:1100px){
-  .contract-page{
-    padding:18px;
-  }
+.contract-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 16px;
+}
+.contract-kpi{
+  background:linear-gradient(180deg,#151512,#10100e)!important;
+  border:1px solid var(--da-border)!important;
+  border-radius:14px;
+  padding:14px 16px;
+}
+.contract-kpi-label{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--da-gold)!important}
+.contract-kpi-value{margin-top:5px;font-size:27px;line-height:1.1;font-weight:800;color:var(--da-text)!important}
+.contract-list-tools{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:0 0 14px;flex-wrap:wrap;
+}
+.contract-search{
+  flex:1 1 420px;min-width:220px;max-width:700px;
+  background:#171717;color:var(--da-text);
+  border:1px solid #4a4438;border-radius:9px;padding:11px 12px;font:inherit;
+}
+.contract-search:focus{outline:none;border-color:var(--da-gold);box-shadow:0 0 0 2px rgba(214,168,79,.10)}
+.contract-list-note{color:var(--da-muted);font-size:12px}
 
-  .contract-toolbar{
-    align-items:flex-start;
-    flex-direction:column;
-  }
+@media(max-width:1100px){
+  .contract-page{padding:18px}
+  .contract-toolbar{align-items:flex-start;flex-direction:column}
+
+  .contract-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
 
   .table-wrap{
-    overflow:visible;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
   }
 
   .contract-table{
     width:100%;
-    min-width:0;
-    border-collapse:separate;
-    border-spacing:0 10px;
+    min-width:900px;
+    border-collapse:collapse;
   }
-
-  .contract-table thead{
-    display:none;
-  }
-
-  .contract-table tbody,
-  .contract-table tr{
-    display:block;
-    width:100%;
-  }
-
-  .contract-table tr{
-    background:#151515;
-    border:1px solid #292929;
-    border-radius:14px;
-    padding:12px 14px;
-    box-sizing:border-box;
-    margin-bottom:10px;
-  }
-
-  .contract-table td{
-    display:grid;
-    grid-template-columns:100px minmax(0,1fr);
-    gap:12px;
-    align-items:start;
-    padding:9px 0;
-    border-bottom:1px solid #252525;
-    min-width:0;
-    font-size:14px;
-    line-height:1.4;
-    overflow-wrap:anywhere;
-    word-break:normal;
-  }
-
-  .contract-table td::before{
-    content:attr(data-label);
-    color:#777;
-    font-size:10px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    padding-top:2px;
-  }
-
-  .contract-table td:first-child{
-    padding-top:2px;
-  }
-
-  .contract-table td:first-child strong{
-    font-size:16px;
-    color:#fff;
-  }
-
-  .contract-table td:first-child small{
-    display:block;
-    margin-top:3px;
-    color:#aaa;
-    font-size:12px;
-  }
-
-  .contract-table td:nth-child(5){
-    line-height:1.5;
-  }
-
-  .contract-table td:nth-child(6){
-    align-items:center;
-  }
-
-  .contract-table td:last-child{
-    display:flex;
-    justify-content:flex-end;
-    border-bottom:0;
-    padding:12px 0 2px;
-  }
-
-  .contract-table td:last-child::before{
-    display:none;
-  }
-
-  .contract-table .edit-button{
-    width:100%;
-    min-height:42px;
-    border-radius:9px;
-    font-weight:700;
-  }
-
   .form-grid{
     grid-template-columns:1fr;
   }
@@ -384,6 +327,18 @@ body{
 }
 
 @media(max-width:700px){
+  .contract-kpis{
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+  }
+  .contract-kpi{padding:12px}
+  .contract-kpi-value{font-size:23px}
+  .contract-list-tools{align-items:stretch;flex-direction:column}
+  .contract-search{width:100%;max-width:none;min-width:0}
+  .contract-list-note{white-space:normal}
+  .table-wrap{overflow-x:auto}
+  .contract-table{min-width:850px}
+
   .contract-page{
     padding:14px;
   }
@@ -489,6 +444,20 @@ body{
     <div><p class="eyebrow">DANH SÁCH</p><h2>Hợp đồng hiện tại</h2></div>
     <div id="pageStatus" class="muted"></div>
   </div>
+  <div class="contract-kpis">
+    <div class="contract-kpi"><div class="contract-kpi-label">TỔNG HỢP ĐỒNG</div><div class="contract-kpi-value" id="kpiContractTotal">0</div></div>
+    <div class="contract-kpi"><div class="contract-kpi-label">ĐANG HIỆU LỰC</div><div class="contract-kpi-value" id="kpiContractActive">0</div></div>
+    <div class="contract-kpi"><div class="contract-kpi-label">CHỜ HIỆU LỰC</div><div class="contract-kpi-value" id="kpiContractPending">0</div></div>
+    <div class="contract-kpi"><div class="contract-kpi-label">HẾT HẠN</div><div class="contract-kpi-value" id="kpiContractExpired">0</div></div>
+  </div>
+
+  <div class="contract-list-tools">
+    <input id="contractSearch" class="contract-search" type="search"
+      placeholder="Tìm mã HĐ, tên hợp đồng, khách hàng, tòa nhà, thang máy..."
+      autocomplete="off">
+    <div id="contractListNote" class="contract-list-note">Hiển thị 5 hợp đồng gần nhất</div>
+  </div>
+
   <div class="table-wrap">
     <table class="contract-table">
       <thead>
@@ -553,8 +522,10 @@ body{
           <select id="status">
             <option value="active">Đang hiệu lực</option>
             <option value="pending">Chờ hiệu lực</option>
-            <option value="expired">Hết hạn</option>
           </select>
+          <small class="field-hint">
+            “Hết hạn” do hệ thống tự xác định theo ngày kết thúc và số lần bảo trì còn lại.
+          </small>
         </div>
 
         <div class="form-group">
@@ -1129,6 +1100,10 @@ function fillForm(c){
 
   fields.forEach(id=>$(id).value=c[id]??"");
 
+  if($("status").value === "expired"){
+    $("status").value="active";
+  }
+
   const durationMonths=
     c.contractDurationMonths ||
     deriveDurationMonths(c.startDate,c.endDate);
@@ -1141,32 +1116,136 @@ function fillForm(c){
   refreshContractCalculations();
 }
 
+function getContractEffectiveStatus(c){
+  const storedStatus = c?.status === "pending" ? "pending" : "active";
+
+  // Chỉ hệ thống tự chuyển ACTIVE -> EXPIRED.
+  // PENDING vẫn do người dùng quyết định, không tự chuyển thành ACTIVE.
+  if(storedStatus !== "active"){
+    return storedStatus;
+  }
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const endDate = parseDateInput(c?.endDate);
+  if(endDate){
+    endDate.setHours(0,0,0,0);
+
+    if(today > endDate){
+      return "expired";
+    }
+  }
+
+  const maintenanceEnabled =
+    c?.maintenanceEnabled === "yes" ||
+    c?.maintenanceEnabled === true ||
+    c?.maintenanceEnabled === "true";
+
+  if(maintenanceEnabled){
+    const total = Number(c?.maintenanceTotal ?? 0);
+    const remaining = Number(c?.maintenanceRemaining ?? 0);
+
+    if(total > 0 && remaining <= 0){
+      return "expired";
+    }
+  }
+
+  return "active";
+}
+
+function getContractStatusLabel(status){
+  return status === "expired"
+    ? "Hết hạn"
+    : status === "pending"
+      ? "Chờ hiệu lực"
+      : "Đang hiệu lực";
+}
+
+function getContractStatusClass(status){
+  return status === "expired"
+    ? "expired"
+    : status === "pending"
+      ? "pending"
+      : "active";
+}
+
+function contractTimestamp(c){
+  const value=c?.createdAt;
+  if(value?.toMillis) return value.toMillis();
+  if(value?.seconds) return Number(value.seconds)*1000;
+  if(value instanceof Date) return value.getTime();
+  if(value){
+    const parsed=Date.parse(value);
+    if(!Number.isNaN(parsed)) return parsed;
+  }
+  const fallback=Date.parse(String(c?.startDate||""));
+  return Number.isNaN(fallback)?0:fallback;
+}
+
+function contractSearchHaystack(c){
+  return [
+    c.code,c.name,c.customerName,c.buildingName,c.elevatorName,
+    customerName(c.customerId),buildingName(c.buildingId),elevatorName(c.elevatorId)
+  ].join(" ").toLowerCase();
+}
+
 function render(){
   const rows=$("contractRows");
-  $("emptyState").style.display=contracts.length?"none":"block";
+  const query=String($("contractSearch")?.value||"").trim().toLowerCase();
+
+  const effectiveStatuses=contracts.map(c=>({
+    contract:c,
+    status:getContractEffectiveStatus(c)
+  }));
+
+  $("kpiContractTotal").textContent=contracts.length;
+  $("kpiContractActive").textContent=
+    effectiveStatuses.filter(x=>x.status==="active").length;
+  $("kpiContractPending").textContent=
+    effectiveStatuses.filter(x=>x.status==="pending").length;
+  $("kpiContractExpired").textContent=
+    effectiveStatuses.filter(x=>x.status==="expired").length;
+
+  const sortedContracts=contracts.slice().sort((a,b)=>{
+    const byCreated=contractTimestamp(b)-contractTimestamp(a);
+    return byCreated!==0 ? byCreated : String(b.code||"").localeCompare(String(a.code||""),"vi");
+  });
+
+  const filtered=query
+    ? sortedContracts.filter(c=>contractSearchHaystack(c).includes(query))
+    : sortedContracts.slice(0,5);
+
+  $("emptyState").style.display=filtered.length?"none":"block";
 
   if(loadingContracts){
     rows.innerHTML='<tr><td colspan="7" style="text-align:center;color:#888;padding:30px">Đang tải hợp đồng từ Firebase...</td></tr>';
+    $("contractListNote").textContent="Đang tải...";
     return;
   }
 
-  rows.innerHTML=contracts.map(c=>{
-    const badgeClass=c.status==="active"?"active":c.status==="expired"?"expired":"pending";
-    const status=c.status==="active"?"Đang hiệu lực":c.status==="expired"?"Hết hạn":"Chờ hiệu lực";
+  $("contractListNote").textContent=query
+    ? `Tìm thấy ${filtered.length} / ${contracts.length} hợp đồng`
+    : contracts.length>5
+      ? `Hiển thị 5 hợp đồng gần nhất · còn ${contracts.length-5} hợp đồng, dùng Tìm kiếm để xem`
+      : `Hiển thị ${contracts.length} hợp đồng gần nhất`;
+
+  rows.innerHTML=filtered.map(c=>{
+    const effectiveStatus=getContractEffectiveStatus(c);
+    const badgeClass=getContractStatusClass(effectiveStatus);
+    const status=getContractStatusLabel(effectiveStatus);
     return `
       <tr>
-        <td><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
-        <td>${esc(customerName(c.customerId))}</td>
-        <td>${esc(buildingName(c.buildingId))}</td>
-        <td>${esc(elevatorName(c.elevatorId))}</td>
-        <td>
+        <td data-label="Mã HĐ"><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
+        <td data-label="Khách hàng">${esc(customerName(c.customerId))}</td>
+        <td data-label="Tòa nhà">${esc(buildingName(c.buildingId))}</td>
+        <td data-label="Thang máy">${esc(elevatorName(c.elevatorId))}</td>
+        <td data-label="Thời hạn">
           ${esc(c.startDate||"—")} → ${esc(c.endDate||"—")}
-          ${c.maintenanceEnabled==="yes"
-            ? `<br><small>${Number(c.maintenanceRemaining ?? 0)} lần bảo trì còn lại</small>`
-            : ""}
+          ${c.maintenanceEnabled==="yes" ? `<br><small>${Number(c.maintenanceRemaining ?? 0)} lần bảo trì còn lại</small>` : ""}
         </td>
-        <td><span class="badge ${badgeClass}">${status}</span></td>
-        <td><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
+        <td data-label="Trạng thái"><span class="badge ${badgeClass}">${status}</span></td>
+        <td data-label=""><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
       </tr>`;
   }).join("");
 
@@ -1195,6 +1274,7 @@ async function openEdit(id){
 }
 
 $("addContract").addEventListener("click",openAdd);
+$("contractSearch").addEventListener("input",render);
 
 $("closeModal").addEventListener("click",closeModal);
 $("cancelModal").addEventListener("click",closeModal);
