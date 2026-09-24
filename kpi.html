@@ -58,6 +58,70 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
 .detail-box{background:#171714;border:1px solid #302c25;border-radius:10px;padding:12px}
 .detail-box small{display:block;color:var(--da-muted);margin-bottom:4px}
 .detail-box strong{font-size:17px;color:var(--da-ivory)}
+.kpi-detail-list{padding:10px 12px}
+.kpi-detail-item{
+  border:1px solid #302c25!important;
+  border-radius:12px!important;
+  background:#11110f!important;
+  margin:0 0 8px!important;
+  overflow:hidden!important;
+}
+.kpi-detail-item:last-child{margin-bottom:0!important}
+.kpi-detail-summary{
+  list-style:none!important;
+  cursor:pointer!important;
+  display:grid!important;
+  grid-template-columns:minmax(125px,1.1fr) minmax(150px,1.5fr) minmax(120px,1.2fr) auto 24px!important;
+  gap:10px!important;
+  align-items:center!important;
+  padding:12px 14px!important;
+  min-height:50px!important;
+}
+.kpi-detail-summary::-webkit-details-marker{display:none!important}
+.kpi-detail-summary::after{
+  content:"+"!important;
+  color:var(--da-gold-light)!important;
+  font-size:20px!important;
+  font-weight:700!important;
+  text-align:center!important;
+}
+.kpi-detail-item[open] .kpi-detail-summary::after{content:"−"!important}
+.kpi-detail-main{min-width:0!important}
+.kpi-detail-id{font-weight:700;color:var(--da-ivory)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-detail-sub{font-size:12px;color:var(--da-muted)!important;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-detail-summary .badge{justify-self:start!important}
+.kpi-detail-body{
+  border-top:1px solid #292722!important;
+  padding:10px 14px 14px!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.kpi-detail-field{
+  min-width:0!important;
+  padding:9px 10px!important;
+  border:1px solid #292722!important;
+  border-radius:9px!important;
+  background:#171714!important;
+}
+.kpi-detail-field small{
+  display:block!important;
+  color:var(--da-gold-light)!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  text-transform:uppercase!important;
+  margin-bottom:3px!important;
+}
+.kpi-detail-field div{
+  color:var(--da-text)!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+}
+.kpi-detail-empty{padding:30px 16px;text-align:center;color:var(--da-muted)}
+@media(max-width:900px){
+ .kpi-detail-summary{grid-template-columns:minmax(120px,1fr) minmax(130px,1.2fr) auto 22px!important}
+ .kpi-detail-body{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
 .auth-gate{position:fixed;inset:0;background:#090909;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px}
 .auth-box{max-width:420px;width:100%;padding:28px;border:1px solid var(--da-gold-soft);border-radius:16px;background:#11110f;text-align:center}
 .auth-box h2{color:var(--da-gold-light);margin-top:0}
@@ -215,38 +279,21 @@ body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09)
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Chi tiết Bảo trì</h2><span class="muted" id="maintenanceDetailLabel">—</span></div>
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Phiếu bảo trì</th><th>Kỹ thuật viên</th><th>Khách hàng / Tòa nhà</th>
-            <th>Thang máy</th><th>Lịch bảo trì</th><th>Hoàn thành</th>
-            <th>Trạng thái</th><th>Kết quả</th>
-          </tr>
-        </thead>
-        <tbody id="maintenanceRows"></tbody>
-      </table>
+    <div class="card-head">
+      <h2>Chi tiết Bảo trì</h2>
+      <span class="muted" id="maintenanceDetailLabel">—</span>
     </div>
-    <div class="empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
+    <div id="maintenanceRows" class="kpi-detail-list"></div>
+    <div class="kpi-detail-empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Chi tiết Work Order</h2><span class="muted" id="detailLabel">—</span></div>
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Work Order</th><th>Kỹ thuật viên</th><th>Nguồn</th>
-            <th>Khách hàng / Tòa nhà</th><th>Thang máy</th>
-            <th>Mở ngày</th><th>Hạn</th><th>Hoàn thành</th>
-            <th>Trạng thái</th><th>Kết quả hạn</th><th>Xử lý</th>
-          </tr>
-        </thead>
-        <tbody id="detailRows"></tbody>
-      </table>
+    <div class="card-head">
+      <h2>Chi tiết Work Order</h2>
+      <span class="muted" id="detailLabel">—</span>
     </div>
-    <div class="empty" id="detailEmpty">Chưa có Work Order trong kỳ.</div>
+    <div id="detailRows" class="kpi-detail-list"></div>
+    <div class="kpi-detail-empty" id="detailEmpty">Chưa có Work Order trong kỳ.</div>
   </div>
 </main>
 
@@ -512,20 +559,39 @@ function renderMaintenanceDetails(){
   $("maintenanceDetailLabel").textContent=`${source.length} lượt bảo trì`;
   if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
-  rows.innerHTML=source.map(r=>{
+  rows.innerHTML=source.map((r,i)=>{
     const result=r.isCompletedOnTime?'<span class="badge done">Đúng lịch</span>':
       r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':
       r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
-    return `<tr>
-      <td data-label="Phiếu bảo trì"><strong>${esc(r.ticketNo||r.id)}</strong></td>
-      <td data-label="Kỹ thuật viên">${esc(r.technicianName||"—")}</td>
-      <td data-label="Khách hàng / Tòa nhà">${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
-      <td data-label="Thang máy">${esc(r.elevatorName||"—")}<br><span class="muted">${esc(r.elevatorAssetCode||"")}</span></td>
-      <td data-label="Lịch bảo trì">${fmt(r.scheduledDate)}</td>
-      <td data-label="Hoàn thành">${fmt(r.completedDate)}</td>
-      <td data-label="Trạng thái"><span class="badge ${r.status==="completed"?"done":r.isOverdue?"late":"progress"}">${esc(r.status==="completed"?"Hoàn thành":r.status==="assigned"?"Đã phân công":r.status==="in_progress"?"Đang thực hiện":"Chưa hoàn thành")}</span></td>
-      <td data-label="Kết quả">${result}</td>
-    </tr>`;
+    const status=r.status==="completed"?"Hoàn thành":
+      r.status==="assigned"?"Đã phân công":
+      r.status==="in_progress"?"Đang thực hiện":"Chưa hoàn thành";
+    const statusCls=r.status==="completed"?"done":r.isOverdue?"late":"progress";
+    return `<details class="kpi-detail-item">
+      <summary class="kpi-detail-summary">
+        <div class="kpi-detail-main">
+          <div class="kpi-detail-id">${esc(r.ticketNo||r.id)}</div>
+          <div class="kpi-detail-sub">${esc(r.technicianName||"—")}</div>
+        </div>
+        <div class="kpi-detail-main">
+          <div class="kpi-detail-id">${esc(r.customerName||"—")}</div>
+          <div class="kpi-detail-sub">${esc(r.buildingName||"—")} · ${esc(r.elevatorName||"—")}</div>
+        </div>
+        <div><span class="badge ${statusCls}">${esc(status)}</span></div>
+      </summary>
+      <div class="kpi-detail-body">
+        <div class="kpi-detail-field"><small>Phiếu bảo trì</small><div>${esc(r.ticketNo||r.id)}</div></div>
+        <div class="kpi-detail-field"><small>Kỹ thuật viên</small><div>${esc(r.technicianName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Khách hàng</small><div>${esc(r.customerName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Tòa nhà</small><div>${esc(r.buildingName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Thang máy</small><div>${esc(r.elevatorName||"—")} ${r.elevatorAssetCode?`· ${esc(r.elevatorAssetCode)}`:""}</div></div>
+        <div class="kpi-detail-field"><small>Lịch bảo trì</small><div>${fmt(r.scheduledDate)}</div></div>
+        <div class="kpi-detail-field"><small>Hoàn thành</small><div>${fmt(r.completedDate)}</div></div>
+        <div class="kpi-detail-field"><small>Trạng thái</small><div><span class="badge ${statusCls}">${esc(status)}</span></div></div>
+        <div class="kpi-detail-field"><small>Kết quả</small><div>${result}</div></div>
+        <div class="kpi-detail-field"><small>Hợp đồng</small><div>${esc(r.contractCode||"—")}</div></div>
+      </div>
+    </details>`;
   }).join("");
 }
 function renderDetails(){
@@ -541,19 +607,36 @@ function renderDetails(){
     const result=r.isCompletedOnTime?'<span class="badge done">Đúng hạn</span>':
       r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':
       r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
-    return `<tr>
-      <td data-label="Work Order"><strong>${esc(r.workOrderNo||r.id)}</strong></td>
-      <td data-label="Kỹ thuật viên">${esc(r.technicianName||"—")}</td>
-      <td data-label="Nguồn"><span class="badge ${sourceClass(r.sourceType)}">${esc(sourceLabel(r.sourceType))}</span></td>
-      <td data-label="Khách hàng / Tòa nhà">${esc(r.customerName||"—")}<br><span class="muted">${esc(r.buildingName||"—")}</span></td>
-      <td data-label="Thang máy">${esc(r.elevatorName||"—")}<br><span class="muted">${esc(r.elevatorAssetCode||"")}</span></td>
-      <td data-label="Mở ngày">${fmt(r.openedDate)}</td>
-      <td data-label="Hạn">${fmt(r.dueDate)}</td>
-      <td data-label="Hoàn thành">${fmt(r.completedDate)}</td>
-      <td data-label="Trạng thái"><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></td>
-      <td data-label="Kết quả hạn">${result}</td>
-      <td data-label="Xử lý">${r.processingDays==null?"—":Number(r.processingDays).toFixed(1)+" ngày"}</td>
-    </tr>`;
+    return `<details class="kpi-detail-item">
+      <summary class="kpi-detail-summary">
+        <div class="kpi-detail-main">
+          <div class="kpi-detail-id">${esc(r.workOrderNo||r.id)}</div>
+          <div class="kpi-detail-sub">${esc(r.technicianName||"—")}</div>
+        </div>
+        <div class="kpi-detail-main">
+          <div class="kpi-detail-id">${esc(r.customerName||"—")}</div>
+          <div class="kpi-detail-sub">${esc(r.buildingName||"—")} · ${esc(r.elevatorName||"—")}</div>
+        </div>
+        <div><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></div>
+      </summary>
+      <div class="kpi-detail-body">
+        <div class="kpi-detail-field"><small>Work Order</small><div>${esc(r.workOrderNo||r.id)}</div></div>
+        <div class="kpi-detail-field"><small>Kỹ thuật viên</small><div>${esc(r.technicianName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Nguồn</small><div><span class="badge ${sourceClass(r.sourceType)}">${esc(sourceLabel(r.sourceType))}</span></div></div>
+        <div class="kpi-detail-field"><small>Khách hàng</small><div>${esc(r.customerName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Tòa nhà</small><div>${esc(r.buildingName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Thang máy</small><div>${esc(r.elevatorName||"—")} ${r.elevatorAssetCode?`· ${esc(r.elevatorAssetCode)}`:""}</div></div>
+        <div class="kpi-detail-field"><small>Mở ngày</small><div>${fmt(r.openedDate)}</div></div>
+        <div class="kpi-detail-field"><small>Hạn</small><div>${fmt(r.dueDate)}</div></div>
+        <div class="kpi-detail-field"><small>Hoàn thành</small><div>${fmt(r.completedDate)}</div></div>
+        <div class="kpi-detail-field"><small>Trạng thái</small><div><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></div></div>
+        <div class="kpi-detail-field"><small>Kết quả hạn</small><div>${result}</div></div>
+        <div class="kpi-detail-field"><small>Xử lý</small><div>${r.processingDays==null?"—":Number(r.processingDays).toFixed(1)+" ngày"}</div></div>
+        <div class="kpi-detail-field"><small>Mã tài sản thang</small><div>${esc(r.elevatorAssetCode||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Hợp đồng</small><div>${esc(r.contractCode||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Ghi chú nguồn</small><div>${esc(r.sourceNote||"—")}</div></div>
+      </div>
+    </details>`;
   }).join("");
 }
 function render(){renderSummary();renderTechRows();renderMaintenanceDetails();renderDetails()}
