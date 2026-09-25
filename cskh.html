@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>Đức Anh Maintenance — CSKH</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/mobile.css">
+<style>
+:root{--bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;--gold2:#f0ca76;--text:#eee9df;--muted:#aaa49a;--border:#3a3428;--ok:#5fca91;--danger:#e35b4f;--blue:#7aa7ff;--purple:#c1a0ff}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text)}body{background:linear-gradient(180deg,#0b0b0a,#080808);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.page{max-width:1400px;margin:auto;padding:22px 16px 60px}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0 0 5px;color:var(--gold2);font-size:30px}.user-name{font-size:16px;font-weight:700;margin:2px 0 4px}.muted{color:var(--muted)}.head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.head-actions .btn{min-height:44px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}.kpi,.card{background:var(--panel);border:1px solid var(--border);border-radius:14px}.kpi{padding:15px}.kpi b{display:block;color:var(--gold2);font-size:12px}.kpi strong{display:block;font-size:28px;margin-top:5px}.kpi small{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.35}.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:15px}.field label{display:block;font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #4a4438;border-radius:9px;padding:10px;background:var(--panel2);color:var(--text);font:inherit;outline:none}.field textarea{min-height:90px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}.status{padding:10px 12px;color:var(--muted);font-size:13px}.status.ok{color:#75dda5}.status.error{color:#ff8176}.section-title{padding:14px 15px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;gap:10px;align-items:center}.section-title strong{color:var(--gold2)}.count{font-size:12px;color:var(--muted)}.request-list{display:grid}.request{display:grid;grid-template-columns:135px 1.2fr 1fr 135px 125px 90px;gap:12px;align-items:center;padding:14px 15px;border-bottom:1px solid #292722}.request:last-child{border-bottom:0}.request:hover{background:#161613}.request-code strong{color:var(--gold2);display:block}.request-code span{color:var(--muted);font-size:12px}.request-main strong{display:block}.request-main span,.request-sub span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.request-date strong{display:block}.request-date span{font-size:12px;color:var(--muted)}.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}.badge.draft{background:#27261f;color:#c9c1b2}.badge.submitted,.badge.admin_review{background:rgba(122,167,255,.14);color:#8fb8ff}.badge.need_info{background:rgba(214,168,79,.15);color:var(--gold2)}.badge.created{background:rgba(95,202,145,.14);color:#75dda5}.badge.duplicate,.badge.rejected{background:rgba(227,91,79,.14);color:#ff8176}.badge.approved{background:rgba(193,160,255,.14);color:var(--purple)}.badge.cancelled{background:#27261f;color:#999}.btn{border:1px solid #695329;background:#151512;color:var(--text);border-radius:9px;padding:9px 12px;font:inherit;cursor:pointer}.btn:hover{border-color:var(--gold)}.btn.primary{background:linear-gradient(180deg,#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}.btn:disabled{opacity:.55;cursor:not-allowed}.empty{padding:40px;text-align:center;color:var(--muted)}.note{padding:14px 15px;color:var(--muted);font-size:13px;border-top:1px solid #302b23;background:#10100e;border-radius:0 0 14px 14px}.note strong{color:var(--gold2)}.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}.modal.show{display:flex}.modal-card{width:min(860px,100%);max-height:92vh;overflow:auto;background:#10100e;border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 80px rgba(0,0,0,.5)}.modal-head{padding:17px 18px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;align-items:center;gap:12px}.modal-head h2{margin:0;color:var(--gold2);font-size:20px}.modal-body{padding:18px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid .full{grid-column:1/-1}.source-box{display:flex;gap:8px;margin-bottom:16px}.source-box button{flex:1}.source-box button.active{background:rgba(214,168,79,.16);border-color:var(--gold);color:var(--gold2)}.modal-foot{padding:14px 18px;border-top:1px solid #302b23;display:flex;justify-content:flex-end;gap:10px}.section-caption{color:var(--gold2);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:18px 0 10px}.request-detail{padding:18px;line-height:1.6}.request-detail .row{display:grid;grid-template-columns:170px 1fr;gap:10px;border-bottom:1px solid #292722;padding:9px 0}.request-detail .row:last-child{border-bottom:0}.detail-modal{z-index:55}
+@media(max-width:950px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.request{grid-template-columns:120px 1fr 1fr 120px}.request .hide-md{display:none}}
+@media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.request{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.request-code,.request-main,.request-sub{grid-column:1/-1}.request-date{grid-column:1}.request-action{grid-column:2;text-align:right}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.source-box{flex-direction:column}.request-detail .row{grid-template-columns:1fr;gap:2px}}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="head">
+    <div>
+      <h1>CSKH</h1>
+      <div class="user-name" id="userName">Đang xác thực…</div>
+      <div class="muted">Tiếp nhận yêu cầu khách hàng và chuyển Admin xử lý.</div>
+    </div>
+    <div class="head-actions">
+      <button class="btn" id="refreshBtn" type="button">↻ Cập nhật</button>
+      <button class="btn primary" id="newBtn" type="button">＋ Tạo phiếu yêu cầu</button>
+    </div>
+  </div>
+
+  <section class="kpis">
+    <div class="kpi"><b>CHỜ XỬ LÝ</b><strong id="kPending">0</strong><small>Đã gửi Admin</small></div>
+    <div class="kpi"><b>CẦN BỔ SUNG</b><strong id="kNeedInfo">0</strong><small>Admin yêu cầu thêm thông tin</small></div>
+    <div class="kpi"><b>ĐÃ TẠO</b><strong id="kCreated">0</strong><small>Đã tạo dữ liệu chính thức</small></div>
+    <div class="kpi"><b>TỔNG PHIẾU</b><strong id="kTotal">0</strong><small>Phiếu của tài khoản CSKH</small></div>
+  </section>
+
+  <section class="toolbar">
+    <div class="field"><label for="search">Tìm phiếu</label><input id="search" placeholder="Mã phiếu, khách hàng, tòa nhà…"></div>
+    <div class="field"><label for="statusFilter">Trạng thái</label><select id="statusFilter"><option value="">Tất cả</option><option value="DRAFT">Nháp</option><option value="SUBMITTED">Đã gửi Admin</option><option value="ADMIN_REVIEW">Admin đang xử lý</option><option value="NEED_INFO">Cần bổ sung</option><option value="CREATED">Đã tạo</option><option value="DUPLICATE">Trùng dữ liệu</option><option value="REJECTED">Từ chối</option></select></div>
+    <div class="field"><label for="sourceFilter">Nguồn</label><select id="sourceFilter"><option value="">Tất cả</option><option value="EXISTING_CUSTOMER">Khách hàng có sẵn</option><option value="EXTERNAL_CUSTOMER">Khách hàng ngoài</option></select></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><strong>DANH SÁCH PHIẾU CSKH</strong><span class="count" id="count">0 phiếu</span></div>
+    <div id="status" class="status">Đang xác thực…</div>
+    <div id="requests" class="request-list"></div>
+    <div id="empty" class="empty" style="display:none">Chưa có phiếu CSKH.</div>
+    <div class="note"><strong>Nguyên tắc:</strong> CSKH chỉ tạo phiếu. Dữ liệu Customer → Building → Elevator chính thức do Admin tạo/duyệt.</div>
+  </section>
+</main>
+
+<div class="modal" id="formModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Tạo phiếu yêu cầu CSKH</h2><button class="btn" id="closeForm" type="button">Đóng</button></div>
+    <div class="modal-body">
+      <div class="source-box">
+        <button class="btn active" type="button" data-source="EXTERNAL_CUSTOMER">Khách hàng ngoài</button>
+        <button class="btn" type="button" data-source="EXISTING_CUSTOMER">Khách hàng có sẵn</button>
+      </div>
+      <input type="hidden" id="requestSource" value="EXTERNAL_CUSTOMER">
+      <div class="field" style="margin-bottom:12px"><label for="requestType">Loại yêu cầu</label><select id="requestType"><option value="MAINTENANCE_REQUEST">Yêu cầu bảo trì</option><option value="SERVICE_REQUEST">Yêu cầu dịch vụ</option><option value="CUSTOMER_REGISTRATION">Đăng ký khách hàng</option><option value="OTHER">Khác</option></select></div>
+
+      <div id="existingFields" style="display:none">
+        <div class="section-caption">Khách hàng có sẵn</div>
+        <div class="form-grid">
+          <div class="field"><label for="customerId">Khách hàng</label><select id="customerId"><option value="">Chọn khách hàng</option></select></div>
+          <div class="field"><label for="buildingId">Tòa nhà</label><select id="buildingId"><option value="">Chọn tòa nhà</option></select></div>
+          <div class="field full"><label for="elevatorId">Thang máy</label><select id="elevatorId"><option value="">Chọn thang máy</option></select></div>
+        </div>
+      </div>
+
+      <div id="externalFields">
+        <div class="section-caption">Thông tin khách hàng ngoài</div>
+        <div class="form-grid">
+          <div class="field"><label for="externalCustomerName">Tên khách hàng *</label><input id="externalCustomerName" placeholder="Tên cá nhân / doanh nghiệp"></div>
+          <div class="field"><label for="externalCustomerPhone">Số điện thoại *</label><input id="externalCustomerPhone" inputmode="tel" placeholder="Số điện thoại"></div>
+          <div class="field"><label for="externalCustomerEmail">Email</label><input id="externalCustomerEmail" type="email" placeholder="Email"></div>
+          <div class="field"><label for="externalCustomerTax">Mã số thuế</label><input id="externalCustomerTax" placeholder="Mã số thuế"></div>
+          <div class="field full"><label for="externalCustomerAddress">Địa chỉ khách hàng</label><input id="externalCustomerAddress" placeholder="Địa chỉ"></div>
+        </div>
+
+        <div class="section-caption">Tòa nhà</div>
+        <div class="form-grid">
+          <div class="field"><label for="externalBuildingName">Tên tòa nhà *</label><input id="externalBuildingName" placeholder="Tên tòa nhà"></div>
+          <div class="field"><label for="externalBuildingAddress">Địa chỉ *</label><input id="externalBuildingAddress" placeholder="Địa chỉ tòa nhà"></div>
+          <div class="field"><label for="externalBuildingManager">Người phụ trách</label><input id="externalBuildingManager" placeholder="Họ tên"></div>
+          <div class="field"><label for="externalBuildingPhone">SĐT phụ trách</label><input id="externalBuildingPhone" inputmode="tel" placeholder="Số điện thoại"></div>
+        </div>
+
+        <div class="section-caption">Thang máy</div>
+        <div class="form-grid">
+          <div class="field"><label for="externalElevatorName">Tên / vị trí thang *</label><input id="externalElevatorName" placeholder="Ví dụ: Thang máy số 01"></div>
+          <div class="field"><label for="externalElevatorExistingCode">Mã thang cũ</label><input id="externalElevatorExistingCode" placeholder="Nếu khách hàng đã có mã"></div>
+          <div class="field"><label for="externalElevatorCapacity">Tải trọng (kg)</label><input id="externalElevatorCapacity" inputmode="numeric" placeholder="Ví dụ: 450"></div>
+          <div class="field"><label for="externalElevatorManufacturer">Hãng sản xuất</label><input id="externalElevatorManufacturer" placeholder="Hãng"></div>
+        </div>
+      </div>
+
+      <div class="section-caption">Nội dung yêu cầu</div>
+      <div class="form-grid">
+        <div class="field full"><label for="description">Mô tả yêu cầu</label><textarea id="description" placeholder="Nội dung khách hàng yêu cầu…"></textarea></div>
+        <div class="field full"><label for="note">Ghi chú nội bộ</label><textarea id="note" placeholder="Thông tin thêm cho Admin…"></textarea></div>
+      </div>
+      <div id="formError" class="status error" style="display:none"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" id="cancelForm" type="button">Hủy</button><button class="btn primary" id="submitForm" type="button">Gửi Admin</button></div>
+  </div>
+</div>
+
+<div class="modal detail-modal" id="detailModal">
+  <div class="modal-card"><div class="modal-head"><h2>Chi tiết phiếu</h2><button class="btn" id="closeDetail" type="button">Đóng</button></div><div id="detailBody" class="request-detail"></div></div>
+</div>
+
+<script type="module">
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { httpsCallable, getFunctions } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
+import { auth, db } from "./js/core/firebase.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { getCustomers, getBuildings, getElevators } from "./js/core/firestore-v1.js";
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+const statusText={DRAFT:"Nháp",SUBMITTED:"Đã gửi Admin",ADMIN_REVIEW:"Admin đang xử lý",NEED_INFO:"Cần bổ sung",APPROVED:"Đã duyệt",CREATED:"Đã tạo",DUPLICATE:"Trùng dữ liệu",REJECTED:"Từ chối",CANCELLED:"Đã hủy"};
+const sourceText={EXISTING_CUSTOMER:"Khách hàng có sẵn",EXTERNAL_CUSTOMER:"Khách hàng ngoài"};
+const typeText={MAINTENANCE_REQUEST:"Yêu cầu bảo trì",SERVICE_REQUEST:"Yêu cầu dịch vụ",CUSTOMER_REGISTRATION:"Đăng ký khách hàng",OTHER:"Khác"};
+let profile=null,requests=[],customers=[],buildings=[],elevators=[];
+
+function fn(name){return httpsCallable(getFunctions(auth.app,"asia-southeast1"),name)}
+function formatDate(v){if(!v)return"—";try{return new Date(v?.toDate?v.toDate():v).toLocaleString("vi-VN")}catch{return String(v)}}
+function badgeClass(s){return String(s||"draft").toLowerCase()}
+function subject(r){
+  if(r.requestSource==="EXTERNAL_CUSTOMER") return r.externalCustomer?.name||"Khách hàng ngoài";
+  return customers.find(x=>x.id===r.customerId)?.name||r.customerId||"Khách hàng có sẵn";
+}
+function buildingName(r){
+  if(r.requestSource==="EXTERNAL_CUSTOMER") return r.externalBuilding?.name||"—";
+  return buildings.find(x=>x.id===r.buildingId)?.name||r.buildingId||"—";
+}
+function elevatorName(r){
+  if(r.requestSource==="EXTERNAL_CUSTOMER") return r.externalElevator?.name||"—";
+  return elevators.find(x=>x.id===r.elevatorId)?.name||r.elevatorId||"—";
+}
+function render(){
+  const q=$("search").value.trim().toLowerCase(),st=$("statusFilter").value,src=$("sourceFilter").value;
+  const list=requests.filter(r=>{
+    if(st&&r.status!==st)return false;if(src&&r.requestSource!==src)return false;
+    const hay=[r.id,r.description,r.note,subject(r),buildingName(r),elevatorName(r)].join(" ").toLowerCase();return !q||hay.includes(q);
+  });
+  $("requests").innerHTML=list.map(r=>`<div class="request"><div class="request-code"><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong><span>${esc(sourceText[r.requestSource]||r.requestSource)}</span></div><div class="request-main"><strong>${esc(subject(r))}</strong><span>${esc(buildingName(r))}</span></div><div class="request-sub"><strong>${esc(elevatorName(r))}</strong><span>${esc(typeText[r.requestType]||r.requestType)}</span></div><div class="request-date"><strong>${esc(formatDate(r.createdAt))}</strong><span>${esc(r.createdByName||"")}</span></div><div><span class="badge ${badgeClass(r.status)}">${esc(statusText[r.status]||r.status)}</span></div><div class="request-action"><button class="btn" type="button" data-open="${esc(r.id)}">Mở</button></div></div>`).join("");
+  $("empty").style.display=list.length?"none":"block";$("count").textContent=`${list.length} phiếu`;
+  $("kTotal").textContent=requests.length;$("kPending").textContent=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW"].includes(r.status)).length;$("kNeedInfo").textContent=requests.filter(r=>r.status==="NEED_INFO").length;$("kCreated").textContent=requests.filter(r=>r.status==="CREATED").length;
+}
+async function loadReference(){
+  try{[customers,buildings,elevators]=await Promise.all([getCustomers(),getBuildings(),getElevators()]);}catch(e){console.warn("CSKH reference load",e);customers=[];buildings=[];elevators=[]}
+  fillCustomers();
+}
+function fillCustomers(){
+  $("customerId").innerHTML='<option value="">Chọn khách hàng</option>'+customers.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  fillBuildings();
+}
+function fillBuildings(){
+  const id=$("customerId").value;const rows=buildings.filter(b=>!id||b.customerId===id);$("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>'+rows.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join("");fillElevators();
+}
+function fillElevators(){
+  const id=$("buildingId").value;const rows=elevators.filter(e=>!id||e.buildingId===id);$("elevatorId").innerHTML='<option value="">Chọn thang máy</option>'+rows.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}${e.assetCode?` — ${esc(e.assetCode)}`:""}</option>`).join("");
+}
+function setSource(source){
+  $("requestSource").value=source;document.querySelectorAll("[data-source]").forEach(b=>b.classList.toggle("active",b.dataset.source===source));$("existingFields").style.display=source==="EXISTING_CUSTOMER"?"block":"none";$("externalFields").style.display=source==="EXTERNAL_CUSTOMER"?"block":"none";
+}
+function resetForm(){
+  $("requestType").value="MAINTENANCE_REQUEST";setSource("EXTERNAL_CUSTOMER");$("customerId").value="";fillBuildings();["externalCustomerName","externalCustomerPhone","externalCustomerEmail","externalCustomerTax","externalCustomerAddress","externalBuildingName","externalBuildingAddress","externalBuildingManager","externalBuildingPhone","externalElevatorName","externalElevatorExistingCode","externalElevatorCapacity","externalElevatorManufacturer","description","note"].forEach(id=>$(id).value="");$("formError").style.display="none";
+}
+function openForm(){resetForm();$("formModal").classList.add("show")}
+function closeForm(){$("formModal").classList.remove("show")}
+function openDetail(id){const r=requests.find(x=>x.id===id);if(!r)return;const rows=[['Mã phiếu',r.id],['Trạng thái',statusText[r.status]||r.status],['Nguồn',sourceText[r.requestSource]||r.requestSource],['Loại',typeText[r.requestType]||r.requestType],['Khách hàng',subject(r)],['Tòa nhà',buildingName(r)],['Thang máy',elevatorName(r)],['Mô tả',r.description||'—'],['Ghi chú',r.note||'—'],['Tạo lúc',formatDate(r.createdAt)],['Cập nhật',formatDate(r.updatedAt)],['Kết quả',r.resultNote||'—']];$("detailBody").innerHTML=rows.map(x=>`<div class="row"><strong>${esc(x[0])}</strong><span>${esc(x[1])}</span></div>`).join("");$("detailModal").classList.add("show")}
+async function loadRequests(){
+  $("status").textContent="Đang tải phiếu CSKH…";$("status").className="status";
+  try{const result=await fn("getCSKHRequests")({});requests=Array.isArray(result.data)?result.data:[];render();$("status").textContent=`Đã tải ${requests.length} phiếu.`;$("status").className="status ok"}catch(e){console.error(e);$("status").textContent=e?.message||"Không tải được phiếu CSKH.";$("status").className="status error"}
+}
+function externalPayload(){return {name:$("externalCustomerName").value.trim(),phone:$("externalCustomerPhone").value.trim(),email:$("externalCustomerEmail").value.trim(),taxCode:$("externalCustomerTax").value.trim(),address:$("externalCustomerAddress").value.trim()}}
+async function createAndSubmit(){
+  const source=$("requestSource").value;const button=$("submitForm");button.disabled=true;button.textContent="Đang gửi…";$("formError").style.display="none";
+  try{
+    const data={requestSource:source,requestType:$("requestType").value,description:$("description").value.trim(),note:$("note").value.trim(),customerId:source==="EXISTING_CUSTOMER"?$("customerId").value:"",buildingId:source==="EXISTING_CUSTOMER"?$("buildingId").value:"",elevatorId:source==="EXISTING_CUSTOMER"?$("elevatorId").value:"",externalCustomer:null,externalBuilding:null,externalElevator:null};
+    if(source==="EXTERNAL_CUSTOMER"){
+      data.externalCustomer=externalPayload();data.externalBuilding={name:$("externalBuildingName").value.trim(),address:{detail:$("externalBuildingAddress").value.trim()},manager:{name:$("externalBuildingManager").value.trim(),phone:$("externalBuildingPhone").value.trim()}};data.externalElevator={name:$("externalElevatorName").value.trim(),existingCode:$("externalElevatorExistingCode").value.trim(),technical:{capacityKg:Number($("externalElevatorCapacity").value)||null},manufacturer:$("externalElevatorManufacturer").value.trim()};
+    }
+    const created=await fn("createCSKHRequest")(data);const requestId=created.data?.id;if(!requestId)throw new Error("Không nhận được mã phiếu CSKH.");await fn("submitCSKHRequest")({requestId});closeForm();await loadRequests();alert("Đã gửi phiếu CSKH cho Admin.");
+  }catch(e){console.error(e);$("formError").textContent=e?.message||"Không thể tạo phiếu.";$("formError").style.display="block"}finally{button.disabled=false;button.textContent="Gửi Admin"}
+}
+
+$("newBtn").addEventListener("click",openForm);$("closeForm").addEventListener("click",closeForm);$("cancelForm").addEventListener("click",closeForm);$("closeDetail").addEventListener("click",()=>$("detailModal").classList.remove("show"));$("refreshBtn").addEventListener("click",loadRequests);$("submitForm").addEventListener("click",createAndSubmit);$("search").addEventListener("input",render);$("statusFilter").addEventListener("change",render);$("sourceFilter").addEventListener("change",render);document.querySelectorAll("[data-source]").forEach(b=>b.addEventListener("click",()=>setSource(b.dataset.source)));$("customerId").addEventListener("change",fillBuildings);$("buildingId").addEventListener("change",fillElevators);$("requests").addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)openDetail(b.dataset.open)});document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeForm();$("detailModal").classList.remove("show")}});
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){$("status").textContent="Chưa đăng nhập Firebase.";$("status").className="status error";return}
+  try{const snap=await getDoc(doc(db,"users",user.uid));profile=snap.exists()?snap.data():null;if(!profile)throw new Error("Không tồn tại users/{uid}.");const role=String(profile.role||"").trim().toUpperCase();if(!["CSKH","CUSTOMER_SERVICE"].includes(role)){throw new Error("Màn hình này dành cho tài khoản CSKH.")}$("userName").textContent=profile.name||user.displayName||user.email||"CSKH";await loadReference();await loadRequests()}catch(e){console.error(e);$("status").textContent=e?.message||"Không thể xác thực tài khoản CSKH.";$("status").className="status error"}
+});
+</script>
+</body>
+</html>
