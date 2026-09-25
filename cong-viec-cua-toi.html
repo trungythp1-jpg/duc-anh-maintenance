@@ -22,7 +22,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.6-sort-ticket-no">
+<body data-build="cong-viec-cua-toi-v1.7-ktv-report-actions">
 <main class="page">
   <div class="head">
     <div>
@@ -58,7 +58,7 @@
     <div id="status" class="status">Đang xác thực…</div>
     <div id="tasks" class="task-list"></div>
     <div id="empty" class="empty" style="display:none">Chưa có công việc được phân công.</div>
-    <div class="note"><strong>Nguyên tắc:</strong> Schedule chỉ đề xuất ngày/cửa sổ. KTV tự sắp xếp ngày làm việc phù hợp. Màn hình này không tự tạo Maintenance hoặc Work Order.</div>
+    <div class="note"><strong>Nguyên tắc:</strong> Schedule chỉ đề xuất ngày/cửa sổ. KTV tự sắp xếp ngày làm việc phù hợp. KTV không tạo Work Order trực tiếp; chỉ báo cáo trạng thái công việc được giao và báo hoàn thành phiếu bảo trì.</div>
   </div>
 </main>
 
@@ -66,7 +66,7 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "./js/core/firebase.js";
 import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getMaintenances, getWorkOrders } from "./js/core/firestore-v1.js";
+import { getMaintenances, getWorkOrders, reportMaintenanceCompletion, reportWorkOrderByTechnician } from "./js/core/firestore-v1.js";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -125,7 +125,20 @@ function render(){
     const badges=isCompleted
       ? `<span class="badge done">Hoàn thành</span>`
       : `<span class="badge ${esc(x.state)}">${esc(x.stateLabel)}</span><div style="margin-top:5px"><span class="badge ${x.kind==="workorder"?"wo":"progress"}">${esc(x.statusLabel)}</span></div>`;
-    return `<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div>${badges}</div><div class="task-action"><button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button></div></div>`;
+    return `<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div>${badges}</div><div class="task-action">
+      <button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button>
+      ${
+        x.kind==="maintenance" && !["completed","cancelled","waiting_confirmation"].includes(x.status)
+          ? `<button class="btn primary" type="button" data-report-maint="${esc(x.id)}" style="margin-top:5px;width:100%">Báo đã hoàn thành</button>`
+          : ""
+      }
+      ${
+        x.kind==="workorder" && x.status!=="completed" && x.status!=="cancelled"
+          ? `<button class="btn" type="button" data-report-wo="in_progress:${esc(x.id)}" style="margin-top:5px;width:100%">Chưa hoàn thành</button>
+             <button class="btn primary" type="button" data-report-wo="completed:${esc(x.id)}" style="margin-top:5px;width:100%">Đã hoàn thành</button>`
+          : ""
+      }
+    </div></div>`;
   }).join("");
   const maintenanceItems=items.filter(x=>x.kind==="maintenance");
   const workOrderItems=items.filter(x=>x.kind==="workorder");
@@ -157,7 +170,56 @@ $("requestBtn").addEventListener("click",()=>{
   // Work Orders page automatically opens the request flow for TECHNICIAN.
   window.location.href="work-orders.html";
 });
-$("tasks").addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(!b)return;const [kind,id]=b.dataset.open.split(":");window.location.href=(kind==="maintenance"?`maintenance.html?id=${encodeURIComponent(id)}`:`work-orders.html?id=${encodeURIComponent(id)}`)});
+$("tasks").addEventListener("click",async e=>{
+  const reportMaintenanceBtn=e.target.closest("[data-report-maint]");
+  if(reportMaintenanceBtn){
+    const id=reportMaintenanceBtn.dataset.reportMaint;
+    if(!id)return;
+    reportMaintenanceBtn.disabled=true;
+    const oldText=reportMaintenanceBtn.textContent;
+    reportMaintenanceBtn.textContent="Đang gửi…";
+    try{
+      await reportMaintenanceCompletion(id,{
+        completedDate:todayIso(),
+        completedByTechnicianId:String(profile?.technicianId||"").trim(),
+        completedByTechnicianName:String(
+          profile?.technicianName ||
+          profile?.displayName ||
+          profile?.name ||
+          profile?.fullName ||
+          profile?.hoTen ||
+          "Kỹ thuật viên"
+        ).trim()
+      });
+      await load();
+    }catch(err){
+      alert(err?.message||"Không thể báo hoàn thành phiếu bảo trì.");
+      reportMaintenanceBtn.disabled=false;
+      reportMaintenanceBtn.textContent=oldText;
+    }
+    return;
+  }
+
+  const reportWoBtn=e.target.closest("[data-report-wo]");
+  if(reportWoBtn){
+    const [status,id]=reportWoBtn.dataset.reportWo.split(":");
+    if(!id)return;
+    reportWoBtn.disabled=true;
+    try{
+      await reportWorkOrderByTechnician(id,status);
+      await load();
+    }catch(err){
+      alert(err?.message||"Không thể cập nhật Work Order.");
+      reportWoBtn.disabled=false;
+    }
+    return;
+  }
+
+  const b=e.target.closest("[data-open]");
+  if(!b)return;
+  const [kind,id]=b.dataset.open.split(":");
+  window.location.href=(kind==="maintenance"?`maintenance.html?id=${encodeURIComponent(id)}`:`work-orders.html?id=${encodeURIComponent(id)}`);
+});
 async function load(){
   $("status").textContent="Đang tải công việc…";
   try{
