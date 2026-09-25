@@ -160,6 +160,51 @@ function buildElevatorData(request, buildingId, customerId) {
   };
 }
 
+
+function buildContractData(request, customerId, buildingId, elevatorId) {
+  const source = request.externalContract || {};
+  const durationMonths = Number(source.durationMonths || 0);
+  const startDate = cleanString(source.startDate);
+  const endDate = (() => {
+    if (!startDate || ![12, 24, 36].includes(durationMonths)) return '';
+    const d = new Date(`${startDate}T00:00:00`);
+    d.setMonth(d.getMonth() + durationMonths);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  if (!cleanString(source.code)) throw new Error('Mã hợp đồng là bắt buộc.');
+  if (!cleanString(source.name)) throw new Error('Tên hợp đồng là bắt buộc.');
+  if (!startDate) throw new Error('Ngày hiệu lực hợp đồng là bắt buộc.');
+  if (![12, 24, 36].includes(durationMonths)) {
+    throw new Error('Thời hạn hợp đồng phải là 12, 24 hoặc 36 tháng.');
+  }
+
+  return {
+    code: cleanString(source.code),
+    name: cleanString(source.name),
+    customerId,
+    buildingId,
+    elevatorId,
+    status: cleanString(source.status) || 'active',
+    signedDate: cleanString(source.signedDate) || new Date().toISOString().slice(0, 10),
+    startDate,
+    endDate,
+    contractValue: Number(source.contractValue || 0),
+    warrantyEnabled: source.warrantyEnabled || 'yes',
+    warrantyPeriod: cleanString(source.warrantyPeriod),
+    warrantyStart: cleanString(source.warrantyStart) || startDate,
+    warrantyEnd: cleanString(source.warrantyEnd) || endDate,
+    warrantyNote: cleanString(source.warrantyNote),
+    maintenanceEnabled: source.maintenanceEnabled || 'yes',
+    maintenanceType: source.maintenanceType || 'paid',
+    maintenanceCycle: source.maintenanceCycle || 'monthly',
+    maintenanceOwner: cleanString(source.maintenanceOwner),
+    paidValue: Number(source.paidValue || 0),
+    paymentDue: cleanString(source.paymentDue),
+    note: cleanString(source.note)
+  };
+}
+
 async function verifyExistingChain(request) {
   const customerId = cleanString(request.customerId);
   const buildingId = cleanString(request.buildingId);
@@ -337,6 +382,28 @@ async function createExternalMasterData(request, options = {}) {
       updatedAt: now()
     });
 
+    let contractRef = null;
+    let contractData = null;
+
+    if (String(request.requestType || '') === 'CONTRACT_REQUEST') {
+      contractRef = db.collection('contracts').doc();
+      contractData = buildContractData(
+        request,
+        customerRef.id,
+        buildingRef.id,
+        elevatorRef.id
+      );
+
+      transaction.set(contractRef, {
+        ...contractData,
+        customerName: customerData.name || '',
+        buildingName: buildingData.name || '',
+        elevatorName: elevatorData.name || '',
+        createdAt: now(),
+        updatedAt: now()
+      });
+    }
+
     if (requestRef && requestSnapshot) {
       const current = requestSnapshot.data() || {};
 
@@ -352,6 +419,7 @@ async function createExternalMasterData(request, options = {}) {
             customerId: customerRef.id,
             buildingId: buildingRef.id,
             elevatorId: elevatorRef.id,
+            contractId: contractRef?.id || '',
             displayCode: code.displayCode
           }
         })
@@ -362,8 +430,11 @@ async function createExternalMasterData(request, options = {}) {
         customerId: customerRef.id,
         buildingId: buildingRef.id,
         elevatorId: elevatorRef.id,
+        contractId: contractRef?.id || '',
         processedAt: now(),
-        resultNote: 'Đã tạo Customer → Building → Elevator.',
+        resultNote: contractRef
+          ? 'Đã tạo Customer → Building → Elevator → Contract.'
+          : 'Đã tạo Customer → Building → Elevator.',
         duplicateResults: preflight.customerDuplicates.filter(
           x => x.severity === 'WARN'
         ),
@@ -376,6 +447,7 @@ async function createExternalMasterData(request, options = {}) {
       customerId: customerRef.id,
       buildingId: buildingRef.id,
       elevatorId: elevatorRef.id,
+      contractId: contractRef?.id || '',
       elevatorCode: code.elevatorCode,
       displayCode: code.displayCode
     };
