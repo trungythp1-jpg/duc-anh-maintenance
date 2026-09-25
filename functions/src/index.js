@@ -16,6 +16,11 @@ const {
 
 const { processImport } = require('./imports');
 
+/* =========================
+   CSKH MODULE V1
+========================= */
+const cskh = require('./cskh');
+
 exports.health = onRequest((req, res) => {
   res.status(200).json({
     ok: true,
@@ -35,3 +40,17 @@ exports.requestConfirmation = requestConfirmation;
 exports.finalizeConfirmation = finalizeConfirmation;
 
 exports.processImport = processImport;
+
+/* =========================
+   CSKH
+========================= */
+
+exports.createCSKHRequest = cskh.createCSKHRequest;
+exports.getCSKHRequest = cskh.getCSKHRequest;
+exports.getCSKHRequests = cskh.getCSKHRequests;
+exports.updateCSKHRequest = cskh.updateCSKHRequest;
+exports.submitCSKHRequest = cskh.submitCSKHRequest;
+
+exports.approveCSKHRequest = cskh.approveCSKHRequest;
+exports.rejectCSKHRequest = cskh.rejectCSKHRequest;
+exports.requestCSKHInfo = cskh.requestCSKHInfo;
