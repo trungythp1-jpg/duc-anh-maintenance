@@ -22,7 +22,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.4-technician-name">
+<body data-build="cong-viec-cua-toi-v1.5-filter-logic">
 <main class="page">
   <div class="head">
     <div>
@@ -97,9 +97,11 @@ function filtered(){
   return items.filter(x=>{
     if(kind&&x.kind!==kind)return false;
     if(view==="active"&&!isActive(x))return false;
-    if(view==="today"&&x.date!==todayIso())return false;
-    if(view==="overdue"&&x.state!=="overdue")return false;
-    if(view==="window"&&x.state!=="window")return false;
+    // Các bộ lọc thời gian chỉ hiển thị công việc chưa hoàn thành.
+    // Ví dụ "Quá hạn" không được hiện PBM đã hoàn thành nhưng ngày thực hiện đã qua.
+    if(view==="today"&&(x.date!==todayIso()||!isActive(x)))return false;
+    if(view==="overdue"&&(x.state!=="overdue"||!isActive(x)))return false;
+    if(view==="window"&&(x.state!=="window"||!isActive(x)))return false;
     if(q){const hay=[x.code,x.title,x.sub,x.elevator,x.asset,x.contract,x.period,x.source,x.statusLabel].join(" ").toLowerCase();if(!hay.includes(q))return false}
     return true;
   });
