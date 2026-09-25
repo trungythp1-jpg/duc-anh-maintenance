@@ -9,7 +9,7 @@
 <style>
 :root{--bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;--gold2:#f0ca76;--text:#eee9df;--muted:#aaa49a;--border:#3a3428;--ok:#5fca91;--danger:#e35b4f;--blue:#7aa7ff;--purple:#c1a0ff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text)}body{background:linear-gradient(180deg,#0b0b0a,#080808);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.page{max-width:1400px;margin:auto;padding:22px 16px 60px}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0 0 5px;color:var(--gold2);font-size:30px}.muted{color:var(--muted)}
+.page{max-width:1400px;margin:auto;padding:22px 16px 60px}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0 0 5px;color:var(--gold2);font-size:30px}.muted{color:var(--muted)}.head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.head-actions .btn{min-height:44px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}.kpi,.card{background:var(--panel);border:1px solid var(--border);border-radius:14px}.kpi{padding:15px}.kpi b{display:block;color:var(--gold2);font-size:12px}.kpi strong{display:block;font-size:28px;margin-top:5px}
 .toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:15px}.field label{display:block;font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:6px}.field input,.field select{width:100%;border:1px solid #4a4438;border-radius:9px;padding:10px;background:var(--panel2);color:var(--text);font:inherit;outline:none}.field input:focus,.field select:focus{border-color:var(--gold)}
 .status{padding:10px 12px;color:var(--muted);font-size:13px}.status.ok{color:#75dda5}.status.error{color:#ff8176}
@@ -19,13 +19,20 @@
 .btn{border:1px solid #695329;background:#151512;color:var(--text);border-radius:9px;padding:9px 12px;font:inherit;cursor:pointer}.btn:hover{border-color:var(--gold)}.btn.primary{background:linear-gradient(180deg,#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}
 .empty{padding:40px;text-align:center;color:var(--muted)}.note{padding:14px 15px;color:var(--muted);font-size:13px;border-top:1px solid #302b23;background:#10100e;border-radius:0 0 14px 14px}.note strong{color:var(--gold2)}
 @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.task{grid-template-columns:110px 1fr 1fr 110px}.task .hide-md{display:none}}
-@media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
+@media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body>
+<body data-build="cong-viec-cua-toi-v1.1-actions">
 <main class="page">
   <div class="head">
-    <div><h1>Công việc của tôi</h1><div class="muted">KTV chỉ xem các công việc được phân công cho tài khoản hiện tại.</div></div>
+    <div>
+      <h1>Công việc của tôi</h1>
+      <div class="muted">KTV quản lý các công việc được phân công và chủ động ghi nhận công việc phát sinh.</div>
+    </div>
+    <div class="head-actions">
+      <button class="btn" id="requestBtn" type="button">＋ Gửi yêu cầu</button>
+      <button class="btn primary" id="maintenanceBtn" type="button">＋ Tạo phiếu bảo trì</button>
+    </div>
   </div>
 
   <div class="kpis">
@@ -98,6 +105,15 @@ function render(){
   $("kTotal").textContent=items.length;$("kToday").textContent=items.filter(x=>x.date===todayIso()&&!(["completed","cancelled"].includes(x.status))).length;$("kOverdue").textContent=items.filter(x=>x.state==="overdue"&&isActive(x)).length;$("kProgress").textContent=items.filter(x=>["assigned","in_progress","waiting_parts"].includes(x.status)).length;
 }
 $("search").addEventListener("input",render);$("kind").addEventListener("change",render);$("view").addEventListener("change",render);
+
+$("maintenanceBtn").addEventListener("click",()=>{
+  window.location.href="maintenance.html";
+});
+
+$("requestBtn").addEventListener("click",()=>{
+  // Work Orders page automatically opens the request flow for TECHNICIAN.
+  window.location.href="work-orders.html";
+});
 $("tasks").addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(!b)return;const [kind,id]=b.dataset.open.split(":");window.location.href=(kind==="maintenance"?`maintenance.html?id=${encodeURIComponent(id)}`:`work-orders.html?id=${encodeURIComponent(id)}`)});
 async function load(){
   $("status").textContent="Đang tải công việc…";
