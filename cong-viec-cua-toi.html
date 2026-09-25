@@ -28,7 +28,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.12-confirm-in-progress">
+<body data-build="cong-viec-cua-toi-v1.13-pbm-confirm">
 <main class="page">
   <div class="head">
     <div>
@@ -87,7 +87,7 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "./js/core/firebase.js";
 import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getMaintenances, getWorkOrders, reportWorkOrderByTechnician } from "./js/core/firestore-v1.js";
+import { getMaintenances, getWorkOrders, reportWorkOrderByTechnician, startMaintenanceByTechnician } from "./js/core/firestore-v1.js?v=maintenance-start-v1";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -124,7 +124,7 @@ function normalize(maintenances,workOrders){
     return String(x.code).localeCompare(String(y.code));
   });
 }
-function isActive(x){return !["completed","cancelled"].includes(x.status)}
+function isActive(x){return !["completed","cancelled","waiting_confirmation"].includes(x.status)}
 function statusBadgeClass(x){
   if(x.status==="waiting_confirmation") return "waiting";
   if(x.status==="completed") return "done";
@@ -197,10 +197,6 @@ $("tasks").addEventListener("click",async e=>{
     const [kind,id]=confirmOpenBtn.dataset.confirmOpen.split(":");
     if(!id)return;
 
-    // Quy tắc V1.12:
-    // - WO: "Xác nhận công việc" chỉ chuyển sang Đang triển khai (in_progress).
-    // - Không hoàn thành WO tại màn hình "Công việc của tôi".
-    // - KTV phải mở phiếu WO và xác nhận Hoàn thành trong chính phiếu WO.
     if(kind==="workorder"){
       confirmOpenBtn.disabled=true;
       const oldText=confirmOpenBtn.textContent;
@@ -218,9 +214,22 @@ $("tasks").addEventListener("click",async e=>{
       }
     }
 
-    // PBM vẫn mở phiếu để thực hiện quy trình hoàn thành theo workflow hiện hành.
-    window.location.href=`maintenance.html?id=${encodeURIComponent(id)}`;
-    return;
+    // PBM: Xác nhận công việc chỉ chuyển sang Đang thực hiện.
+    // Không hoàn thành PBM tại màn hình này.
+    confirmOpenBtn.disabled=true;
+    const oldText=confirmOpenBtn.textContent;
+    confirmOpenBtn.textContent="Đang xác nhận…";
+    try{
+      await startMaintenanceByTechnician(id);
+      await load();
+      return;
+    }catch(err){
+      console.error("Không thể xác nhận công việc PBM:",err);
+      alert(err?.message||"Không thể chuyển PBM sang trạng thái Đang thực hiện.");
+      confirmOpenBtn.disabled=false;
+      confirmOpenBtn.textContent=oldText;
+      return;
+    }
   }
 
   const b=e.target.closest("[data-open]");
