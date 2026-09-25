@@ -22,7 +22,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.1-actions">
+<body data-build="cong-viec-cua-toi-v1.2-badge-logic">
 <main class="page">
   <div class="head">
     <div>
@@ -101,7 +101,13 @@ function filtered(){
 }
 function render(){
   const list=filtered();$("count").textContent=`${list.length} công việc`;$('empty').style.display=list.length?"none":"block";
-  $("tasks").innerHTML=list.map(x=>`<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div><span class="badge ${esc(x.state)}">${esc(x.stateLabel)}</span><div style="margin-top:5px"><span class="badge ${x.kind==="workorder"?"wo":x.status==="completed"?"done":"progress"}">${esc(x.statusLabel)}</span></div></div><div class="task-action"><button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button></div></div>`).join("");
+  $("tasks").innerHTML=list.map(x=>{
+    const isCompleted=x.status==="completed";
+    const badges=isCompleted
+      ? `<span class="badge done">Hoàn thành</span>`
+      : `<span class="badge ${esc(x.state)}">${esc(x.stateLabel)}</span><div style="margin-top:5px"><span class="badge ${x.kind==="workorder"?"wo":"progress"}">${esc(x.statusLabel)}</span></div>`;
+    return `<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div>${badges}</div><div class="task-action"><button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button></div></div>`;
+  }).join("");
   $("kTotal").textContent=items.length;$("kToday").textContent=items.filter(x=>x.date===todayIso()&&!(["completed","cancelled"].includes(x.status))).length;$("kOverdue").textContent=items.filter(x=>x.state==="overdue"&&isActive(x)).length;$("kProgress").textContent=items.filter(x=>["assigned","in_progress","waiting_parts"].includes(x.status)).length;
 }
 $("search").addEventListener("input",render);$("kind").addEventListener("change",render);$("view").addEventListener("change",render);
