@@ -22,7 +22,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.5-filter-logic">
+<body data-build="cong-viec-cua-toi-v1.6-sort-ticket-no">
 <main class="page">
   <div class="head">
     <div>
@@ -89,7 +89,19 @@ function workOrderItem(w){
 function normalize(maintenances,workOrders){
   const a=(maintenances||[]).filter(x=>String(x.technicianId||"")===String(profile?.technicianId||"")).map(maintenanceItem);
   const b=(workOrders||[]).filter(x=>String(x.assignedTechnicianId||"")===String(profile?.technicianId||"")).map(workOrderItem);
-  return [...a,...b].sort((x,y)=>String(x.date||"9999-12-31").localeCompare(String(y.date||"9999-12-31"))||String(x.code).localeCompare(String(y.code)));
+  // Hiển thị theo STT phiếu: PBM-000001, PBM-000002...;
+  // WO cũng sắp theo số WO riêng. Không sắp theo ngày thực hiện.
+  return [...a,...b].sort((x,y)=>{
+    const getNo = item => {
+      const m = String(item.code||"").match(/(\d+)$/);
+      return m ? Number(m[1]) : Number.MAX_SAFE_INTEGER;
+    };
+    const kindOrder = x.kind===y.kind ? 0 : (x.kind==="maintenance" ? -1 : 1);
+    if(kindOrder!==0) return kindOrder;
+    const noDiff=getNo(x)-getNo(y);
+    if(noDiff!==0) return noDiff;
+    return String(x.code).localeCompare(String(y.code));
+  });
 }
 function isActive(x){return !["completed","cancelled"].includes(x.status)}
 function filtered(){
