@@ -22,7 +22,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.7-ktv-report-actions">
+<body data-build="cong-viec-cua-toi-v1.9-notifications">
 <main class="page">
   <div class="head">
     <div>
@@ -35,6 +35,16 @@
       <button class="btn primary" id="maintenanceBtn" type="button">＋ Tạo phiếu bảo trì</button>
     </div>
   </div>
+
+  <section id="notificationPanel" style="margin-top:14px;padding:14px 16px;border:1px solid #3a3225;border-radius:14px;background:#10100e;display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div>
+        <strong style="color:var(--gold2)">🔔 Thông báo công việc mới</strong>
+        <div id="notificationText" class="muted" style="margin-top:5px"></div>
+      </div>
+      <button class="btn primary" id="notificationOpenBtn" type="button" style="display:none">Mở</button>
+    </div>
+  </section>
 
   <div class="kpis">
     <div class="kpi"><b>TỔNG CÔNG VIỆC</b><strong id="kTotal">0</strong><small>Bảo trì + WO phát sinh</small></div>
@@ -70,7 +80,7 @@ import { getMaintenances, getWorkOrders, reportMaintenanceCompletion, reportWork
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",waiting_parts:"Chờ vật tư",completed:"Hoàn thành",cancelled:"Đã hủy"};
+const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",waiting_parts:"Chờ vật tư",waiting_confirmation:"Chờ CSKH xác nhận",completed:"Hoàn thành",cancelled:"Đã hủy"};
 const todayIso=()=>new Date().toISOString().slice(0,10);
 let profile=null,items=[];
 
@@ -104,6 +114,11 @@ function normalize(maintenances,workOrders){
   });
 }
 function isActive(x){return !["completed","cancelled"].includes(x.status)}
+function statusBadgeClass(x){
+  if(x.status==="waiting_confirmation") return "waiting";
+  if(x.status==="completed") return "done";
+  return x.kind==="workorder" ? "wo" : "progress";
+}
 function filtered(){
   const q=$("search").value.trim().toLowerCase(),kind=$("kind").value,view=$("view").value;
   return items.filter(x=>{
@@ -122,9 +137,10 @@ function render(){
   const list=filtered();$("count").textContent=`${list.length} công việc`;$('empty').style.display=list.length?"none":"block";
   $("tasks").innerHTML=list.map(x=>{
     const isCompleted=x.status==="completed";
+    const isWaitingConfirmation=x.status==="waiting_confirmation";
     const badges=isCompleted
       ? `<span class="badge done">Hoàn thành</span>`
-      : `<span class="badge ${esc(x.state)}">${esc(x.stateLabel)}</span><div style="margin-top:5px"><span class="badge ${x.kind==="workorder"?"wo":"progress"}">${esc(x.statusLabel)}</span></div>`;
+      : `<span class="badge ${esc(x.state)}">${esc(x.stateLabel)}</span><div style="margin-top:5px"><span class="badge ${statusBadgeClass(x)}">${esc(x.statusLabel)}</span></div>`;
     return `<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div>${badges}</div><div class="task-action">
       <button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button>
       ${
@@ -220,13 +236,96 @@ $("tasks").addEventListener("click",async e=>{
   const [kind,id]=b.dataset.open.split(":");
   window.location.href=(kind==="maintenance"?`maintenance.html?id=${encodeURIComponent(id)}`:`work-orders.html?id=${encodeURIComponent(id)}`);
 });
+
+let notificationReady=false;
+let knownMaintenanceIds=new Set();
+let knownWorkOrderIds=new Set();
+let notificationTarget=null;
+
+function showNewNotification(kind,item){
+  const panel=$("notificationPanel");
+  const text=$("notificationText");
+  const openBtn=$("notificationOpenBtn");
+  if(!panel||!text||!openBtn)return;
+
+  const isMaintenance=kind==="maintenance";
+  const code=item?.ticketNo||item?.workOrderNo||item?.id||"";
+  const title=isMaintenance
+    ? `Phiếu bảo trì mới ${code}`
+    : `Work Order mới ${code}`;
+  const detail=isMaintenance
+    ? `${item?.customerName||""} · ${item?.buildingName||""} · ${item?.elevatorName||""}`
+    : `${item?.issueTitle||item?.problemDescription||"Có Work Order mới"} · ${item?.elevatorName||""}`;
+
+  text.textContent=`${title} — ${detail}`;
+  notificationTarget={kind,id:item?.id||""};
+  openBtn.style.display="inline-flex";
+  panel.style.display="block";
+
+  if("Notification" in window && Notification.permission==="granted"){
+    try{
+      new Notification(title,{body:detail});
+    }catch(e){}
+  }
+}
+
+async function enableBrowserNotifications(){
+  if(!("Notification" in window))return;
+  try{
+    if(Notification.permission==="default") await Notification.requestPermission();
+  }catch(e){}
+}
+
+function seedNotificationState(maintenanceItems,workOrderItems){
+  knownMaintenanceIds=new Set((maintenanceItems||[]).map(x=>String(x.id)));
+  knownWorkOrderIds=new Set((workOrderItems||[]).map(x=>String(x.id)));
+  notificationReady=true;
+}
+
+async function checkForNewAssignedWork(maintenanceItems,workOrderItems){
+  if(!notificationReady){
+    seedNotificationState(maintenanceItems,workOrderItems);
+    return;
+  }
+
+  const newMaintenance=(maintenanceItems||[]).filter(x=>!knownMaintenanceIds.has(String(x.id)));
+  const newWorkOrders=(workOrderItems||[]).filter(x=>!knownWorkOrderIds.has(String(x.id)));
+
+  (maintenanceItems||[]).forEach(x=>knownMaintenanceIds.add(String(x.id)));
+  (workOrderItems||[]).forEach(x=>knownWorkOrderIds.add(String(x.id)));
+
+  if(newMaintenance.length){
+    showNewNotification("maintenance",newMaintenance[0]);
+  }else if(newWorkOrders.length){
+    showNewNotification("workorder",newWorkOrders[0]);
+  }
+}
+
+$("notificationOpenBtn")?.addEventListener("click",()=>{
+  if(!notificationTarget?.id)return;
+  window.location.href=notificationTarget.kind==="maintenance"
+    ? `maintenance.html?id=${encodeURIComponent(notificationTarget.id)}`
+    : `work-orders.html?id=${encodeURIComponent(notificationTarget.id)}`;
+});
+
+$("notificationPanel")?.addEventListener("click",e=>{
+  if(e.target.closest("#notificationOpenBtn"))return;
+});
+
+enableBrowserNotifications();
+
 async function load(){
   $("status").textContent="Đang tải công việc…";
   try{
     const technicianId=String(profile?.technicianId||"").trim();
     if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId.");
     const [m,w]=await Promise.all([getMaintenances({technicianId}),getWorkOrders({technicianId})]);
-    items=normalize(m||[],w||[]);render();$("status").textContent=`Đã tải ${items.length} công việc được phân công.`;$("status").className="status ok";
+    items=normalize(m||[],w||[]);
+    const maintenanceItems=items.filter(x=>x.kind==="maintenance");
+    const workOrderItems=items.filter(x=>x.kind==="workorder");
+    await checkForNewAssignedWork(maintenanceItems,workOrderItems);
+    render();
+    $("status").textContent=`Đã tải ${items.length} công việc được phân công.`;$("status").className="status ok";
   }catch(err){$("status").textContent=err?.message||"Không tải được công việc.";$("status").className="status error"}
 }
 import { db } from "./js/core/firebase.js";
@@ -251,6 +350,12 @@ onAuthStateChanged(auth,async user=>{
     await load();
   }catch(err){$("status").textContent=err?.message||"Không tải được dữ liệu.";$("status").className="status error"}
 });
+
+setInterval(()=>{
+  if(window.firebaseUserReady!==false){
+    load();
+  }
+},30000);
 </script>
 </body>
 </html>
