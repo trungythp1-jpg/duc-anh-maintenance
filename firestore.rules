@@ -159,25 +159,27 @@ service cloud.firestore {
     // CUSTOMERS / BUILDINGS / ELEVATORS
     // =========================================================
     //
-    // Giữ quyền hiện tại cho giai đoạn Module 4.
-    // Scope dữ liệu TECHNICIAN trên PBM/WO được khóa ở dưới.
-    // Các màn hình TECHNICIAN sẽ không tải toàn bộ các collection
-    // này sau khi Permission Test được hoàn thiện.
+    // CSKH KHÔNG được trực tiếp tạo/sửa Customer/Building chính thức
+    // trong workflow "khách hàng ngoài".
+    //
+    // Luồng chính thức:
+    //   CSKH -> cskhRequests -> ADMIN duyệt
+    //   -> ADMIN tạo Customer -> Building -> Elevator.
+    //
+    // CSKH vẫn được đọc dữ liệu master để tìm khách hàng hiện hữu.
     //
 
     match /customers/{customerId} {
       allow read: if isServiceStaff();
       allow create, update: if isAdmin()
-        || isManager()
-        || isCSKH();
+        || isManager();
       allow delete: if false;
     }
 
     match /buildings/{buildingId} {
       allow read: if isServiceStaff();
       allow create, update: if isAdmin()
-        || isManager()
-        || isCSKH();
+        || isManager();
       allow delete: if false;
     }
 
@@ -192,6 +194,95 @@ service cloud.firestore {
       allow read: if isServiceStaff();
       allow create, update: if isAdmin()
         || isManager();
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // CSKH REQUESTS
+    // =========================================================
+    //
+    // Phiếu yêu cầu CSKH là lớp dữ liệu trung gian, KHÔNG phải
+    // master data.
+    //
+    // Luồng:
+    //   DRAFT
+    //      ↓
+    //   SUBMITTED
+    //      ↓
+    //   ADMIN_REVIEW
+    //      ↓
+    //   CREATED / DUPLICATE / NEED_INFO / REJECTED
+    //
+    // Client không được tự chuyển trạng thái sang CREATED.
+    // Việc duyệt/tạo master data thực hiện qua Cloud Functions
+    // bằng Admin SDK.
+    //
+    // CSKH:
+    //   - tạo phiếu của chính mình ở DRAFT.
+    //   - đọc phiếu của chính mình.
+    //   - sửa dữ liệu nghiệp vụ khi DRAFT / NEED_INFO.
+    //   - không được tự sửa status/history/linked master IDs.
+    //
+    // ADMIN / MANAGER:
+    //   - được đọc phiếu.
+    //   - không dùng Firestore client để tự sửa trạng thái;
+    //     thao tác duyệt/từ chối/yêu cầu bổ sung đi qua Cloud Functions.
+    //
+
+    match /cskhRequests/{requestId} {
+      allow get: if isAdmin()
+        || isManager()
+        || (
+          isCSKH()
+          && resource.data.createdByUid == request.auth.uid
+        );
+
+      allow list: if isAdmin()
+        || isManager()
+        || isCSKH();
+
+      allow create: if
+        isCSKH()
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.status == 'DRAFT'
+        && request.resource.data.requestSource in [
+          'EXISTING_CUSTOMER',
+          'EXTERNAL_CUSTOMER'
+        ]
+        && request.resource.data.requestType in [
+          'MAINTENANCE_REQUEST',
+          'SERVICE_REQUEST',
+          'CUSTOMER_REGISTRATION',
+          'OTHER'
+        ]
+        && request.resource.data.assignedAdminUid == ''
+        && request.resource.data.assignedAdminName == ''
+        && request.resource.data.processedAt == null
+        && request.resource.data.resultNote == '';
+
+      allow update: if
+        isCSKH()
+        && resource.data.createdByUid == request.auth.uid
+        && request.resource.data.createdByUid == resource.data.createdByUid
+        && request.resource.data.status in ['DRAFT', 'NEED_INFO']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'requestSource',
+          'requestType',
+          'customerId',
+          'buildingId',
+          'elevatorId',
+          'externalCustomer',
+          'externalBuilding',
+          'externalElevator',
+          'description',
+          'note',
+          'history',
+          'updatedAt'
+        ])
+        && request.resource.data.history.size()
+           == resource.data.history.size() + 1;
+
       allow delete: if false;
     }
 
@@ -222,7 +313,6 @@ service cloud.firestore {
     //   chỉ được đọc/sửa PBM có technicianId đúng bằng
     //   users/{uid}.technicianId.
     //
-    // Quan trọng:
     // Query TECHNICIAN phải dùng:
     // where("technicianId", "==", users/{uid}.technicianId)
     //
@@ -244,12 +334,6 @@ service cloud.firestore {
         || isCSKH()
         || isAssignedMaintenance();
 
-      // ADMIN / MANAGER:
-      // tạo PBM bình thường.
-      //
-      // TECHNICIAN:
-      // chỉ tạo PBM cho chính mình.
-      // Không cho tạo completed / waiting_confirmation ngay từ đầu.
       allow create: if
         (isAdmin() || isManager())
         ||
@@ -273,8 +357,6 @@ service cloud.firestore {
         (isAdmin() || isManager())
         ||
         (
-          // KTV được sửa PBM của chính mình, nhưng không được tự
-          // xác nhận cuối cùng.
           isAssignedMaintenance()
           && request.resource.data.technicianId
              == resource.data.technicianId
@@ -286,7 +368,6 @@ service cloud.firestore {
           && request.resource.data.contractId == resource.data.contractId
           && request.resource.data.periodNumber == resource.data.periodNumber
           && (
-            // Luồng báo hoàn thành duy nhất của KTV.
             (
               resource.data.status in ['assigned', 'in_progress']
               && request.resource.data.status == 'waiting_confirmation'
@@ -318,7 +399,6 @@ service cloud.firestore {
               ])
             )
             ||
-            // Các chỉnh sửa vận hành của KTV trước khi báo hoàn thành.
             (
               resource.data.status in ['assigned', 'in_progress']
               && request.resource.data.status in ['assigned', 'in_progress']
@@ -357,7 +437,6 @@ service cloud.firestore {
         )
         ||
         (
-          // CSKH chỉ xác nhận trong cửa sổ 18 giờ.
           isCSKH()
           && resource.data.status == 'waiting_confirmation'
           && resource.data.customerConfirmationStatus == 'pending'
@@ -383,46 +462,16 @@ service cloud.firestore {
         )
         ||
         (
-          // ADMIN / MANAGER có thể xác nhận sau khi quá 18 giờ.
-          // Có thể dùng nhánh quản trị riêng, nhưng vẫn giữ nguyên
-          // toàn bộ quyền quản lý của họ.
           false
         );
 
       allow delete: if false;
     }
 
+
     // =========================================================
     // WORK ORDERS — V2
     // =========================================================
-    //
-    // Work Order độc lập với Maintenance.
-    //
-    // sourceType:
-    //   MAINTENANCE
-    //   CUSTOMER_REPORT
-    //   INCIDENT
-    //   SALES
-    //   MANAGEMENT
-    //   OTHER
-    //
-    // Mọi WO phải có context tài sản:
-    //   customerId
-    //   buildingId
-    //   elevatorId
-    //
-    // Nếu sourceType == MAINTENANCE:
-    //   maintenanceId bắt buộc.
-    //
-    // TECHNICIAN:
-    //   - chỉ đọc/sửa WO được giao cho chính mình.
-    //   - không được thay đổi source/asset/contract/maintenance/
-    //     assignedTechnicianId.
-    //   - chỉ sửa các trường vận hành được phép.
-    //
-    // Query TECHNICIAN phải dùng:
-    //   where("assignedTechnicianId", "==", users/{uid}.technicianId)
-    //
 
     match /workOrders/{workOrderId} {
       allow get: if isAdmin()
@@ -437,8 +486,6 @@ service cloud.firestore {
         || isCSKH()
         || isAssignedWorkOrder();
 
-      // ADMIN / MANAGER / DIRECTOR / CSKH có thể tạo WO chính thức.
-      // TECHNICIAN không tạo WO trực tiếp; chỉ gửi Request.
       allow create: if
         (isAdmin() || isManager() || isDirector() || isCSKH())
         && request.resource.data.sourceType in [
@@ -480,10 +527,6 @@ service cloud.firestore {
           )
         );
 
-      // ADMIN / MANAGER có quyền quản lý toàn bộ WO nhưng vẫn phải
-      // giữ các invariant cốt lõi của Work Order V2.
-      // TECHNICIAN chỉ được sửa WO đang giao cho mình và chỉ được
-      // thay đổi các trường vận hành.
       allow update: if
         (
           (isAdmin() || isManager())
@@ -621,23 +664,6 @@ service cloud.firestore {
     // =========================================================
     // WORK ORDER REQUESTS — V2
     // =========================================================
-    //
-    // TECHNICIAN không tạo Work Order trực tiếp.
-    // TECHNICIAN gửi Request; ADMIN / MANAGER chuyển Request
-    // thành Work Order chính thức và phân công KTV.
-    //
-    // Request độc lập với Maintenance.
-    //
-    // Nếu sourceType == MAINTENANCE:
-    //   maintenanceId bắt buộc và phải thuộc đúng technicianId
-    //   của người gửi request.
-    //
-    // Nếu sourceType != MAINTENANCE:
-    //   maintenanceId có thể rỗng.
-    //
-    // TECHNICIAN chỉ được đọc Request do chính mình gửi.
-    // ADMIN / MANAGER / DIRECTOR / CSKH được đọc danh sách.
-    //
 
     match /workOrderRequests/{requestId} {
       allow get: if isAdmin()
@@ -691,8 +717,6 @@ service cloud.firestore {
           )
         );
 
-      // Chỉ cho phép ADMIN / MANAGER xử lý Request.
-      // Dữ liệu nguồn của Request không được sửa sau khi gửi.
       allow update: if
         (isAdmin() || isManager())
         && request.resource.data.status in [
@@ -834,5 +858,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
