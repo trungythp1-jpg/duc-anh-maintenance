@@ -67,7 +67,7 @@ body{
   box-shadow:0 4px 18px rgba(214,168,79,.12);
 }
 .btn:hover{border-color:var(--da-gold)!important}
-.btn:disabled{opacity:.55;cursor:not-allowed}.btn.confirm-expired{opacity:.30!important;filter:grayscale(.75);cursor:not-allowed!important}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .kpi{
@@ -348,12 +348,12 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.26-cskh-expired-button-disabled">
+<body data-maintenance-build="v1.26-ktv-create-maintenance">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
   <div class="page-head">
-    <div><h1>Phiếu bảo trì</h1><div class="muted">Ghi nhận công việc bảo trì thực tế từ Hợp đồng → Lịch bảo trì.</div></div>
+    <div><h1>Phiếu bảo trì</h1><div class="muted">Ghi nhận công việc bảo trì thực tế từ Hợp đồng → Lịch bảo trì. KTV có thể chủ động tạo phiếu và phiếu mới sẽ tự phân công cho chính KTV.</div></div>
     <button class="btn primary" id="addBtn" type="button">＋ Tạo phiếu bảo trì</button>
   </div>
 
@@ -499,6 +499,12 @@ function applyAssignmentPermission(){
   $("assignmentReason").disabled=!allowed;
   if(!allowed){
     $("assignmentReason").value="";
+    if(isTech && !editingId){
+      const technicianId=String(currentProfile?.technicianId||"").trim();
+      if(technicianId){
+        $("technicianId").value=technicianId;
+      }
+    }
   }
 }
 function isConfirmationExpired(maintenance){
@@ -519,7 +525,7 @@ function applyTechnicianScopeUI(){
     if(el) el.disabled=isTech && Boolean(editingId);
   });
   const addBtn=$("addBtn");
-  if(addBtn) addBtn.disabled=isTech;
+  if(addBtn) addBtn.disabled=false;
 
   const statusEl=$("status");
   if(statusEl){
@@ -550,18 +556,10 @@ function applyTechnicianScopeUI(){
     String(currentMaintenance.customerConfirmationStatus||"")==="pending";
 
   const confirmBtn=$("confirmCompletionBtn");
-  const cskhWaiting=isCSKH && Boolean(editingId) && isWaiting;
-  const confirmationExpired=cskhWaiting && isConfirmationExpired(currentMaintenance);
-  const canConfirm=cskhWaiting && !confirmationExpired;
+  const canConfirm=isCSKH && Boolean(editingId) && isWaiting && !isConfirmationExpired(currentMaintenance);
   if(confirmBtn){
-    // Khi quá 18 giờ, CSKH vẫn nhìn thấy nút để hiểu đây là luồng xác nhận
-    // của mình, nhưng nút bị khóa/mờ; chỉ ADMIN/MANAGER mới có thể xử lý.
-    confirmBtn.style.display=cskhWaiting?"inline-flex":"none";
-    confirmBtn.disabled=confirmationExpired;
-    confirmBtn.classList.toggle("confirm-expired",confirmationExpired);
-    confirmBtn.title=confirmationExpired
-      ? "Đã quá 18 giờ. CSKH không thể xác nhận; chờ cấp quản lý xác nhận."
-      : "Xác nhận hoàn thành trong thời hạn 18 giờ.";
+    confirmBtn.style.display=canConfirm?"inline-flex":"none";
+    confirmBtn.disabled=false;
   }
 
   const managerConfirmBtn=$("managerConfirmCompletionBtn");
@@ -573,11 +571,10 @@ function applyTechnicianScopeUI(){
 
   const saveBtn=$("saveBtn");
   if(saveBtn){
-    // CSKH không dùng Lưu phiếu để xử lý xác nhận, kể cả khi đã quá hạn.
-    saveBtn.style.display=(cskhWaiting || canManagerConfirm)?"none":"inline-flex";
+    saveBtn.style.display=(canConfirm || canManagerConfirm)?"none":"inline-flex";
   }
 
-  if(cskhWaiting || canManagerConfirm){
+  if(canConfirm || canManagerConfirm){
     ["customerId","buildingId","elevatorId","contractId","periodNumber",
      "scheduledDate","completedDate","status","technicianId",
      "assignmentReason","condition","result","issueFound","note"]
@@ -853,15 +850,30 @@ if(!canManageTechnicianAssignment() && editingId && newTechnicianId!==oldTechnic
 }
 const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
  if(currentRole()==="TECHNICIAN") {
-   if(!editingId) { setError("Kỹ thuật viên chỉ được xử lý phiếu đã được phân công."); return; }
-   if(newTechnicianId!==String(oldTechnicianId||"")) { setError("Kỹ thuật viên không được thay đổi người được phân công."); return; }
+   if(editingId){
+     if(newTechnicianId!==String(oldTechnicianId||"")){
+       setError("Kỹ thuật viên không được thay đổi người được phân công.");
+       return;
+     }
+   }else{
+     const selfTechnicianId=String(currentProfile?.technicianId||"").trim();
+     if(!selfTechnicianId){
+       setError("Tài khoản TECHNICIAN chưa có technicianId.");
+       return;
+     }
+     if(newTechnicianId!==selfTechnicianId){
+       setError("Phiếu mới của KTV phải được phân công cho chính KTV đang đăng nhập.");
+       return;
+     }
+   }
  }
  const assignmentReason=$("assignmentReason").value.trim();
 if(assignmentChanged && editingId && !assignmentReason){
   setError("Khi thay đổi kỹ thuật viên phải nhập lý do.");
   return;
 }
-const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:$("status").value,technicianId:newTechnicianId,technicianName:newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
+const isTechnicianCreating=currentRole()==="TECHNICIAN"&&!editingId;
+const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:isTechnicianCreating?"assigned":$("status").value,technicianId:isTechnicianCreating?String(currentProfile?.technicianId||"").trim():newTechnicianId,technicianName:isTechnicianCreating?currentActorName():newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
 if(editingId){
   if(currentRole()==="TECHNICIAN"){
     const technicianPayload={
