@@ -242,7 +242,7 @@ tr:hover td{background:#161613}
   </div>
 </div>
 
-<script type="module">
+<!-- BUILD: work-orders-v1.13-completion-fix -->\n<script type="module">
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
@@ -254,8 +254,9 @@ import {
   getWorkOrders,
   createWorkOrder,
   updateWorkOrder,
-  reportWorkOrderByTechnician
-} from "./js/core/firestore-v1.js?v=wo2.1";
+  reportWorkOrderByTechnician,
+  completeWorkOrderByTechnician
+} from "./js/core/firestore-v1.js?v=wo2.2";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $ = id => document.getElementById(id);
@@ -541,7 +542,11 @@ async function submitTechnicianReport(status){
   $("err").textContent="";
   try{
     const isCompleted=status==="completed";
-    await reportWorkOrderByTechnician(editingId,status);
+    if(status==="completed"){
+      await completeWorkOrderByTechnician(editingId);
+    }else{
+      await reportWorkOrderByTechnician(editingId,status);
+    }
     close();
     $("status").className="status ok";
     $("status").textContent=isCompleted?"KTV đã báo cáo hoàn thành Work Order.":"KTV đã báo cáo chưa hoàn thành Work Order.";
