@@ -10,6 +10,12 @@
 :root{--bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;--gold2:#f0ca76;--text:#eee9df;--muted:#aaa49a;--border:#3a3428;--ok:#5fca91;--danger:#e35b4f;--blue:#7aa7ff;--purple:#c1a0ff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text)}body{background:linear-gradient(180deg,#0b0b0a,#080808);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .page{max-width:1400px;margin:auto;padding:22px 16px 60px}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0 0 5px;color:var(--gold2);font-size:30px}.technician-name{color:var(--text);font-size:16px;font-weight:700;margin:2px 0 4px}.muted{color:var(--muted)}.head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.head-actions .btn{min-height:44px}
+.notification-bell{position:relative;min-width:46px;height:44px;border:1px solid #695329;background:#151512;color:var(--text);border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font:inherit}
+.notification-bell:hover{border-color:var(--gold)}
+.bell-icon{font-size:21px;line-height:1}
+.notification-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#e35b4f;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
+.notification-bell.has-new{box-shadow:0 0 0 1px rgba(214,168,79,.25),0 0 14px rgba(214,168,79,.16)}
+@media(max-width:600px){.notification-bell{width:44px}}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}.kpi,.card{background:var(--panel);border:1px solid var(--border);border-radius:14px}.kpi{padding:15px}.kpi b{display:block;color:var(--gold2);font-size:12px}.kpi strong{display:block;font-size:28px;margin-top:5px}.kpi small{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.35}
 .toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:15px}.field label{display:block;font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:6px}.field input,.field select{width:100%;border:1px solid #4a4438;border-radius:9px;padding:10px;background:var(--panel2);color:var(--text);font:inherit;outline:none}.field input:focus,.field select:focus{border-color:var(--gold)}
 .status{padding:10px 12px;color:var(--muted);font-size:13px}.status.ok{color:#75dda5}.status.error{color:#ff8176}
@@ -22,7 +28,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.10-notifications-click">
+<body data-build="cong-viec-cua-toi-v1.11-bell-confirm">
 <main class="page">
   <div class="head">
     <div>
@@ -31,6 +37,10 @@
       <div class="muted">KTV quản lý các công việc được phân công và chủ động ghi nhận công việc phát sinh.</div>
     </div>
     <div class="head-actions">
+      <button class="notification-bell" id="notificationBell" type="button" aria-label="Thông báo" aria-expanded="false">
+        <span class="bell-icon">🔔</span>
+        <span class="notification-badge" id="notificationBadge" style="display:none">0</span>
+      </button>
       <button class="btn" id="requestBtn" type="button">＋ Gửi yêu cầu</button>
       <button class="btn primary" id="maintenanceBtn" type="button">＋ Tạo phiếu bảo trì</button>
     </div>
@@ -40,7 +50,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
       <div>
         <strong style="color:var(--gold2)">🔔 Thông báo công việc mới <span id="notificationCount"></span></strong>
-        <div class="muted" style="margin-top:5px">PBM/WO mới được phân công cho bạn. Chạm vào thông báo để mở công việc.</div>
+        <div class="muted" style="margin-top:5px">PBM/WO mới được phân công cho bạn. Chạm vào từng thông báo để mở công việc.</div>
       </div>
       <button class="btn" id="notificationEnableBtn" type="button" style="display:none">Bật thông báo</button>
     </div>
@@ -77,7 +87,7 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "./js/core/firebase.js";
 import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getMaintenances, getWorkOrders, reportMaintenanceCompletion, reportWorkOrderByTechnician } from "./js/core/firestore-v1.js";
+import { getMaintenances, getWorkOrders } from "./js/core/firestore-v1.js";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -145,14 +155,8 @@ function render(){
     return `<div class="task"><div class="task-code"><strong>${esc(x.code)}</strong><span>${esc(x.source)}</span></div><div class="task-main"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}</span></div><div class="task-sub"><strong>${esc(x.elevator)}</strong><span>${esc(x.asset||"Chưa có mã thang")}</span></div><div class="date"><strong>${esc(dateLabel(x.date))}</strong><span>${esc(x.contract)} ${esc(x.period)}</span></div><div>${badges}</div><div class="task-action">
       <button class="btn" type="button" data-open="${esc(x.kind)}:${esc(x.id)}">Mở</button>
       ${
-        x.kind==="maintenance" && !["completed","cancelled","waiting_confirmation"].includes(x.status)
-          ? `<button class="btn primary" type="button" data-report-maint="${esc(x.id)}" style="margin-top:5px;width:100%">Báo đã hoàn thành</button>`
-          : ""
-      }
-      ${
-        x.kind==="workorder" && x.status!=="completed" && x.status!=="cancelled"
-          ? `<button class="btn" type="button" data-report-wo="in_progress:${esc(x.id)}" style="margin-top:5px;width:100%">Chưa hoàn thành</button>
-             <button class="btn primary" type="button" data-report-wo="completed:${esc(x.id)}" style="margin-top:5px;width:100%">Đã hoàn thành</button>`
+        !["completed","cancelled"].includes(x.status)
+          ? `<button class="btn primary" type="button" data-confirm-open="${esc(x.kind)}:${esc(x.id)}" style="margin-top:5px;width:100%">Xác nhận công việc</button>`
           : ""
       }
     </div></div>`;
@@ -188,54 +192,23 @@ $("requestBtn").addEventListener("click",()=>{
   window.location.href="work-orders.html";
 });
 $("tasks").addEventListener("click",async e=>{
-  const reportMaintenanceBtn=e.target.closest("[data-report-maint]");
-  if(reportMaintenanceBtn){
-    const id=reportMaintenanceBtn.dataset.reportMaint;
+  const confirmOpenBtn=e.target.closest("[data-confirm-open]");
+  if(confirmOpenBtn){
+    const [kind,id]=confirmOpenBtn.dataset.confirmOpen.split(":");
     if(!id)return;
-    reportMaintenanceBtn.disabled=true;
-    const oldText=reportMaintenanceBtn.textContent;
-    reportMaintenanceBtn.textContent="Đang gửi…";
-    try{
-      await reportMaintenanceCompletion(id,{
-        completedDate:todayIso(),
-        completedByTechnicianId:String(profile?.technicianId||"").trim(),
-        completedByTechnicianName:String(
-          profile?.technicianName ||
-          profile?.displayName ||
-          profile?.name ||
-          profile?.fullName ||
-          profile?.hoTen ||
-          "Kỹ thuật viên"
-        ).trim()
-      });
-      await load();
-    }catch(err){
-      alert(err?.message||"Không thể báo hoàn thành phiếu bảo trì.");
-      reportMaintenanceBtn.disabled=false;
-      reportMaintenanceBtn.textContent=oldText;
-    }
-    return;
-  }
-
-  const reportWoBtn=e.target.closest("[data-report-wo]");
-  if(reportWoBtn){
-    const [status,id]=reportWoBtn.dataset.reportWo.split(":");
-    if(!id)return;
-    reportWoBtn.disabled=true;
-    try{
-      await reportWorkOrderByTechnician(id,status);
-      await load();
-    }catch(err){
-      alert(err?.message||"Không thể cập nhật Work Order.");
-      reportWoBtn.disabled=false;
-    }
+    window.location.href=kind==="maintenance"
+      ? `maintenance.html?id=${encodeURIComponent(id)}`
+      : `work-orders.html?id=${encodeURIComponent(id)}`;
     return;
   }
 
   const b=e.target.closest("[data-open]");
   if(!b)return;
   const [kind,id]=b.dataset.open.split(":");
-  window.location.href=(kind==="maintenance"?`maintenance.html?id=${encodeURIComponent(id)}`:`work-orders.html?id=${encodeURIComponent(id)}`);
+  if(!id)return;
+  window.location.href=(kind==="maintenance"
+    ? `maintenance.html?id=${encodeURIComponent(id)}`
+    : `work-orders.html?id=${encodeURIComponent(id)}`);
 });
 
 let notificationReady=false;
@@ -288,48 +261,65 @@ function notificationData(kind,item){
   const detail=isMaintenance
     ? `${item?.customerName||"Khách hàng"} · ${item?.buildingName||"Tòa nhà"} · ${item?.elevatorName||"Thang máy"}`
     : `${item?.issueTitle||item?.problemDescription||"Có Work Order mới"} · ${item?.elevatorName||"Thang máy"}`;
-  return {
-    id:String(item?.id||""),
-    kind,
-    code:String(code),
-    title,
-    detail,
-    createdAt:Date.now()
-  };
+  return {id:String(item?.id||""),kind,code:String(code),title,detail,createdAt:Date.now()};
+}
+
+function updateNotificationBell(){
+  const badge=$("notificationBadge");
+  const bell=$("notificationBell");
+  if(!badge||!bell)return;
+
+  const count=pendingNotifications.length;
+  badge.textContent=count>99 ? "99+" : String(count);
+  badge.style.display=count ? "flex" : "none";
+  bell.classList.toggle("has-new",count>0);
+  bell.setAttribute("aria-expanded",$("notificationPanel")?.style.display==="block" ? "true" : "false");
 }
 
 function renderNotifications(){
   const panel=$("notificationPanel");
   const list=$("notificationList");
-  const count=$("notificationCount");
-  if(!panel||!list||!count)return;
+  if(!panel||!list)return;
 
-  count.textContent=pendingNotifications.length ? `(${pendingNotifications.length})` : "";
-  panel.style.display=pendingNotifications.length ? "block" : "none";
+  list.innerHTML=pendingNotifications.length
+    ? pendingNotifications.map((n,index)=>`
+      <button type="button" class="btn notification-item" data-notification-index="${index}"
+        style="width:100%;text-align:left;padding:11px 12px;background:#151512">
+        <strong style="display:block;color:var(--gold2)">${esc(n.title)}</strong>
+        <span style="display:block;margin-top:4px;color:var(--muted);font-size:12px">${esc(n.detail)}</span>
+        <span style="display:block;margin-top:5px;font-size:12px;color:#75dda5">Chạm để mở công việc →</span>
+      </button>
+    `).join("")
+    : `<div class="muted" style="padding:10px 2px">Không có thông báo mới.</div>`;
 
-  list.innerHTML=pendingNotifications.map((n,index)=>`
-    <button type="button" class="btn notification-item" data-notification-index="${index}"
-      style="width:100%;text-align:left;padding:11px 12px;background:#151512">
-      <strong style="display:block;color:var(--gold2)">${esc(n.title)}</strong>
-      <span style="display:block;margin-top:4px;color:var(--muted);font-size:12px">${esc(n.detail)}</span>
-      <span style="display:block;margin-top:5px;font-size:12px;color:#75dda5">Chạm để mở công việc →</span>
-    </button>
-  `).join("");
+  updateNotificationBell();
+}
+
+function toggleNotificationPanel(force){
+  const panel=$("notificationPanel");
+  if(!panel)return;
+
+  const shouldOpen=typeof force==="boolean"
+    ? force
+    : panel.style.display!=="block";
+
+  panel.style.display=shouldOpen ? "block" : "none";
+  const bell=$("notificationBell");
+  if(bell)bell.setAttribute("aria-expanded",shouldOpen ? "true" : "false");
 }
 
 function addPendingNotification(kind,item){
   const n=notificationData(kind,item);
   if(!n.id)return;
   if(pendingNotifications.some(x=>x.id===n.id && x.kind===n.kind))return;
+
   pendingNotifications.unshift(n);
   pendingNotifications=pendingNotifications.slice(0,30);
   saveNotificationState();
   renderNotifications();
 
   if("Notification" in window && Notification.permission==="granted"){
-    try{
-      new Notification(n.title,{body:n.detail});
-    }catch(e){}
+    try{ new Notification(n.title,{body:n.detail}); }catch(e){}
   }
 }
 
@@ -340,7 +330,9 @@ function seedNotificationState(maintenanceItems,workOrderItems){
   knownWorkOrderIds=new Set(saved.knownWorkOrderIds.map(String));
   pendingNotifications=Array.isArray(saved.pending)?saved.pending:[];
 
-  const hasPreviousState=knownMaintenanceIds.size>0 || knownWorkOrderIds.size>0 || pendingNotifications.length>0;
+  const hasPreviousState=knownMaintenanceIds.size>0 ||
+    knownWorkOrderIds.size>0 ||
+    pendingNotifications.length>0;
 
   if(!hasPreviousState){
     (maintenanceItems||[]).forEach(x=>knownMaintenanceIds.add(String(x.id)));
@@ -371,23 +363,9 @@ async function checkForNewAssignedWork(maintenanceItems,workOrderItems){
   renderNotifications();
 }
 
-async function enableBrowserNotifications(){
-  if(!("Notification" in window))return;
-  try{
-    if(Notification.permission==="default"){
-      await Notification.requestPermission();
-    }
-  }catch(e){}
-  updateNotificationEnableButton();
-}
-
-function updateNotificationEnableButton(){
-  const btn=$("notificationEnableBtn");
-  if(!btn||!("Notification" in window))return;
-  btn.style.display=Notification.permission==="granted" ? "none" : "inline-flex";
-}
-
-$("notificationEnableBtn")?.addEventListener("click",enableBrowserNotifications);
+$("notificationBell")?.addEventListener("click",()=>{
+  toggleNotificationPanel();
+});
 
 $("notificationList")?.addEventListener("click",e=>{
   const btn=e.target.closest("[data-notification-index]");
@@ -400,13 +378,24 @@ $("notificationList")?.addEventListener("click",e=>{
   pendingNotifications.splice(index,1);
   saveNotificationState();
   renderNotifications();
+  toggleNotificationPanel(false);
 
   window.location.href=n.kind==="maintenance"
     ? `maintenance.html?id=${encodeURIComponent(n.id)}`
     : `work-orders.html?id=${encodeURIComponent(n.id)}`;
 });
 
-updateNotificationEnableButton();
+document.addEventListener("click",e=>{
+  const panel=$("notificationPanel");
+  const bell=$("notificationBell");
+  if(!panel||!bell)return;
+  if(panel.style.display==="block" && !panel.contains(e.target) && !bell.contains(e.target)){
+    toggleNotificationPanel(false);
+  }
+});
+
+updateNotificationBell();
+
 
 async function load(){
   $("status").textContent="Đang tải công việc…";
