@@ -1,4 +1,5 @@
 const { db, now } = require('../lib/admin');
+const { HttpsError } = require('firebase-functions/v2/https');
 const { logNotification } = require('../notifications/engine');
 const { historyEntry, appendHistory } = require('./history');
 
@@ -30,21 +31,58 @@ function clean(value) {
   return String(value ?? '').trim();
 }
 
+/*
+ * CSKH DEBUG V1
+ * Convert internal business errors into explicit Firebase callable errors.
+ * This keeps the existing workflow/schema unchanged while making frontend
+ * errors diagnosable instead of showing only "internal".
+ */
+function cskhError(code, message, details = undefined) {
+  const safeCode = [
+    'unauthenticated',
+    'permission-denied',
+    'invalid-argument',
+    'not-found',
+    'failed-precondition',
+    'already-exists',
+    'aborted',
+    'internal'
+  ].includes(code) ? code : 'internal';
+
+  return new HttpsError(
+    safeCode,
+    String(message || 'Lỗi CSKH.'),
+    details
+  );
+}
+
+function debugContext(request, user = null) {
+  return {
+    uid: request?.auth?.uid || user?.uid || '',
+    role: user?.role || '',
+    function: 'CSKH',
+    requestId: clean(request?.data?.requestId)
+  };
+}
+
 function assertSource(value) {
   if (!SOURCES.includes(value)) {
-    throw new Error('requestSource không hợp lệ.');
+    throw cskhError('invalid-argument', 'requestSource không hợp lệ.');
   }
 }
 
 function assertType(value) {
   if (!REQUEST_TYPES.includes(value)) {
-    throw new Error('requestType không hợp lệ.');
+    throw cskhError('invalid-argument', 'requestType không hợp lệ.');
   }
 }
 
 function getUser(request) {
   if (!request.auth?.uid) {
-    throw new Error('UNAUTHENTICATED');
+    throw cskhError(
+      'unauthenticated',
+      'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
+    );
   }
 
   const token = request.auth.token || {};
@@ -73,7 +111,19 @@ async function requireRole(request, allowed) {
   const role = await getRole(user.uid);
 
   if (!allowed.includes(role)) {
-    throw new Error('PERMISSION_DENIED');
+    console.error('[CSKH][PERMISSION_DENIED]', {
+      ...debugContext(request, { ...user, role }),
+      allowedRoles: allowed
+    });
+
+    throw cskhError(
+      'permission-denied',
+      `Tài khoản không có quyền CSKH. Role hiện tại: ${role || '(trống)'}.`,
+      {
+        currentRole: role || '',
+        allowedRoles: allowed
+      }
+    );
   }
 
   return {
@@ -88,23 +138,23 @@ function validateExternalPayload(data) {
   const elevator = data.externalElevator || {};
 
   if (!clean(customer.name)) {
-    throw new Error('Tên khách hàng là bắt buộc.');
+    throw cskhError('invalid-argument', 'Tên khách hàng là bắt buộc.');
   }
 
   if (!clean(customer.phone)) {
-    throw new Error('Số điện thoại khách hàng là bắt buộc.');
+    throw cskhError('invalid-argument', 'Số điện thoại khách hàng là bắt buộc.');
   }
 
   if (!clean(building.name)) {
-    throw new Error('Tên tòa nhà là bắt buộc.');
+    throw cskhError('invalid-argument', 'Tên tòa nhà là bắt buộc.');
   }
 
   if (!clean(building.address?.detail || building.address)) {
-    throw new Error('Địa chỉ tòa nhà là bắt buộc.');
+    throw cskhError('invalid-argument', 'Địa chỉ tòa nhà là bắt buộc.');
   }
 
   if (!clean(elevator.name)) {
-    throw new Error('Tên thang máy là bắt buộc.');
+    throw cskhError('invalid-argument', 'Tên thang máy là bắt buộc.');
   }
 }
 
@@ -127,7 +177,8 @@ async function validateRequestPayload(data) {
     !clean(data.buildingId) ||
     !clean(data.elevatorId)
   ) {
-    throw new Error(
+    throw cskhError(
+      'invalid-argument',
       'Yêu cầu EXISTING_CUSTOMER phải có customerId, buildingId và elevatorId.'
     );
   }
@@ -242,6 +293,14 @@ async function createCSKHRequest(request) {
 
   await ref.set(payload);
 
+  console.log('[CSKH][CREATE][OK]', {
+    uid: user.uid,
+    role: user.role,
+    requestId: ref.id,
+    requestSource: payload.requestSource,
+    requestType: payload.requestType
+  });
+
   return {
     id: ref.id,
     ...payload
@@ -249,65 +308,124 @@ async function createCSKHRequest(request) {
 }
 
 async function getCSKHRequest(request) {
-  const user = await requireRole(
-    request,
-    ['customer_service', 'cskh', 'admin', 'manager']
-  );
+  try {
+    const user = await requireRole(
+      request,
+      ['customer_service', 'cskh', 'admin', 'manager']
+    );
 
-  const id = clean(request.data?.requestId);
+    const id = clean(request.data?.requestId);
 
-  if (!id) {
-    throw new Error('requestId là bắt buộc.');
+    if (!id) {
+      throw cskhError('invalid-argument', 'requestId là bắt buộc.');
+    }
+
+    console.log('[CSKH][GET_ONE][START]', debugContext(request, user));
+
+    const snap = await db.collection('cskhRequests').doc(id).get();
+
+    if (!snap.exists) {
+      throw cskhError('not-found', 'Không tìm thấy phiếu CSKH.');
+    }
+
+    const data = snap.data() || {};
+
+    if (
+      !['admin', 'manager'].includes(user.role) &&
+      data.createdByUid !== user.uid
+    ) {
+      throw cskhError(
+        'permission-denied',
+        'Bạn không có quyền xem phiếu CSKH này.'
+      );
+    }
+
+    console.log('[CSKH][GET_ONE][OK]', {
+      ...debugContext(request, user),
+      status: data.status || '',
+      requestSource: data.requestSource || ''
+    });
+
+    return {
+      id: snap.id,
+      ...data
+    };
+  } catch (error) {
+    console.error('[CSKH][GET_ONE][ERROR]', {
+      ...debugContext(request),
+      code: error?.code || 'internal',
+      message: error?.message || String(error)
+    });
+
+    if (error instanceof HttpsError) throw error;
+
+    throw cskhError(
+      'internal',
+      'Không thể tải phiếu CSKH. Xem Firebase Functions Logs để biết chi tiết.',
+      {
+        originalCode: error?.code || '',
+        originalMessage: error?.message || String(error)
+      }
+    );
   }
-
-  const snap = await db.collection('cskhRequests').doc(id).get();
-
-  if (!snap.exists) {
-    throw new Error('Không tìm thấy phiếu CSKH.');
-  }
-
-  const data = snap.data() || {};
-
-  if (
-    !['admin', 'manager'].includes(user.role) &&
-    data.createdByUid !== user.uid
-  ) {
-    throw new Error('PERMISSION_DENIED');
-  }
-
-  return {
-    id: snap.id,
-    ...data
-  };
 }
 
 async function getCSKHRequests(request) {
-  const user = await requireRole(
-    request,
-    ['customer_service', 'cskh', 'admin', 'manager']
-  );
+  try {
+    const user = await requireRole(
+      request,
+      ['customer_service', 'cskh', 'admin', 'manager']
+    );
 
-  if (['admin', 'manager'].includes(user.role)) {
-    const snap = await db.collection('cskhRequests')
-      .orderBy('createdAt', 'desc')
-      .limit(100)
-      .get();
+    console.log('[CSKH][GET_LIST][START]', debugContext(request, user));
 
-    return snap.docs.map(doc => ({
+    let snap;
+
+    if (['admin', 'manager'].includes(user.role)) {
+      snap = await db.collection('cskhRequests')
+        .orderBy('createdAt', 'desc')
+        .limit(100)
+        .get();
+    } else {
+      snap = await db.collection('cskhRequests')
+        .where('createdByUid', '==', user.uid)
+        .limit(100)
+        .get();
+    }
+
+    const result = snap.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    console.log('[CSKH][GET_LIST][OK]', {
+      ...debugContext(request, user),
+      count: result.length,
+      scope: ['admin', 'manager'].includes(user.role)
+        ? 'ALL'
+        : 'OWN'
+    });
+
+    return result;
+  } catch (error) {
+    console.error('[CSKH][GET_LIST][ERROR]', {
+      ...debugContext(request),
+      code: error?.code || 'internal',
+      message: error?.message || String(error),
+      stack: error?.stack || ''
+    });
+
+    if (error instanceof HttpsError) throw error;
+
+    throw cskhError(
+      'internal',
+      'Không thể tải danh sách CSKH. Firebase Functions đã ghi log lỗi chi tiết.',
+      {
+        originalCode: error?.code || '',
+        originalMessage: error?.message || String(error)
+      }
+    );
   }
-
-  const snap = await db.collection('cskhRequests')
-    .where('createdByUid', '==', user.uid)
-    .limit(100)
-    .get();
-
-  return snap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
 }
 
 async function submitCSKHRequest(request) {
@@ -319,14 +437,14 @@ async function submitCSKHRequest(request) {
   const id = clean(request.data?.requestId);
 
   if (!id) {
-    throw new Error('requestId là bắt buộc.');
+    throw cskhError('invalid-argument', 'requestId là bắt buộc.');
   }
 
   const ref = db.collection('cskhRequests').doc(id);
   const snap = await ref.get();
 
   if (!snap.exists) {
-    throw new Error('Không tìm thấy phiếu CSKH.');
+    throw cskhError('not-found', 'Không tìm thấy phiếu CSKH.');
   }
 
   const current = snap.data() || {};
@@ -335,11 +453,12 @@ async function submitCSKHRequest(request) {
     current.createdByUid !== user.uid &&
     user.role !== 'admin'
   ) {
-    throw new Error('PERMISSION_DENIED');
+    throw cskhError('permission-denied', 'Bạn không có quyền thao tác phiếu CSKH này.');
   }
 
   if (!['DRAFT', 'NEED_INFO'].includes(current.status)) {
-    throw new Error(
+    throw cskhError(
+      'failed-precondition',
       'Phiếu không thể gửi ở trạng thái hiện tại.'
     );
   }
@@ -386,6 +505,12 @@ async function submitCSKHRequest(request) {
     );
   }
 
+  console.log('[CSKH][SUBMIT][OK]', {
+    uid: user.uid,
+    role: user.role,
+    requestId: id
+  });
+
   return getCSKHRequest({
     auth: {
       uid: user.uid,
@@ -409,14 +534,14 @@ async function updateCSKHRequest(request) {
   const id = clean(request.data?.requestId);
 
   if (!id) {
-    throw new Error('requestId là bắt buộc.');
+    throw cskhError('invalid-argument', 'requestId là bắt buộc.');
   }
 
   const ref = db.collection('cskhRequests').doc(id);
   const snap = await ref.get();
 
   if (!snap.exists) {
-    throw new Error('Không tìm thấy phiếu CSKH.');
+    throw cskhError('not-found', 'Không tìm thấy phiếu CSKH.');
   }
 
   const current = snap.data() || {};
@@ -425,11 +550,12 @@ async function updateCSKHRequest(request) {
     current.createdByUid !== user.uid &&
     user.role !== 'admin'
   ) {
-    throw new Error('PERMISSION_DENIED');
+    throw cskhError('permission-denied', 'Bạn không có quyền thao tác phiếu CSKH này.');
   }
 
   if (!['DRAFT', 'NEED_INFO'].includes(current.status)) {
-    throw new Error(
+    throw cskhError(
+      'failed-precondition',
       'Chỉ có thể sửa phiếu Nháp hoặc Cần bổ sung.'
     );
   }
@@ -458,6 +584,13 @@ async function updateCSKHRequest(request) {
     ...patch,
     history,
     updatedAt: now()
+  });
+
+  console.log('[CSKH][UPDATE][OK]', {
+    uid: user.uid,
+    role: user.role,
+    requestId: id,
+    fields: Object.keys(patch)
   });
 
   return getCSKHRequest({
