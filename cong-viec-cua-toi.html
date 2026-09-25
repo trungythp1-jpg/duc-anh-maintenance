@@ -22,7 +22,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.9-notifications">
+<body data-build="cong-viec-cua-toi-v1.10-notifications-click">
 <main class="page">
   <div class="head">
     <div>
@@ -39,11 +39,12 @@
   <section id="notificationPanel" style="margin-top:14px;padding:14px 16px;border:1px solid #3a3225;border-radius:14px;background:#10100e;display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
       <div>
-        <strong style="color:var(--gold2)">🔔 Thông báo công việc mới</strong>
-        <div id="notificationText" class="muted" style="margin-top:5px"></div>
+        <strong style="color:var(--gold2)">🔔 Thông báo công việc mới <span id="notificationCount"></span></strong>
+        <div class="muted" style="margin-top:5px">PBM/WO mới được phân công cho bạn. Chạm vào thông báo để mở công việc.</div>
       </div>
-      <button class="btn primary" id="notificationOpenBtn" type="button" style="display:none">Mở</button>
+      <button class="btn" id="notificationEnableBtn" type="button" style="display:none">Bật thông báo</button>
     </div>
+    <div id="notificationList" style="display:grid;gap:8px;margin-top:12px"></div>
   </section>
 
   <div class="kpis">
@@ -240,46 +241,115 @@ $("tasks").addEventListener("click",async e=>{
 let notificationReady=false;
 let knownMaintenanceIds=new Set();
 let knownWorkOrderIds=new Set();
-let notificationTarget=null;
+let pendingNotifications=[];
+let notificationStorageKey="";
 
-function showNewNotification(kind,item){
-  const panel=$("notificationPanel");
-  const text=$("notificationText");
-  const openBtn=$("notificationOpenBtn");
-  if(!panel||!text||!openBtn)return;
+function getNotificationStorageKey(){
+  const technicianId=String(profile?.technicianId||"").trim();
+  return technicianId ? `ducAnhKtvNotifications:${technicianId}` : "";
+}
 
+function readNotificationState(){
+  notificationStorageKey=getNotificationStorageKey();
+  if(!notificationStorageKey)return {knownMaintenanceIds:[],knownWorkOrderIds:[],pending:[]};
+  try{
+    const raw=localStorage.getItem(notificationStorageKey);
+    if(!raw)return {knownMaintenanceIds:[],knownWorkOrderIds:[],pending:[]};
+    const data=JSON.parse(raw);
+    return {
+      knownMaintenanceIds:Array.isArray(data.knownMaintenanceIds)?data.knownMaintenanceIds:[],
+      knownWorkOrderIds:Array.isArray(data.knownWorkOrderIds)?data.knownWorkOrderIds:[],
+      pending:Array.isArray(data.pending)?data.pending:[]
+    };
+  }catch(e){
+    return {knownMaintenanceIds:[],knownWorkOrderIds:[],pending:[]};
+  }
+}
+
+function saveNotificationState(){
+  if(!notificationStorageKey)return;
+  try{
+    localStorage.setItem(notificationStorageKey,JSON.stringify({
+      knownMaintenanceIds:[...knownMaintenanceIds],
+      knownWorkOrderIds:[...knownWorkOrderIds],
+      pending:pendingNotifications.slice(0,30)
+    }));
+  }catch(e){}
+}
+
+function notificationData(kind,item){
   const isMaintenance=kind==="maintenance";
-  const code=item?.ticketNo||item?.workOrderNo||item?.id||"";
+  const code=isMaintenance
+    ? (item?.ticketNo||item?.code||item?.id||"PBM")
+    : (item?.workOrderNo||item?.code||item?.id||"WO");
   const title=isMaintenance
     ? `Phiếu bảo trì mới ${code}`
     : `Work Order mới ${code}`;
   const detail=isMaintenance
-    ? `${item?.customerName||""} · ${item?.buildingName||""} · ${item?.elevatorName||""}`
-    : `${item?.issueTitle||item?.problemDescription||"Có Work Order mới"} · ${item?.elevatorName||""}`;
+    ? `${item?.customerName||"Khách hàng"} · ${item?.buildingName||"Tòa nhà"} · ${item?.elevatorName||"Thang máy"}`
+    : `${item?.issueTitle||item?.problemDescription||"Có Work Order mới"} · ${item?.elevatorName||"Thang máy"}`;
+  return {
+    id:String(item?.id||""),
+    kind,
+    code:String(code),
+    title,
+    detail,
+    createdAt:Date.now()
+  };
+}
 
-  text.textContent=`${title} — ${detail}`;
-  notificationTarget={kind,id:item?.id||""};
-  openBtn.style.display="inline-flex";
-  panel.style.display="block";
+function renderNotifications(){
+  const panel=$("notificationPanel");
+  const list=$("notificationList");
+  const count=$("notificationCount");
+  if(!panel||!list||!count)return;
+
+  count.textContent=pendingNotifications.length ? `(${pendingNotifications.length})` : "";
+  panel.style.display=pendingNotifications.length ? "block" : "none";
+
+  list.innerHTML=pendingNotifications.map((n,index)=>`
+    <button type="button" class="btn notification-item" data-notification-index="${index}"
+      style="width:100%;text-align:left;padding:11px 12px;background:#151512">
+      <strong style="display:block;color:var(--gold2)">${esc(n.title)}</strong>
+      <span style="display:block;margin-top:4px;color:var(--muted);font-size:12px">${esc(n.detail)}</span>
+      <span style="display:block;margin-top:5px;font-size:12px;color:#75dda5">Chạm để mở công việc →</span>
+    </button>
+  `).join("");
+}
+
+function addPendingNotification(kind,item){
+  const n=notificationData(kind,item);
+  if(!n.id)return;
+  if(pendingNotifications.some(x=>x.id===n.id && x.kind===n.kind))return;
+  pendingNotifications.unshift(n);
+  pendingNotifications=pendingNotifications.slice(0,30);
+  saveNotificationState();
+  renderNotifications();
 
   if("Notification" in window && Notification.permission==="granted"){
     try{
-      new Notification(title,{body:detail});
+      new Notification(n.title,{body:n.detail});
     }catch(e){}
   }
 }
 
-async function enableBrowserNotifications(){
-  if(!("Notification" in window))return;
-  try{
-    if(Notification.permission==="default") await Notification.requestPermission();
-  }catch(e){}
-}
-
 function seedNotificationState(maintenanceItems,workOrderItems){
-  knownMaintenanceIds=new Set((maintenanceItems||[]).map(x=>String(x.id)));
-  knownWorkOrderIds=new Set((workOrderItems||[]).map(x=>String(x.id)));
+  const saved=readNotificationState();
+
+  knownMaintenanceIds=new Set(saved.knownMaintenanceIds.map(String));
+  knownWorkOrderIds=new Set(saved.knownWorkOrderIds.map(String));
+  pendingNotifications=Array.isArray(saved.pending)?saved.pending:[];
+
+  const hasPreviousState=knownMaintenanceIds.size>0 || knownWorkOrderIds.size>0 || pendingNotifications.length>0;
+
+  if(!hasPreviousState){
+    (maintenanceItems||[]).forEach(x=>knownMaintenanceIds.add(String(x.id)));
+    (workOrderItems||[]).forEach(x=>knownWorkOrderIds.add(String(x.id)));
+  }
+
   notificationReady=true;
+  saveNotificationState();
+  renderNotifications();
 }
 
 async function checkForNewAssignedWork(maintenanceItems,workOrderItems){
@@ -291,28 +361,52 @@ async function checkForNewAssignedWork(maintenanceItems,workOrderItems){
   const newMaintenance=(maintenanceItems||[]).filter(x=>!knownMaintenanceIds.has(String(x.id)));
   const newWorkOrders=(workOrderItems||[]).filter(x=>!knownWorkOrderIds.has(String(x.id)));
 
+  newMaintenance.forEach(x=>addPendingNotification("maintenance",x));
+  newWorkOrders.forEach(x=>addPendingNotification("workorder",x));
+
   (maintenanceItems||[]).forEach(x=>knownMaintenanceIds.add(String(x.id)));
   (workOrderItems||[]).forEach(x=>knownWorkOrderIds.add(String(x.id)));
 
-  if(newMaintenance.length){
-    showNewNotification("maintenance",newMaintenance[0]);
-  }else if(newWorkOrders.length){
-    showNewNotification("workorder",newWorkOrders[0]);
-  }
+  saveNotificationState();
+  renderNotifications();
 }
 
-$("notificationOpenBtn")?.addEventListener("click",()=>{
-  if(!notificationTarget?.id)return;
-  window.location.href=notificationTarget.kind==="maintenance"
-    ? `maintenance.html?id=${encodeURIComponent(notificationTarget.id)}`
-    : `work-orders.html?id=${encodeURIComponent(notificationTarget.id)}`;
+async function enableBrowserNotifications(){
+  if(!("Notification" in window))return;
+  try{
+    if(Notification.permission==="default"){
+      await Notification.requestPermission();
+    }
+  }catch(e){}
+  updateNotificationEnableButton();
+}
+
+function updateNotificationEnableButton(){
+  const btn=$("notificationEnableBtn");
+  if(!btn||!("Notification" in window))return;
+  btn.style.display=Notification.permission==="granted" ? "none" : "inline-flex";
+}
+
+$("notificationEnableBtn")?.addEventListener("click",enableBrowserNotifications);
+
+$("notificationList")?.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-notification-index]");
+  if(!btn)return;
+
+  const index=Number(btn.dataset.notificationIndex);
+  const n=pendingNotifications[index];
+  if(!n?.id)return;
+
+  pendingNotifications.splice(index,1);
+  saveNotificationState();
+  renderNotifications();
+
+  window.location.href=n.kind==="maintenance"
+    ? `maintenance.html?id=${encodeURIComponent(n.id)}`
+    : `work-orders.html?id=${encodeURIComponent(n.id)}`;
 });
 
-$("notificationPanel")?.addEventListener("click",e=>{
-  if(e.target.closest("#notificationOpenBtn"))return;
-});
-
-enableBrowserNotifications();
+updateNotificationEnableButton();
 
 async function load(){
   $("status").textContent="Đang tải công việc…";
@@ -352,7 +446,7 @@ onAuthStateChanged(auth,async user=>{
 });
 
 setInterval(()=>{
-  if(window.firebaseUserReady!==false){
+  if(profile && String(profile.role||"").toUpperCase()==="TECHNICIAN"){
     load();
   }
 },30000);
