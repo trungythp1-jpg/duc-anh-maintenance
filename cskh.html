@@ -32,7 +32,7 @@ button{cursor:pointer}
 .list{padding:8px 18px 16px}.list-row{display:grid;grid-template-columns:150px 1.2fr 1fr 110px;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #292722}.list-row:last-child{border-bottom:0}.list-row strong{display:block}.list-row small{display:block;color:var(--muted);margin-top:3px}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px}.quick .btn{min-height:58px;text-align:left}.quick b{display:block}.quick small{color:var(--muted)}
 .note{padding:14px 18px;color:var(--muted);font-size:12px;border-top:1px solid #2d2922}
-.status{padding:10px 18px;color:var(--muted);font-size:12px}.status.ok{color:var(--ok)}.status.err{color:#ff8578}
+.status{padding:10px 18px;color:var(--muted);font-size:12px;line-height:1.55;word-break:break-word}.status.ok{color:var(--ok)}.status.err{color:#ff8578}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.76);display:none;align-items:center;justify-content:center;padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));z-index:50}.modal.show{display:flex}
 .modal-card{width:min(900px,100%);height:min(92dvh,900px);max-height:calc(100dvh - 20px);display:flex;flex-direction:column;overflow:hidden;background:#10100e;border:1px solid #4b4334;border-radius:16px;box-shadow:var(--shadow)}
 .modal-head{flex:0 0 auto;padding:16px 18px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;align-items:center}.modal-head h2{margin:0;color:var(--gold2);font-size:20px}
@@ -158,6 +158,35 @@ const profileRole=r=>String(r||"").trim().toLowerCase();
 let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[];
 
 function callable(name){return httpsCallable(getFunctions(auth.app,"asia-southeast1"),name)}
+
+function errorInfo(error){
+  return {
+    code:String(error?.code||"").trim(),
+    message:String(error?.message||error||"").trim(),
+    details:error?.details ?? null,
+    name:String(error?.name||"").trim()
+  };
+}
+
+function formatLoadError(label,error){
+  const x=errorInfo(error);
+  const detail=x.details
+    ? (typeof x.details==="string" ? x.details : JSON.stringify(x.details))
+    : "";
+  return `${label}: ${x.code||"NO_CODE"} — ${x.message||"Không rõ lỗi"}${detail?` — ${detail}`:""}`;
+}
+
+async function safeLoad(label,fn){
+  try{
+    const value=await fn();
+    console.log(`[CSKH][LOAD][OK] ${label}`,value);
+    return {ok:true,label,value};
+  }catch(error){
+    console.error(`[CSKH][LOAD][ERROR] ${label}`,errorInfo(error),error);
+    return {ok:false,label,error};
+  }
+}
+
 function openModal(id){$(id).classList.add("show")}
 function closeModal(id){$(id).classList.remove("show")}
 function formatDate(v){if(!v)return"—";try{return new Date(v?.toDate?v.toDate():v).toLocaleString("vi-VN",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch{return String(v)}}
@@ -266,13 +295,43 @@ async function submitExternalRequest(){
   finally{btn.disabled=false;btn.textContent="Gửi Admin"}
 }
 
-async function loadRequests(){const result=await callable("getCSKHRequests")({});requests=Array.isArray(result.data)?result.data:[]}
+async function loadRequests(){
+  const result=await callable("getCSKHRequests")({});
+  requests=Array.isArray(result.data)?result.data:[];
+  return requests;
+}
+
 async function loadAll(){
-  $("status").textContent="Đang cập nhật dữ liệu…";$("status").className="status";
-  try{
-    await Promise.all([loadRequests(),loadReference(),getWorkOrders().then(x=>workOrders=Array.isArray(x)?x:[])]);
-    render();$("status").textContent=`Đã cập nhật · ${requests.length} phiếu CSKH · ${workOrders.length} Work Order.`;$("status").className="status ok";
-  }catch(e){console.error(e);$("status").textContent=e?.message||"Không tải được dữ liệu.";$("status").className="status err"}
+  $("status").textContent="Đang kiểm tra từng nguồn dữ liệu…";
+  $("status").className="status";
+
+  const results=await Promise.all([
+    safeLoad("Phiếu CSKH",loadRequests),
+    safeLoad("Customer / Building / Elevator",loadReference),
+    safeLoad("Work Order",async()=>{
+      const rows=await getWorkOrders();
+      workOrders=Array.isArray(rows)?rows:[];
+      return workOrders;
+    })
+  ]);
+
+  const failed=results.filter(x=>!x.ok);
+
+  // Always render whatever data was loaded successfully.
+  render();
+
+  if(!failed.length){
+    $("status").textContent=`Đã cập nhật · ${requests.length} phiếu CSKH · ${workOrders.length} Work Order.`;
+    $("status").className="status ok";
+    return;
+  }
+
+  const messages=failed.map(x=>formatLoadError(x.label,x.error));
+  $("status").innerHTML=
+    `<strong>DEBUG — Có nguồn dữ liệu lỗi:</strong><br>`+
+    messages.map(esc).join("<br>")+
+    `<br><small>Chi tiết cũng đã ghi vào Console.</small>`;
+  $("status").className="status err";
 }
 
 $("newExistingContract").addEventListener("click",()=>{resetContract();openModal("contractModal")});
