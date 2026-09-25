@@ -1988,6 +1988,50 @@ export async function updateWorkOrder(workOrderId, data){
   return getWorkOrder(workOrderId);
 }
 
+export async function completeWorkOrderByTechnician(workOrderId) {
+  requireValue(workOrderId, "workOrderId");
+
+  const workOrderRef = doc(
+    db,
+    COLLECTIONS.WORK_ORDERS,
+    workOrderId
+  );
+
+  const snapshot = await getDoc(workOrderRef);
+  if(!snapshot.exists()){
+    throw new Error("Không tìm thấy Work Order.");
+  }
+
+  const existing = snapshot.data() || {};
+
+  if(String(existing.assignedTechnicianId || "").trim() === ""){
+    throw new Error("Work Order chưa được phân công kỹ thuật viên.");
+  }
+
+  if(existing.status === "completed"){
+    throw new Error("Work Order đã hoàn thành.");
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+
+  // Chỉ ghi các trường vận hành cần thiết cho việc hoàn thành.
+  // Không ghi completedAt để giữ tương thích với Rules đang chạy.
+  const payload = {
+    status: "completed",
+    completedDate: existing.completedDate || today,
+    resolution: String(existing.resolution || "KTV xác nhận đã hoàn thành").trim(),
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(workOrderRef, payload);
+
+  return {
+    id: workOrderId,
+    ...existing,
+    ...payload
+  };
+}
+
 export async function reportWorkOrderByTechnician(workOrderId, status) {
   requireValue(workOrderId, "workOrderId");
 
