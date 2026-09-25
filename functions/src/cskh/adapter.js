@@ -2,8 +2,6 @@ const { db, now } = require('../lib/admin');
 const { normalizeText } = require('../lib/utils');
 const { generateElevatorCode } = require('../codes/elevator-code');
 const { findCustomerDuplicates } = require('../duplicate/customer');
-const { findBuildingDuplicates } = require('../duplicate/building');
-const { findElevatorDuplicates } = require('../duplicate/elevator');
 const { validateCustomer } = require('../validation/customer');
 const { validateBuilding } = require('../validation/building');
 const { validateElevator } = require('../validation/elevator');
@@ -12,7 +10,6 @@ const { historyEntry, appendHistory } = require('./history');
 function cleanString(value) {
   return String(value ?? '').trim();
 }
-
 
 function addressToText(address) {
   if (typeof address === 'string') return cleanString(address);
@@ -24,7 +21,10 @@ function addressToText(address) {
     address.ward,
     address.district,
     address.province
-  ].map(cleanString).filter(Boolean).join(', ');
+  ]
+    .map(cleanString)
+    .filter(Boolean)
+    .join(', ');
 }
 
 function locationToLatLng(location) {
@@ -42,13 +42,18 @@ function locationToLatLng(location) {
 function buildCustomerData(request) {
   const source = request.externalCustomer || {};
 
+  /*
+   * Current Customer validator expects address to be a string.
+   * CSKH may submit either a plain string or an address object, so normalize
+   * both forms before passing data into the existing validator.
+   */
   return validateCustomer({
     name: source.name,
     phone: source.phone,
     email: source.email || '',
     type: source.type || 'business',
     taxCode: source.taxCode || '',
-    address: source.address || '',
+    address: addressToText(source.address),
     contactPerson: source.contactPerson || { name: '', phone: '' },
     status: 'active'
   });
@@ -56,6 +61,7 @@ function buildCustomerData(request) {
 
 function buildBuildingData(request, customerId) {
   const source = request.externalBuilding || {};
+
   const address = {
     province: cleanString(source.address?.province),
     district: cleanString(source.address?.district),
@@ -69,7 +75,7 @@ function buildBuildingData(request, customerId) {
         accuracy: Number.isFinite(Number(source.location.accuracy))
           ? Number(source.location.accuracy)
           : null,
-        source: source.location.source || 'cskh'
+        source: cleanString(source.location.source) || 'cskh'
       }
     : null;
 
@@ -117,8 +123,10 @@ function buildElevatorData(request, buildingId, customerId) {
     manufacturer: source.manufacturer || '',
     machineBrand: technical.machine?.brand || source.machineBrand || '',
     machineModel: technical.machine?.model || source.machineModel || '',
-    controllerBrand: technical.controller?.brand || source.controllerBrand || '',
-    controllerModel: technical.controller?.model || source.controllerModel || '',
+    controllerBrand:
+      technical.controller?.brand || source.controllerBrand || '',
+    controllerModel:
+      technical.controller?.model || source.controllerModel || '',
     status: 'ACTIVE',
     serviceStatus: 'NOT_MANAGED'
   });
@@ -192,7 +200,10 @@ async function approveExternalRequest(request) {
   const customerData = buildCustomerData(request);
   const customerDuplicates = await findCustomerDuplicates(customerData);
 
-  const customerBlocks = customerDuplicates.filter(x => x.severity === 'BLOCK');
+  const customerBlocks = customerDuplicates.filter(
+    x => x.severity === 'BLOCK'
+  );
+
   if (customerBlocks.length) {
     return {
       ok: false,
@@ -203,18 +214,18 @@ async function approveExternalRequest(request) {
   }
 
   /*
-   * Customer is new at this point, so the existing Building duplicate helper
-   * cannot produce a meaningful match yet: it scopes by customerId.
-   * Likewise, the Elevator duplicate helper scopes by buildingId.
+   * The existing Building duplicate helper requires customerId.
+   * The existing Elevator duplicate helper requires buildingId.
    *
-   * We therefore do not invent a second duplicate algorithm here.
-   * Existing Customer BLOCK is the only authoritative preflight that can be
-   * evaluated before the new Customer/Building IDs exist.
+   * For a genuinely new external customer, those official IDs do not exist
+   * until this transaction creates them. We therefore do not create a second
+   * duplicate algorithm here.
    *
-   * Once the Customer and Building IDs are created inside the transaction,
-   * they become the authoritative references for the new master records.
+   * Customer BLOCK is the authoritative preflight that can be evaluated
+   * before master IDs exist. WARN results are retained for Admin/audit.
    */
   const buildingData = buildBuildingData(request, '__CUSTOMER_ID__');
+
   const elevatorData = buildElevatorData(
     request,
     '__BUILDING_ID__',
@@ -232,18 +243,21 @@ async function approveExternalRequest(request) {
 
 async function createExternalMasterData(request, options = {}) {
   const preflight = await approveExternalRequest(request);
+
   if (!preflight.ok) return preflight;
 
   const customerData = preflight.customerData;
-
-  // Create the master records in one transaction. The duplicate helpers use
-  // normal queries for preflight; this transaction then makes the actual
-  // Customer -> Building -> Elevator write atomic.
   const requestRef = options.requestRef || null;
   const admin = options.admin || null;
 
+  /*
+   * The approval flow has already atomically claimed the request as
+   * ADMIN_REVIEW. This transaction re-checks that state before creating
+   * master data, so the request and the three master records are committed
+   * together.
+   */
   const result = await db.runTransaction(async transaction => {
-    // ALL transaction reads must happen before any writes.
+    // ALL transaction reads must happen before any transaction writes.
     const requestSnapshot = requestRef
       ? await transaction.get(requestRef)
       : null;
@@ -254,15 +268,21 @@ async function createExternalMasterData(request, options = {}) {
 
     if (
       requestSnapshot &&
-      !['ADMIN_REVIEW'].includes(String(requestSnapshot.data()?.status || ''))
+      String(requestSnapshot.data()?.status || '') !== 'ADMIN_REVIEW'
     ) {
-      throw new Error('Phiếu CSKH đã được xử lý hoặc không còn ở trạng thái duyệt.');
+      throw new Error(
+        'Phiếu CSKH đã được xử lý hoặc không còn ở trạng thái duyệt.'
+      );
     }
 
-    // generateElevatorCode() performs transaction.get().
+    // generateElevatorCode() performs its own transaction.get().
+    // It is therefore intentionally called before any transaction.set().
     const code = await generateElevatorCode(transaction);
 
     const customerRef = db.collection('customers').doc();
+    const buildingRef = db.collection('buildings').doc();
+    const elevatorRef = db.collection('elevators').doc();
+
     const customer = {
       name: customerData.name,
       nameNormalized: customerData.nameNormalized,
@@ -271,25 +291,27 @@ async function createExternalMasterData(request, options = {}) {
       email: customerData.email || '',
       taxCode: customerData.taxCode || '',
       address: customerData.address || '',
-      contactPerson: customerData.contactPerson || { name: '', phone: '' },
+      contactPerson: customerData.contactPerson || {
+        name: '',
+        phone: ''
+      },
       status: 'active',
       createdAt: now(),
       updatedAt: now()
     };
 
-    const buildingRef = db.collection('buildings').doc();
-
     const buildingData = buildBuildingData(request, customerRef.id);
 
-    const elevatorRef = db.collection('elevators').doc();
     const elevatorData = buildElevatorData(
       request,
       buildingRef.id,
       customerRef.id
     );
+
     elevatorData.assetCode = code.displayCode;
 
     transaction.set(customerRef, customer);
+
     transaction.set(buildingRef, {
       name: buildingData.name,
       nameNormalized: normalizeText(buildingData.name),
@@ -317,6 +339,7 @@ async function createExternalMasterData(request, options = {}) {
 
     if (requestRef && requestSnapshot) {
       const current = requestSnapshot.data() || {};
+
       const nextHistory = appendHistory(
         current,
         historyEntry({
@@ -361,9 +384,9 @@ async function createExternalMasterData(request, options = {}) {
   return {
     ok: true,
     ...result,
-    warnings: [
-      ...preflight.customerDuplicates.filter(x => x.severity === 'WARN')
-    ]
+    warnings: preflight.customerDuplicates.filter(
+      x => x.severity === 'WARN'
+    )
   };
 }
 
