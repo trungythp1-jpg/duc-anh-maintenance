@@ -48,15 +48,23 @@ function getUser(request) {
   }
 
   const token = request.auth.token || {};
+
   return {
     uid: request.auth.uid,
-    name: clean(token.name || token.displayName || token.email || request.auth.uid)
+    name: clean(
+      token.name ||
+      token.displayName ||
+      token.email ||
+      request.auth.uid
+    )
   };
 }
 
 async function getRole(uid) {
   const snap = await db.collection('users').doc(uid).get();
+
   if (!snap.exists) return '';
+
   return clean(snap.data()?.role).toLowerCase();
 }
 
@@ -68,7 +76,10 @@ async function requireRole(request, allowed) {
     throw new Error('PERMISSION_DENIED');
   }
 
-  return { ...user, role };
+  return {
+    ...user,
+    role
+  };
 }
 
 function validateExternalPayload(data) {
@@ -76,30 +87,49 @@ function validateExternalPayload(data) {
   const building = data.externalBuilding || {};
   const elevator = data.externalElevator || {};
 
-  if (!clean(customer.name)) throw new Error('Tên khách hàng là bắt buộc.');
-  if (!clean(customer.phone)) throw new Error('Số điện thoại khách hàng là bắt buộc.');
-  if (!clean(building.name)) throw new Error('Tên tòa nhà là bắt buộc.');
+  if (!clean(customer.name)) {
+    throw new Error('Tên khách hàng là bắt buộc.');
+  }
+
+  if (!clean(customer.phone)) {
+    throw new Error('Số điện thoại khách hàng là bắt buộc.');
+  }
+
+  if (!clean(building.name)) {
+    throw new Error('Tên tòa nhà là bắt buộc.');
+  }
+
   if (!clean(building.address?.detail || building.address)) {
     throw new Error('Địa chỉ tòa nhà là bắt buộc.');
   }
-  if (!clean(elevator.name)) throw new Error('Tên thang máy là bắt buộc.');
+
+  if (!clean(elevator.name)) {
+    throw new Error('Tên thang máy là bắt buộc.');
+  }
 }
 
 async function validateRequestPayload(data) {
   const requestSource = clean(data.requestSource);
-  const requestType = clean(data.requestType || 'MAINTENANCE_REQUEST');
+  const requestType = clean(
+    data.requestType || 'MAINTENANCE_REQUEST'
+  );
 
   assertSource(requestSource);
   assertType(requestType);
 
   if (requestSource === 'EXTERNAL_CUSTOMER') {
     validateExternalPayload(data);
-  } else {
-    if (!clean(data.customerId) || !clean(data.buildingId) || !clean(data.elevatorId)) {
-      throw new Error(
-        'Yêu cầu EXISTING_CUSTOMER phải có customerId, buildingId và elevatorId.'
-      );
-    }
+    return;
+  }
+
+  if (
+    !clean(data.customerId) ||
+    !clean(data.buildingId) ||
+    !clean(data.elevatorId)
+  ) {
+    throw new Error(
+      'Yêu cầu EXISTING_CUSTOMER phải có customerId, buildingId và elevatorId.'
+    );
   }
 }
 
@@ -120,8 +150,48 @@ async function notifyAdmins(type, requestId, payload) {
   }
 }
 
+function buildEditablePatch(patch) {
+  const source = patch && typeof patch === 'object'
+    ? patch
+    : {};
+
+  /*
+   * Never allow CSKH/Admin updateCSKHRequest() to overwrite system fields
+   * such as status, ownership, linked master IDs, history or timestamps.
+   *
+   * Only these business-input fields are editable while the request is
+   * DRAFT / NEED_INFO.
+   */
+  const allowed = [
+    'requestSource',
+    'requestType',
+    'customerId',
+    'buildingId',
+    'elevatorId',
+    'externalCustomer',
+    'externalBuilding',
+    'externalElevator',
+    'description',
+    'note'
+  ];
+
+  const result = {};
+
+  for (const field of allowed) {
+    if (Object.prototype.hasOwnProperty.call(source, field)) {
+      result[field] = source[field];
+    }
+  }
+
+  return result;
+}
+
 async function createCSKHRequest(request) {
-  const user = await requireRole(request, ['customer_service', 'cskh', 'admin']);
+  const user = await requireRole(
+    request,
+    ['customer_service', 'cskh', 'admin']
+  );
+
   const data = request.data || {};
 
   await validateRequestPayload(data);
@@ -139,7 +209,9 @@ async function createCSKHRequest(request) {
 
   const payload = {
     requestSource: clean(data.requestSource),
-    requestType: clean(data.requestType || 'MAINTENANCE_REQUEST'),
+    requestType: clean(
+      data.requestType || 'MAINTENANCE_REQUEST'
+    ),
 
     status: 'DRAFT',
 
@@ -170,7 +242,10 @@ async function createCSKHRequest(request) {
 
   await ref.set(payload);
 
-  return { id: ref.id, ...payload };
+  return {
+    id: ref.id,
+    ...payload
+  };
 }
 
 async function getCSKHRequest(request) {
@@ -180,10 +255,16 @@ async function getCSKHRequest(request) {
   );
 
   const id = clean(request.data?.requestId);
-  if (!id) throw new Error('requestId là bắt buộc.');
+
+  if (!id) {
+    throw new Error('requestId là bắt buộc.');
+  }
 
   const snap = await db.collection('cskhRequests').doc(id).get();
-  if (!snap.exists) throw new Error('Không tìm thấy phiếu CSKH.');
+
+  if (!snap.exists) {
+    throw new Error('Không tìm thấy phiếu CSKH.');
+  }
 
   const data = snap.data() || {};
 
@@ -194,7 +275,10 @@ async function getCSKHRequest(request) {
     throw new Error('PERMISSION_DENIED');
   }
 
-  return { id: snap.id, ...data };
+  return {
+    id: snap.id,
+    ...data
+  };
 }
 
 async function getCSKHRequests(request) {
@@ -203,15 +287,22 @@ async function getCSKHRequests(request) {
     ['customer_service', 'cskh', 'admin', 'manager']
   );
 
-  let query = db.collection('cskhRequests').orderBy('createdAt', 'desc').limit(100);
+  if (['admin', 'manager'].includes(user.role)) {
+    const snap = await db.collection('cskhRequests')
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get();
 
-  if (!['admin', 'manager'].includes(user.role)) {
-    query = db.collection('cskhRequests')
-      .where('createdByUid', '==', user.uid)
-      .limit(100);
+    return snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
   }
 
-  const snap = await query.get();
+  const snap = await db.collection('cskhRequests')
+    .where('createdByUid', '==', user.uid)
+    .limit(100)
+    .get();
 
   return snap.docs.map(doc => ({
     id: doc.id,
@@ -220,25 +311,37 @@ async function getCSKHRequests(request) {
 }
 
 async function submitCSKHRequest(request) {
-  const user = await requireRole(request, ['customer_service', 'cskh', 'admin']);
+  const user = await requireRole(
+    request,
+    ['customer_service', 'cskh', 'admin']
+  );
+
   const id = clean(request.data?.requestId);
-  if (!id) throw new Error('requestId là bắt buộc.');
+
+  if (!id) {
+    throw new Error('requestId là bắt buộc.');
+  }
 
   const ref = db.collection('cskhRequests').doc(id);
   const snap = await ref.get();
-  if (!snap.exists) throw new Error('Không tìm thấy phiếu CSKH.');
+
+  if (!snap.exists) {
+    throw new Error('Không tìm thấy phiếu CSKH.');
+  }
 
   const current = snap.data() || {};
 
   if (
     current.createdByUid !== user.uid &&
-    !['admin'].includes(user.role)
+    user.role !== 'admin'
   ) {
     throw new Error('PERMISSION_DENIED');
   }
 
   if (!['DRAFT', 'NEED_INFO'].includes(current.status)) {
-    throw new Error('Phiếu không thể gửi ở trạng thái hiện tại.');
+    throw new Error(
+      'Phiếu không thể gửi ở trạng thái hiện tại.'
+    );
   }
 
   await validateRequestPayload(current);
@@ -256,46 +359,88 @@ async function submitCSKHRequest(request) {
 
   await ref.update({
     status: 'SUBMITTED',
+    assignedAdminUid: '',
+    assignedAdminName: '',
     updatedAt: now(),
     history
   });
 
-  await notifyAdmins('CSKH_REQUEST_SUBMITTED', id, {
-    requestType: current.requestType,
-    requestSource: current.requestSource,
-    createdByName: current.createdByName
-  });
+  /*
+   * Notification failure must not undo the submitted request.
+   * The request has already reached the authoritative SUBMITTED state.
+   */
+  try {
+    await notifyAdmins(
+      'CSKH_REQUEST_SUBMITTED',
+      id,
+      {
+        requestType: current.requestType,
+        requestSource: current.requestSource,
+        createdByName: current.createdByName
+      }
+    );
+  } catch (notificationError) {
+    console.error(
+      'CSKH submit notification failed',
+      notificationError
+    );
+  }
 
   return getCSKHRequest({
-    auth: { uid: user.uid, token: { role: user.role, name: user.name } },
-    data: { requestId: id }
+    auth: {
+      uid: user.uid,
+      token: {
+        role: user.role,
+        name: user.name
+      }
+    },
+    data: {
+      requestId: id
+    }
   });
 }
 
 async function updateCSKHRequest(request) {
-  const user = await requireRole(request, ['customer_service', 'cskh', 'admin']);
+  const user = await requireRole(
+    request,
+    ['customer_service', 'cskh', 'admin']
+  );
+
   const id = clean(request.data?.requestId);
-  if (!id) throw new Error('requestId là bắt buộc.');
+
+  if (!id) {
+    throw new Error('requestId là bắt buộc.');
+  }
 
   const ref = db.collection('cskhRequests').doc(id);
   const snap = await ref.get();
-  if (!snap.exists) throw new Error('Không tìm thấy phiếu CSKH.');
+
+  if (!snap.exists) {
+    throw new Error('Không tìm thấy phiếu CSKH.');
+  }
 
   const current = snap.data() || {};
 
   if (
     current.createdByUid !== user.uid &&
-    !['admin'].includes(user.role)
+    user.role !== 'admin'
   ) {
     throw new Error('PERMISSION_DENIED');
   }
 
   if (!['DRAFT', 'NEED_INFO'].includes(current.status)) {
-    throw new Error('Chỉ có thể sửa phiếu Nháp hoặc Cần bổ sung.');
+    throw new Error(
+      'Chỉ có thể sửa phiếu Nháp hoặc Cần bổ sung.'
+    );
   }
 
-  const patch = request.data?.patch || {};
-  const next = { ...current, ...patch };
+  const patch = buildEditablePatch(request.data?.patch);
+
+  const next = {
+    ...current,
+    ...patch
+  };
+
   await validateRequestPayload(next);
 
   const history = appendHistory(
@@ -309,18 +454,23 @@ async function updateCSKHRequest(request) {
     })
   );
 
-  delete next.history;
-  delete next.id;
-
   await ref.update({
-    ...next,
+    ...patch,
     history,
     updatedAt: now()
   });
 
   return getCSKHRequest({
-    auth: { uid: user.uid, token: { role: user.role, name: user.name } },
-    data: { requestId: id }
+    auth: {
+      uid: user.uid,
+      token: {
+        role: user.role,
+        name: user.name
+      }
+    },
+    data: {
+      requestId: id
+    }
   });
 }
 
