@@ -348,7 +348,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.26-ktv-create-maintenance">
+<body data-maintenance-build="v1.27-ktv-create-maintenance-fix">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -499,7 +499,7 @@ function applyAssignmentPermission(){
   $("assignmentReason").disabled=!allowed;
   if(!allowed){
     $("assignmentReason").value="";
-    if(isTech && !editingId){
+    if(currentRole()==="TECHNICIAN" && !editingId){
       const technicianId=String(currentProfile?.technicianId||"").trim();
       if(technicianId){
         $("technicianId").value=technicianId;
