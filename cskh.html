@@ -31,6 +31,7 @@ button{cursor:pointer}
 .urgent{padding:16px 18px}.task{border:1px solid #40392e;border-radius:12px;padding:14px;margin-bottom:10px;background:#151512}.task:last-child{margin-bottom:0}.task-top{display:flex;justify-content:space-between;gap:10px}.dot{width:12px;height:12px;border-radius:50%;background:var(--danger);display:inline-block;margin-right:8px}.task-code{font-weight:900;color:var(--gold2)}.task-meta{color:var(--muted);font-size:13px;margin-top:5px}.task-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.tag{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;background:#29261f;color:#cfc6b7}.tag.blue{background:rgba(127,170,255,.14);color:#9bbdff}.tag.green{background:rgba(110,213,154,.14);color:#78e1a4}.tag.gold{background:rgba(214,168,79,.14);color:var(--gold2)}
 .list{padding:8px 18px 16px}.list-row{display:grid;grid-template-columns:150px 1.2fr 1fr 110px;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #292722}.list-row:last-child{border-bottom:0}.list-row strong{display:block}.list-row small{display:block;color:var(--muted);margin-top:3px}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px}.quick .btn{min-height:58px;text-align:left}.quick b{display:block}.quick small{color:var(--muted)}
+.maintenance-list{padding:0 18px 10px}.maintenance-task{padding:14px 0;border-bottom:1px solid var(--line)}.maintenance-task:last-child{border-bottom:0}.maintenance-task .task-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.maintenance-task .task-meta{margin-top:7px;color:var(--muted);font-size:13px}.maintenance-task .task-foot{margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}.dot.red{background:#ff6b5f}.confirm-detail{display:grid;gap:10px}.confirm-row{display:flex;justify-content:space-between;gap:18px;padding-bottom:10px;border-bottom:1px solid var(--line)}.confirm-row span{color:var(--muted)}.confirm-row strong{text-align:right}.confirm-note{padding:12px;border:1px solid var(--line);border-radius:10px;color:var(--muted)}
 .note{padding:14px 18px;color:var(--muted);font-size:12px;border-top:1px solid #2d2922}
 .status{padding:10px 18px;color:var(--muted);font-size:12px;line-height:1.55;word-break:break-word}.status.ok{color:var(--ok)}.status.err{color:#ff8578}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.76);display:none;align-items:center;justify-content:center;padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));z-index:50}.modal.show{display:flex}
@@ -72,6 +73,9 @@ button{cursor:pointer}
     <section class="card">
       <div class="head"><strong>🔔 CẦN XỬ LÝ</strong><span id="urgentCount">0</span></div>
       <div class="urgent" id="urgent"></div>
+      <div class="head"><strong>🔔 XÁC NHẬN PHIẾU BẢO TRÌ</strong><span id="maintenanceConfirmCount">0</span></div>
+      <div class="maintenance-list" id="maintenanceConfirmList"></div>
+
       <div class="head"><strong>📋 TẤT CẢ CÔNG VIỆC</strong><span id="allCount">0</span></div>
       <div class="list" id="allTasks"></div>
       <div class="status" id="status">Đang tải dữ liệu…</div>
@@ -84,11 +88,30 @@ button{cursor:pointer}
         <button class="btn" id="quickExternal"><b>Khách hàng mới</b><small>Tạo phiếu gửi Admin duyệt</small></button>
         <button class="btn" id="quickContracts"><b>Danh sách hợp đồng</b><small>Mở module Hợp đồng</small></button>
         <button class="btn" id="quickRequests"><b>Phiếu CSKH</b><small>Xem toàn bộ phiếu của tôi</small></button>
+        <button class="btn" id="quickMaintenanceConfirm"><b>Xác nhận bảo trì</b><small>Xác nhận phiếu KTV đã báo hoàn thành</small></button>
       </div>
       <div class="note"><b>Nguyên tắc:</b> khách hàng đã có trong hệ thống thì CSKH được tạo hợp đồng trực tiếp. Chỉ khi khách hàng chưa tồn tại mới tạo phiếu gửi Admin để tạo Customer → Building → Elevator.</div>
     </aside>
   </div>
 </main>
+
+<!-- MAINTENANCE CONFIRMATION -->
+<div class="modal" id="maintenanceConfirmModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Xác nhận phiếu bảo trì</h2>
+      <button class="btn" data-close="maintenanceConfirmModal">Đóng</button>
+    </div>
+    <div class="modal-body">
+      <div id="maintenanceConfirmDetail" class="confirm-detail"></div>
+      <div class="error" id="maintenanceConfirmError"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="maintenanceConfirmModal">Hủy</button>
+      <button class="btn primary" id="confirmMaintenanceBtn">Xác nhận hoàn thành</button>
+    </div>
+  </div>
+</div>
 
 <!-- EXISTING CUSTOMER CONTRACT -->
 <div class="modal" id="contractModal">
@@ -148,42 +171,24 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/fi
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
 import {
-  getCustomers,getBuildings,getElevators,createContract,getWorkOrders
+  getCustomers,getBuildings,getElevators,createContract,getWorkOrders,
+  getMaintenances,confirmMaintenanceByCSKH
 } from "./js/core/firestore-v1.js";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const statusText={DRAFT:"Nháp",SUBMITTED:"Đã gửi Admin",ADMIN_REVIEW:"Admin đang xử lý",NEED_INFO:"Cần bổ sung",APPROVED:"Đã duyệt",CREATED:"Đã tạo",DUPLICATE:"Trùng dữ liệu",REJECTED:"Từ chối",CANCELLED:"Đã hủy"};
 const profileRole=r=>String(r||"").trim().toLowerCase();
-let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[];
+let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[],maintenances=[];
 
 function callable(name){return httpsCallable(getFunctions(auth.app,"asia-southeast1"),name)}
 
-function errorInfo(error){
-  return {
-    code:String(error?.code||"").trim(),
-    message:String(error?.message||error||"").trim(),
-    details:error?.details ?? null,
-    name:String(error?.name||"").trim()
-  };
-}
-
-function formatLoadError(label,error){
-  const x=errorInfo(error);
-  const detail=x.details
-    ? (typeof x.details==="string" ? x.details : JSON.stringify(x.details))
-    : "";
-  return `${label}: ${x.code||"NO_CODE"} — ${x.message||"Không rõ lỗi"}${detail?` — ${detail}`:""}`;
-}
-
-async function safeLoad(label,fn){
+async function safeLoad(fn,fallback){
   try{
-    const value=await fn();
-    console.log(`[CSKH][LOAD][OK] ${label}`,value);
-    return {ok:true,label,value};
+    return await fn();
   }catch(error){
-    console.error(`[CSKH][LOAD][ERROR] ${label}`,errorInfo(error),error);
-    return {ok:false,label,error};
+    console.error(error);
+    return fallback;
   }
 }
 
@@ -194,6 +199,72 @@ function sourceName(r){return r.requestSource==="EXTERNAL_CUSTOMER"?(r.externalC
 function buildingName(r){return r.requestSource==="EXTERNAL_CUSTOMER"?(r.externalBuilding?.name||"—"):(buildings.find(x=>x.id===r.buildingId)?.name||"—")}
 function elevatorName(r){return r.requestSource==="EXTERNAL_CUSTOMER"?(r.externalElevator?.name||"—"):(elevators.find(x=>x.id===r.elevatorId)?.name||"—")}
 
+function maintenanceDate(v){
+  if(!v) return null;
+  try{
+    if(typeof v.toDate==="function") return v.toDate();
+    const d=new Date(v);
+    return Number.isNaN(d.getTime())?null:d;
+  }catch{
+    return null;
+  }
+}
+
+function maintenanceDeadlineText(v){
+  const d=maintenanceDate(v);
+  if(!d) return "Không có thời hạn";
+  const ms=d.getTime()-Date.now();
+  if(ms<=0) return "Đã quá 18 giờ";
+  const total=Math.floor(ms/60000);
+  const hours=Math.floor(total/60);
+  const minutes=total%60;
+  return `Còn ${hours} giờ ${minutes} phút`;
+}
+
+function pendingConfirmations(){
+  return maintenances
+    .filter(m=>String(m.status||"")==="waiting_confirmation" &&
+      String(m.customerConfirmationStatus||"")==="pending")
+    .sort((a,b)=>{
+      const ad=maintenanceDate(a.customerConfirmationDeadline)?.getTime()||Number.MAX_SAFE_INTEGER;
+      const bd=maintenanceDate(b.customerConfirmationDeadline)?.getTime()||Number.MAX_SAFE_INTEGER;
+      return ad-bd;
+    });
+}
+
+function renderMaintenanceConfirmations(){
+  const rows=pendingConfirmations();
+  $("maintenanceConfirmCount").textContent=rows.length;
+
+  $("maintenanceConfirmList").innerHTML=rows.length
+    ? rows.map(m=>{
+        const expired=maintenanceDate(m.customerConfirmationDeadline)?.getTime()<=Date.now();
+        return `
+          <div class="maintenance-task">
+            <div class="task-top">
+              <div>
+                <span class="dot ${expired?"red":""}"></span>
+                <strong>${esc(m.ticketNo||m.id.slice(0,8).toUpperCase())}</strong>
+              </div>
+              <span class="tag ${expired?"gold":"blue"}">${expired?"Quá hạn":"Chờ xác nhận"}</span>
+            </div>
+            <div class="task-meta">
+              ${esc(m.customerName||"—")} • ${esc(m.buildingName||"—")} • ${esc(m.elevatorName||"—")}
+            </div>
+            <div class="task-meta">
+              KTV: ${esc(m.technicianName||"—")} • ${esc(maintenanceDeadlineText(m.customerConfirmationDeadline))}
+            </div>
+            <div class="task-foot">
+              <span class="muted">${esc(m.completedDate||"Đã báo hoàn thành")}</span>
+              <button class="btn ${expired?"":"primary"}" data-maintenance="${esc(m.id)}" ${expired?"disabled":""}>
+                ${expired?"Chờ quản lý":"Xác nhận hoàn thành"}
+              </button>
+            </div>
+          </div>`;
+      }).join("")
+    : `<div class="empty" style="padding:25px;color:var(--muted)">Không có phiếu bảo trì đang chờ CSKH xác nhận.</div>`;
+}
+
 function render(){
   const waiting=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW"].includes(r.status)).length;
   const need=requests.filter(r=>r.status==="NEED_INFO").length;
@@ -202,6 +273,7 @@ function render(){
   $("kNeed").textContent=need;
   $("kCreated").textContent=created;
   $("kWO").textContent=workOrders.length;
+  renderMaintenanceConfirmations();
 
   const urgent=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(r.status)).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,3);
   $("urgentCount").textContent=urgent.length;
@@ -301,37 +373,91 @@ async function loadRequests(){
   return requests;
 }
 
+async function loadMaintenanceConfirmations(){
+  maintenances=await getMaintenances();
+  return maintenances;
+}
+
 async function loadAll(){
-  $("status").textContent="Đang kiểm tra từng nguồn dữ liệu…";
+  $("status").textContent="Đang cập nhật dữ liệu…";
   $("status").className="status";
 
   const results=await Promise.all([
-    safeLoad("Phiếu CSKH",loadRequests),
-    safeLoad("Customer / Building / Elevator",loadReference),
-    safeLoad("Work Order",async()=>{
+    safeLoad(loadRequests,[]),
+    safeLoad(loadReference,[]),
+    safeLoad(async()=>{
       const rows=await getWorkOrders();
       workOrders=Array.isArray(rows)?rows:[];
       return workOrders;
-    })
+    },[]),
+    safeLoad(loadMaintenanceConfirmations,[])
   ]);
 
-  const failed=results.filter(x=>!x.ok);
-
-  // Always render whatever data was loaded successfully.
-  render();
-
-  if(!failed.length){
-    $("status").textContent=`Đã cập nhật · ${requests.length} phiếu CSKH · ${workOrders.length} Work Order.`;
-    $("status").className="status ok";
-    return;
+  if(!requests.length && results[0].length===0){
+    requests=[];
   }
 
-  const messages=failed.map(x=>formatLoadError(x.label,x.error));
-  $("status").innerHTML=
-    `<strong>DEBUG — Có nguồn dữ liệu lỗi:</strong><br>`+
-    messages.map(esc).join("<br>")+
-    `<br><small>Chi tiết cũng đã ghi vào Console.</small>`;
-  $("status").className="status err";
+  render();
+  $("status").textContent=
+    `Đã cập nhật · ${requests.length} phiếu CSKH · ${pendingConfirmations().length} phiếu bảo trì chờ xác nhận · ${workOrders.length} Work Order.`;
+  $("status").className="status ok";
+}
+
+let selectedMaintenanceId="";
+
+function openMaintenanceConfirmation(id){
+  const m=maintenances.find(x=>String(x.id)===String(id));
+  if(!m) return;
+
+  selectedMaintenanceId=id;
+  const expired=maintenanceDate(m.customerConfirmationDeadline)?.getTime()<=Date.now();
+
+  $("maintenanceConfirmDetail").innerHTML=`
+    <div class="confirm-row"><span>Phiếu</span><strong>${esc(m.ticketNo||m.id)}</strong></div>
+    <div class="confirm-row"><span>Khách hàng</span><strong>${esc(m.customerName||"—")}</strong></div>
+    <div class="confirm-row"><span>Tòa nhà</span><strong>${esc(m.buildingName||"—")}</strong></div>
+    <div class="confirm-row"><span>Thang máy</span><strong>${esc(m.elevatorName||"—")}</strong></div>
+    <div class="confirm-row"><span>KTV</span><strong>${esc(m.technicianName||"—")}</strong></div>
+    <div class="confirm-row"><span>Ngày hoàn thành</span><strong>${esc(m.completedDate||"—")}</strong></div>
+    <div class="confirm-row"><span>Thời hạn CSKH</span><strong>${esc(maintenanceDeadlineText(m.customerConfirmationDeadline))}</strong></div>
+    ${m.result?`<div class="confirm-note"><b>Kết quả:</b><br>${esc(m.result)}</div>`:""}
+    ${m.note?`<div class="confirm-note"><b>Ghi chú:</b><br>${esc(m.note)}</div>`:""}
+  `;
+
+  $("maintenanceConfirmError").style.display="none";
+  $("confirmMaintenanceBtn").disabled=expired;
+  $("confirmMaintenanceBtn").textContent=expired?"Đã quá hạn":"Xác nhận hoàn thành";
+  openModal("maintenanceConfirmModal");
+}
+
+async function confirmSelectedMaintenance(){
+  const btn=$("confirmMaintenanceBtn");
+  if(!selectedMaintenanceId || btn.disabled) return;
+
+  btn.disabled=true;
+  btn.textContent="Đang xác nhận…";
+  $("maintenanceConfirmError").style.display="none";
+
+  try{
+    await confirmMaintenanceByCSKH(selectedMaintenanceId,{
+      confirmedBy:profile?.name||profile?.displayName||profile?.email||"CSKH",
+      note:""
+    });
+
+    closeModal("maintenanceConfirmModal");
+    selectedMaintenanceId="";
+    await loadAll();
+    alert("Đã xác nhận hoàn thành phiếu bảo trì.");
+  }catch(error){
+    console.error(error);
+    $("maintenanceConfirmError").textContent=error?.message||"Không thể xác nhận phiếu bảo trì.";
+    $("maintenanceConfirmError").style.display="block";
+  }finally{
+    if(document.getElementById("maintenanceConfirmModal")?.classList.contains("show")){
+      btn.disabled=false;
+      btn.textContent="Xác nhận hoàn thành";
+    }
+  }
 }
 
 $("newExistingContract").addEventListener("click",()=>{resetContract();openModal("contractModal")});
@@ -340,6 +466,12 @@ $("newExternalRequest").addEventListener("click",()=>{resetRequest();openModal("
 $("quickExternal").addEventListener("click",()=>{resetRequest();openModal("requestModal")});
 $("quickContracts").addEventListener("click",()=>location.href="contracts.html");
 $("quickRequests").addEventListener("click",()=>document.querySelector("#allTasks")?.scrollIntoView({behavior:"smooth"}));
+$("quickMaintenanceConfirm").addEventListener("click",()=>document.querySelector("#maintenanceConfirmList")?.scrollIntoView({behavior:"smooth"}));
+$("maintenanceConfirmList").addEventListener("click",event=>{
+  const button=event.target.closest("[data-maintenance]");
+  if(button && !button.disabled) openMaintenanceConfirmation(button.dataset.maintenance);
+});
+$("confirmMaintenanceBtn").addEventListener("click",confirmSelectedMaintenance);
 $("refresh").addEventListener("click",loadAll);
 $("contractCustomer").addEventListener("change",fillBuildings);
 $("contractBuilding").addEventListener("change",fillElevators);
