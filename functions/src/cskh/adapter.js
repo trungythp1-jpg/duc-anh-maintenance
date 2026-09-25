@@ -13,9 +13,6 @@ function cleanString(value) {
   return String(value ?? '').trim();
 }
 
-function normalizeRole(value) {
-  return cleanString(value).toLowerCase();
-}
 
 function addressToText(address) {
   if (typeof address === 'string') return cleanString(address);
@@ -205,6 +202,18 @@ async function approveExternalRequest(request) {
     };
   }
 
+  /*
+   * Customer is new at this point, so the existing Building duplicate helper
+   * cannot produce a meaningful match yet: it scopes by customerId.
+   * Likewise, the Elevator duplicate helper scopes by buildingId.
+   *
+   * We therefore do not invent a second duplicate algorithm here.
+   * Existing Customer BLOCK is the only authoritative preflight that can be
+   * evaluated before the new Customer/Building IDs exist.
+   *
+   * Once the Customer and Building IDs are created inside the transaction,
+   * they become the authoritative references for the new master records.
+   */
   const buildingData = buildBuildingData(request, '__CUSTOMER_ID__');
   const elevatorData = buildElevatorData(
     request,
@@ -212,8 +221,6 @@ async function approveExternalRequest(request) {
     '__CUSTOMER_ID__'
   );
 
-  // The real customer/building IDs are inserted below. We deliberately do
-  // not create any master record until the duplicate preflight is complete.
   return {
     ok: true,
     customerData,
