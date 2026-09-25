@@ -254,6 +254,7 @@ service cloud.firestore {
           'MAINTENANCE_REQUEST',
           'SERVICE_REQUEST',
           'CUSTOMER_REGISTRATION',
+          'CONTRACT_REQUEST',
           'OTHER'
         ]
         && request.resource.data.assignedAdminUid == ''
@@ -275,6 +276,7 @@ service cloud.firestore {
           'externalCustomer',
           'externalBuilding',
           'externalElevator',
+          'externalContract',
           'description',
           'note',
           'history',
