@@ -602,8 +602,57 @@ async function loadCurrentUserProfile() {
 
 function watchCurrentUserProfile() {
   if (!auth) return;
-  onAuthStateChanged(auth, async () => {
-    await loadCurrentUserProfile();
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.replace("login.html");
+      return;
+    }
+
+    try {
+      const snapshot = await getDoc(doc(db, "users", user.uid));
+
+      if (!snapshot.exists()) {
+        throw new Error("Không tồn tại hồ sơ users/{uid}.");
+      }
+
+      const role = String(snapshot.data()?.role || "").trim().toUpperCase();
+
+      /* Dashboard tổng chỉ dành cho ADMIN và DIRECTOR. */
+      if (role === "CSKH" || role === "CUSTOMER_SERVICE") {
+        window.location.replace("cskh.html");
+        return;
+      }
+
+      if (role === "TECHNICIAN") {
+        window.location.replace("cong-viec-cua-toi.html");
+        return;
+      }
+
+      if (!["ADMIN", "DIRECTOR"].includes(role)) {
+        document.body.innerHTML = `
+          <main style="min-height:100vh;display:grid;place-items:center;background:#090909;color:#eee9df;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:24px">
+            <section style="max-width:520px;width:100%;background:#11110f;border:1px solid #3a3428;border-radius:16px;padding:28px;text-align:center">
+              <div style="color:#f0ca76;font-weight:800;letter-spacing:.08em">ĐỨC ANH MAINTENANCE</div>
+              <h1 style="margin:12px 0 8px">Không có quyền truy cập</h1>
+              <p style="color:#aaa49a;line-height:1.6">Màn hình Dashboard tổng chỉ dành cho Administrator và Giám đốc.</p>
+            </section>
+          </main>`;
+        return;
+      }
+
+      await loadCurrentUserProfile();
+      loadDashboardData();
+    } catch (error) {
+      console.error("DASHBOARD ROLE GATE ERROR:", error);
+      document.body.innerHTML = `
+        <main style="min-height:100vh;display:grid;place-items:center;background:#090909;color:#eee9df;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:24px">
+          <section style="max-width:520px;width:100%;background:#11110f;border:1px solid #3a3428;border-radius:16px;padding:28px;text-align:center">
+            <h1 style="margin:0 0 8px">Không thể xác thực tài khoản</h1>
+            <p style="color:#aaa49a;line-height:1.6">${String(error?.message || "Vui lòng đăng nhập lại.").replace(/[&<>]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</p>
+          </section>
+        </main>`;
+    }
   });
 }
 
@@ -1151,7 +1200,6 @@ $("refreshTop")
 ========================================================= */
 
 watchCurrentUserProfile();
-loadDashboardData();
 
 </script>
 
