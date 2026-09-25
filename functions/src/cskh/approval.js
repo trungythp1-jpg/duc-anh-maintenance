@@ -31,48 +31,92 @@ async function loadRequest(requestId) {
   };
 }
 
+/**
+ * Atomically claim a CSKH request for admin review.
+ *
+ * This prevents two admins from processing the same request at the same time.
+ * SUBMITTED / NEED_INFO -> ADMIN_REVIEW is claimed in one transaction.
+ * If the request is already ADMIN_REVIEW by another admin, it is blocked.
+ */
+async function claimForAdminReview(requestId, admin) {
+  const ref = db.collection('cskhRequests').doc(requestId);
+
+  return db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+
+    if (!snap.exists) {
+      throw new Error('Không tìm thấy phiếu CSKH.');
+    }
+
+    const current = snap.data() || {};
+    const status = clean(current.status);
+    const assignedAdminUid = clean(current.assignedAdminUid);
+
+    if (!['SUBMITTED', 'ADMIN_REVIEW', 'NEED_INFO'].includes(status)) {
+      throw new Error('Phiếu không ở trạng thái có thể duyệt.');
+    }
+
+    if (
+      status === 'ADMIN_REVIEW' &&
+      assignedAdminUid &&
+      assignedAdminUid !== admin.uid
+    ) {
+      throw new Error('Phiếu CSKH đang được Admin khác xử lý.');
+    }
+
+    const timestamp = now();
+
+    transaction.update(ref, {
+      status: 'ADMIN_REVIEW',
+      assignedAdminUid: admin.uid,
+      assignedAdminName: admin.name,
+      updatedAt: timestamp,
+      history: appendHistory(
+        current,
+        historyEntry({
+          action: 'ADMIN_REVIEW',
+          byUid: admin.uid,
+          byName: admin.name,
+          fromStatus: status,
+          toStatus: 'ADMIN_REVIEW'
+        })
+      )
+    });
+
+    return {
+      ref,
+      data: current
+    };
+  });
+}
+
 async function approveCSKHRequest(request) {
   const admin = await requireRole(request, ['admin']);
 
   const requestId = clean(request.data?.requestId);
   if (!requestId) throw new Error('requestId là bắt buộc.');
 
-  const loaded = await loadRequest(requestId);
-  const current = loaded.data;
-
-  if (!['SUBMITTED', 'ADMIN_REVIEW', 'NEED_INFO'].includes(current.status)) {
-    throw new Error('Phiếu không ở trạng thái có thể duyệt.');
-  }
-
-  // Lock the request into review before creating master records.
-  // A second admin request will fail once the status is no longer reviewable.
-  await loaded.ref.update({
+  // Claim the request atomically before doing any master-data work.
+  const claimed = await claimForAdminReview(requestId, admin);
+  const loaded = claimed;
+  const reviewData = {
+    ...claimed.data,
     status: 'ADMIN_REVIEW',
     assignedAdminUid: admin.uid,
-    assignedAdminName: admin.name,
-    updatedAt: now(),
-    history: appendHistory(
-      current,
-      historyEntry({
-        action: 'ADMIN_REVIEW',
-        byUid: admin.uid,
-        byName: admin.name,
-        fromStatus: current.status,
-        toStatus: 'ADMIN_REVIEW'
-      })
-    )
-  });
-
-  const reviewSnap = await loaded.ref.get();
-  const reviewData = reviewSnap.data() || {};
+    assignedAdminName: admin.name
+  };
 
   try {
     let result;
 
     if (reviewData.requestSource === 'EXTERNAL_CUSTOMER') {
-      result = await createExternalMasterData(reviewData, { requestRef: loaded.ref, admin });
+      result = await createExternalMasterData(reviewData, {
+        requestRef: loaded.ref,
+        admin
+      });
     } else {
       const chain = await verifyExistingChain(reviewData);
+
       result = {
         ok: true,
         customerId: chain.customer.id,
@@ -86,6 +130,10 @@ async function approveCSKHRequest(request) {
 
     if (!result.ok) {
       const nextStatus = result.status || 'DUPLICATE';
+
+      const latestSnap = await loaded.ref.get();
+      const latest = latestSnap.data() || {};
+
       const updated = {
         status: nextStatus,
         processedAt: now(),
@@ -94,7 +142,7 @@ async function approveCSKHRequest(request) {
         duplicateResults: result.duplicates || [],
         updatedAt: now(),
         history: appendHistory(
-          reviewData,
+          latest,
           historyEntry({
             action: 'DUPLICATE',
             byUid: admin.uid,
@@ -108,25 +156,23 @@ async function approveCSKHRequest(request) {
 
       await loaded.ref.update(updated);
 
-      await notifyUser(
-        'CSKH_REQUEST_DUPLICATE',
-        requestId,
-        reviewData.createdByUid,
-        {
-          stage: result.duplicateStage,
-          duplicates: result.duplicates || []
-        }
-      );
-
       return {
         id: requestId,
         status: nextStatus,
-        ...result
+        ...result,
+        notification: {
+          type: 'CSKH_REQUEST_DUPLICATE',
+          recipientId: reviewData.createdByUid,
+          payload: {
+            stage: result.duplicateStage,
+            duplicates: result.duplicates || []
+          }
+        }
       };
     }
 
-    // EXTERNAL_CUSTOMER is completed atomically inside the master-data
-    // transaction, including the cskhRequests status update.
+    // EXTERNAL_CUSTOMER is completed atomically inside createExternalMasterData,
+    // including creation of Customer -> Building -> Elevator and the request update.
     if (reviewData.requestSource !== 'EXTERNAL_CUSTOMER') {
       const finalSnap = await loaded.ref.get();
       const finalData = finalSnap.data() || {};
@@ -159,18 +205,6 @@ async function approveCSKHRequest(request) {
       });
     }
 
-    await notifyUser(
-      'CSKH_REQUEST_CREATED',
-      requestId,
-      reviewData.createdByUid,
-      {
-        customerId: result.customerId,
-        buildingId: result.buildingId,
-        elevatorId: result.elevatorId,
-        displayCode: result.displayCode || ''
-      }
-    );
-
     return {
       id: requestId,
       status: 'CREATED',
@@ -178,36 +212,44 @@ async function approveCSKHRequest(request) {
       buildingId: result.buildingId,
       elevatorId: result.elevatorId,
       displayCode: result.displayCode || '',
-      warnings: result.warnings || []
+      warnings: result.warnings || [],
+      notification: {
+        type: 'CSKH_REQUEST_CREATED',
+        recipientId: reviewData.createdByUid,
+        payload: {
+          customerId: result.customerId,
+          buildingId: result.buildingId,
+          elevatorId: result.elevatorId,
+          displayCode: result.displayCode || ''
+        }
+      }
     };
   } catch (error) {
+    // Only errors from the actual business-processing stage may move the
+    // request to NEED_INFO. Notification failures must never roll back the
+    // business result or change CREATED back to NEED_INFO.
     const latestSnap = await loaded.ref.get();
     const latest = latestSnap.data() || {};
 
-    await loaded.ref.update({
-      status: 'NEED_INFO',
-      processedAt: null,
-      resultNote: clean(error.message || 'Không thể xử lý phiếu.'),
-      updatedAt: now(),
-      history: appendHistory(
-        latest,
-        historyEntry({
-          action: 'NEED_INFO',
-          byUid: admin.uid,
-          byName: admin.name,
-          fromStatus: 'ADMIN_REVIEW',
-          toStatus: 'NEED_INFO',
-          note: clean(error.message)
-        })
-      )
-    });
-
-    await notifyUser(
-      'CSKH_REQUEST_NEED_INFO',
-      requestId,
-      current.createdByUid,
-      { reason: clean(error.message) }
-    );
+    if (latest.status !== 'CREATED') {
+      await loaded.ref.update({
+        status: 'NEED_INFO',
+        processedAt: null,
+        resultNote: clean(error.message || 'Không thể xử lý phiếu.'),
+        updatedAt: now(),
+        history: appendHistory(
+          latest,
+          historyEntry({
+            action: 'NEED_INFO',
+            byUid: admin.uid,
+            byName: admin.name,
+            fromStatus: 'ADMIN_REVIEW',
+            toStatus: 'NEED_INFO',
+            note: clean(error.message)
+          })
+        )
+      });
+    }
 
     throw error;
   }
