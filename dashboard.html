@@ -126,11 +126,11 @@
           ↻
         </button>
 
-        <div class="user-chip">
-          <div class="avatar">AD</div>
+        <div class="user-chip" id="currentUserChip">
+          <div class="avatar" id="currentUserAvatar">DA</div>
           <div class="user-text">
-            <strong>Administrator</strong>
-            <small>ADMIN</small>
+            <strong id="currentUserName">Đang tải...</strong>
+            <small id="currentUserRole">...</small>
           </div>
         </div>
 
@@ -494,6 +494,17 @@ import {
   getElevators
 } from "./js/core/firestore-v1.js";
 
+import { auth, db } from "./js/core/firebase.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
 
 const $ = id => document.getElementById(id);
 
@@ -505,6 +516,97 @@ let elevators = [];
 /* =========================================================
    HELPERS
 ========================================================= */
+
+async function loadCurrentUserProfile() {
+
+  const nameElement = $("currentUserName");
+  const roleElement = $("currentUserRole");
+  const avatarElement = $("currentUserAvatar");
+
+  try {
+    if (!auth?.currentUser) {
+      if (nameElement) nameElement.textContent = "Chưa đăng nhập";
+      if (roleElement) roleElement.textContent = "";
+      if (avatarElement) avatarElement.textContent = "DA";
+      return;
+    }
+
+    const user = auth.currentUser;
+    const snapshot = await getDoc(doc(db, "users", user.uid));
+
+    if (!snapshot.exists()) {
+      throw new Error("Không tồn tại hồ sơ users/{uid}.");
+    }
+
+    const profile = snapshot.data() || {};
+    const rawRole = String(profile.role || "").trim();
+    const normalizedRole = rawRole.toUpperCase();
+
+    const roleMap = {
+      ADMIN: { name: "Administrator", label: "ADMIN" },
+      MANAGER: { name: "Quản lý", label: "MANAGER" },
+      DIRECTOR: { name: "Giám đốc", label: "DIRECTOR" },
+      CSKH: { name: "CSKH", label: "CSKH" },
+      CUSTOMER_SERVICE: { name: "CSKH", label: "CSKH" },
+      TECHNICIAN: { name: "Kỹ thuật viên", label: "TECHNICIAN" },
+      WAREHOUSE: { name: "Kho", label: "WAREHOUSE" }
+    };
+
+    const roleInfo = roleMap[normalizedRole] || {
+      name: rawRole || "Nhân sự",
+      label: rawRole || "USER"
+    };
+
+    const displayName = String(
+      profile.name ||
+      user.displayName ||
+      user.email ||
+      "Người dùng"
+    ).trim();
+
+    /*
+     * CSKH được hiển thị theo role nghiệp vụ từ Firestore.
+     * Không dùng giá trị mặc định Administrator cho tài khoản CSKH.
+     */
+    if (nameElement) {
+      nameElement.textContent =
+        normalizedRole === "CSKH" || normalizedRole === "CUSTOMER_SERVICE"
+          ? roleInfo.name
+          : displayName;
+    }
+
+    if (roleElement) {
+      roleElement.textContent = roleInfo.label;
+    }
+
+    if (avatarElement) {
+      const initials = normalizedRole === "CSKH" || normalizedRole === "CUSTOMER_SERVICE"
+        ? "CS"
+        : displayName
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(-2)
+            .map(part => part.charAt(0).toUpperCase())
+            .join("") || "DA";
+      avatarElement.textContent = initials;
+    }
+
+  } catch (error) {
+    console.error("DASHBOARD USER PROFILE ERROR:", error);
+    if (nameElement) nameElement.textContent = "Lỗi tài khoản";
+    if (roleElement) roleElement.textContent = "";
+    if (avatarElement) avatarElement.textContent = "!";
+  }
+}
+
+
+function watchCurrentUserProfile() {
+  if (!auth) return;
+  onAuthStateChanged(auth, async () => {
+    await loadCurrentUserProfile();
+  });
+}
+
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -1048,6 +1150,7 @@ $("refreshTop")
    START
 ========================================================= */
 
+watchCurrentUserProfile();
 loadDashboardData();
 
 </script>
