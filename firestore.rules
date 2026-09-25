@@ -1,5 +1,7 @@
 rules_version = '2';
 
+// BUILD: WO-independent + KTV Maintenance completion workflow
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -229,6 +231,7 @@ service cloud.firestore {
     //
 
     match /maintenance/{maintenanceId} {
+
       allow get: if isAdmin()
         || isManager()
         || isDirector()
@@ -241,12 +244,37 @@ service cloud.firestore {
         || isCSKH()
         || isAssignedMaintenance();
 
-      allow create: if isAdmin()
-        || isManager();
+      // ADMIN / MANAGER:
+      // tạo PBM bình thường.
+      //
+      // TECHNICIAN:
+      // chỉ tạo PBM cho chính mình.
+      // Không cho tạo completed / waiting_confirmation ngay từ đầu.
+      allow create: if
+        (isAdmin() || isManager())
+        ||
+        (
+          isTechnician()
+          && request.resource.data.technicianId == technicianIdFromUser()
+          && request.resource.data.technicianId != ''
+          && request.resource.data.status in ['assigned', 'in_progress']
+          && request.resource.data.completedByTechnicianId == ''
+          && request.resource.data.completedByTechnicianName == ''
+          && request.resource.data.completionReportedAt == null
+          && request.resource.data.customerConfirmationStatus == 'not_started'
+          && request.resource.data.customerConfirmationDeadline == null
+          && request.resource.data.customerConfirmedBy == ''
+          && request.resource.data.customerConfirmedAt == null
+          && request.resource.data.confirmationEscalatedBy == ''
+          && request.resource.data.confirmationEscalatedAt == null
+        );
 
-      allow update: if isAdmin()
-        || isManager()
-        || (
+      allow update: if
+        (isAdmin() || isManager())
+        ||
+        (
+          // KTV được sửa PBM của chính mình, nhưng không được tự
+          // xác nhận cuối cùng.
           isAssignedMaintenance()
           && request.resource.data.technicianId
              == resource.data.technicianId
@@ -257,19 +285,112 @@ service cloud.firestore {
           && request.resource.data.elevatorId == resource.data.elevatorId
           && request.resource.data.contractId == resource.data.contractId
           && request.resource.data.periodNumber == resource.data.periodNumber
+          && (
+            // Luồng báo hoàn thành duy nhất của KTV.
+            (
+              resource.data.status in ['assigned', 'in_progress']
+              && request.resource.data.status == 'waiting_confirmation'
+              && request.resource.data.completedByTechnicianId
+                 == technicianIdFromUser()
+              && request.resource.data.completedByTechnicianName
+                 != ''
+              && request.resource.data.completionReportedAt != null
+              && request.resource.data.customerConfirmationStatus == 'pending'
+              && request.resource.data.customerConfirmationDeadline != null
+              && request.resource.data.customerConfirmedBy == ''
+              && request.resource.data.customerConfirmedAt == null
+              && request.resource.data.confirmationEscalatedBy == ''
+              && request.resource.data.confirmationEscalatedAt == null
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'completedDate',
+                'status',
+                'completedByTechnicianId',
+                'completedByTechnicianName',
+                'completionReportedAt',
+                'customerConfirmationStatus',
+                'customerConfirmationDeadline',
+                'customerConfirmedBy',
+                'customerConfirmedAt',
+                'customerConfirmationNote',
+                'confirmationEscalatedBy',
+                'confirmationEscalatedAt',
+                'updatedAt'
+              ])
+            )
+            ||
+            // Các chỉnh sửa vận hành của KTV trước khi báo hoàn thành.
+            (
+              resource.data.status in ['assigned', 'in_progress']
+              && request.resource.data.status in ['assigned', 'in_progress']
+              && request.resource.data.completedByTechnicianId
+                 == resource.data.completedByTechnicianId
+              && request.resource.data.completedByTechnicianName
+                 == resource.data.completedByTechnicianName
+              && request.resource.data.completionReportedAt
+                 == resource.data.completionReportedAt
+              && request.resource.data.customerConfirmationStatus
+                 == resource.data.customerConfirmationStatus
+              && request.resource.data.customerConfirmationDeadline
+                 == resource.data.customerConfirmationDeadline
+              && request.resource.data.customerConfirmedBy
+                 == resource.data.customerConfirmedBy
+              && request.resource.data.customerConfirmedAt
+                 == resource.data.customerConfirmedAt
+              && request.resource.data.confirmationEscalatedBy
+                 == resource.data.confirmationEscalatedBy
+              && request.resource.data.confirmationEscalatedAt
+                 == resource.data.confirmationEscalatedAt
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'customerId','customerName',
+                'buildingId','buildingName',
+                'elevatorId','elevatorName','elevatorAssetCode',
+                'contractId','contractCode','periodNumber',
+                'scheduledDate','completedDate','status',
+                'technicianId','technicianName',
+                'checklist','condition','result','issueFound','note',
+                'latestWorkOrderId','latestWorkOrderNo',
+                'latestWorkOrderStatus','workOrderIds','workOrderCount',
+                'updatedAt'
+              ])
+            )
+          )
+        )
+        ||
+        (
+          // CSKH chỉ xác nhận trong cửa sổ 18 giờ.
+          isCSKH()
+          && resource.data.status == 'waiting_confirmation'
+          && resource.data.customerConfirmationStatus == 'pending'
+          && request.resource.data.status == 'completed'
+          && request.resource.data.customerConfirmationStatus == 'confirmed'
+          && request.resource.data.completedByTechnicianId
+             == resource.data.completedByTechnicianId
+          && request.resource.data.completedByTechnicianName
+             == resource.data.completedByTechnicianName
+          && request.resource.data.technicianId
+             == resource.data.technicianId
+          && request.resource.data.customerConfirmedBy != ''
+          && request.resource.data.customerConfirmedAt != null
+          && request.time <= resource.data.customerConfirmationDeadline
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'customerId','customerName','buildingId','buildingName','elevatorId',
-            'elevatorName','elevatorAssetCode','contractId','contractCode','periodNumber',
-            'scheduledDate','completedDate','status','technicianId','technicianName',
-            'checklist','condition','result','issueFound','note',
-            'latestWorkOrderId','latestWorkOrderNo','latestWorkOrderStatus',
-            'workOrderIds','workOrderCount','updatedAt'
+            'status',
+            'customerConfirmationStatus',
+            'customerConfirmedBy',
+            'customerConfirmedAt',
+            'customerConfirmationNote',
+            'updatedAt'
           ])
+        )
+        ||
+        (
+          // ADMIN / MANAGER có thể xác nhận sau khi quá 18 giờ.
+          // Có thể dùng nhánh quản trị riêng, nhưng vẫn giữ nguyên
+          // toàn bộ quyền quản lý của họ.
+          false
         );
 
       allow delete: if false;
     }
-
 
     // =========================================================
     // WORK ORDERS — V2
@@ -316,9 +437,10 @@ service cloud.firestore {
         || isCSKH()
         || isAssignedWorkOrder();
 
-      // Chỉ ADMIN / MANAGER tạo WO chính thức.
+      // ADMIN / MANAGER / DIRECTOR / CSKH có thể tạo WO chính thức.
+      // TECHNICIAN không tạo WO trực tiếp; chỉ gửi Request.
       allow create: if
-        (isAdmin() || isManager())
+        (isAdmin() || isManager() || isDirector() || isCSKH())
         && request.resource.data.sourceType in [
           'MAINTENANCE',
           'CUSTOMER_REPORT',
@@ -417,19 +539,24 @@ service cloud.firestore {
              == resource.data.contractId
           && request.resource.data.maintenanceId
              == resource.data.maintenanceId
-          && request.resource.data.status in [
-            'in_progress',
-            'completed'
-          ]
-          && (
-            resource.data.status != 'completed'
-            || request.resource.data.status == 'completed'
-          )
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'type',
+            'priority',
             'status',
+            'issueTitle',
+            'problemDescription',
+            'openedDate',
+            'dueDate',
             'completedDate',
-            'resolution',
             'completedAt',
+            'cause',
+            'resolution',
+            'materials',
+            'laborCost',
+            'materialCost',
+            'totalCost',
+            'attachmentUrls',
+            'note',
             'updatedAt'
           ])
         );
