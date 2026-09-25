@@ -28,7 +28,7 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.11-bell-confirm">
+<body data-build="cong-viec-cua-toi-v1.12-confirm-in-progress">
 <main class="page">
   <div class="head">
     <div>
@@ -87,7 +87,7 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "./js/core/firebase.js";
 import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getMaintenances, getWorkOrders } from "./js/core/firestore-v1.js";
+import { getMaintenances, getWorkOrders, reportWorkOrderByTechnician } from "./js/core/firestore-v1.js";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -196,9 +196,30 @@ $("tasks").addEventListener("click",async e=>{
   if(confirmOpenBtn){
     const [kind,id]=confirmOpenBtn.dataset.confirmOpen.split(":");
     if(!id)return;
-    window.location.href=kind==="maintenance"
-      ? `maintenance.html?id=${encodeURIComponent(id)}`
-      : `work-orders.html?id=${encodeURIComponent(id)}`;
+
+    // Quy tắc V1.12:
+    // - WO: "Xác nhận công việc" chỉ chuyển sang Đang triển khai (in_progress).
+    // - Không hoàn thành WO tại màn hình "Công việc của tôi".
+    // - KTV phải mở phiếu WO và xác nhận Hoàn thành trong chính phiếu WO.
+    if(kind==="workorder"){
+      confirmOpenBtn.disabled=true;
+      const oldText=confirmOpenBtn.textContent;
+      confirmOpenBtn.textContent="Đang xác nhận…";
+      try{
+        await reportWorkOrderByTechnician(id,"in_progress");
+        await load();
+        return;
+      }catch(err){
+        console.error("Không thể xác nhận công việc WO:",err);
+        alert(err?.message||"Không thể chuyển WO sang trạng thái Đang triển khai.");
+        confirmOpenBtn.disabled=false;
+        confirmOpenBtn.textContent=oldText;
+        return;
+      }
+    }
+
+    // PBM vẫn mở phiếu để thực hiện quy trình hoàn thành theo workflow hiện hành.
+    window.location.href=`maintenance.html?id=${encodeURIComponent(id)}`;
     return;
   }
 
