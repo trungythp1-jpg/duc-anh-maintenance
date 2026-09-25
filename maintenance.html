@@ -67,7 +67,7 @@ body{
   box-shadow:0 4px 18px rgba(214,168,79,.12);
 }
 .btn:hover{border-color:var(--da-gold)!important}
-.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn:disabled{opacity:.55;cursor:not-allowed}.btn.confirm-expired{opacity:.30!important;filter:grayscale(.75);cursor:not-allowed!important}
 
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .kpi{
@@ -348,7 +348,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.25-admin-expiry-confirmation">
+<body data-maintenance-build="v1.26-cskh-expired-button-disabled">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -550,10 +550,18 @@ function applyTechnicianScopeUI(){
     String(currentMaintenance.customerConfirmationStatus||"")==="pending";
 
   const confirmBtn=$("confirmCompletionBtn");
-  const canConfirm=isCSKH && Boolean(editingId) && isWaiting && !isConfirmationExpired(currentMaintenance);
+  const cskhWaiting=isCSKH && Boolean(editingId) && isWaiting;
+  const confirmationExpired=cskhWaiting && isConfirmationExpired(currentMaintenance);
+  const canConfirm=cskhWaiting && !confirmationExpired;
   if(confirmBtn){
-    confirmBtn.style.display=canConfirm?"inline-flex":"none";
-    confirmBtn.disabled=false;
+    // Khi quá 18 giờ, CSKH vẫn nhìn thấy nút để hiểu đây là luồng xác nhận
+    // của mình, nhưng nút bị khóa/mờ; chỉ ADMIN/MANAGER mới có thể xử lý.
+    confirmBtn.style.display=cskhWaiting?"inline-flex":"none";
+    confirmBtn.disabled=confirmationExpired;
+    confirmBtn.classList.toggle("confirm-expired",confirmationExpired);
+    confirmBtn.title=confirmationExpired
+      ? "Đã quá 18 giờ. CSKH không thể xác nhận; chờ cấp quản lý xác nhận."
+      : "Xác nhận hoàn thành trong thời hạn 18 giờ.";
   }
 
   const managerConfirmBtn=$("managerConfirmCompletionBtn");
@@ -565,10 +573,11 @@ function applyTechnicianScopeUI(){
 
   const saveBtn=$("saveBtn");
   if(saveBtn){
-    saveBtn.style.display=(canConfirm || canManagerConfirm)?"none":"inline-flex";
+    // CSKH không dùng Lưu phiếu để xử lý xác nhận, kể cả khi đã quá hạn.
+    saveBtn.style.display=(cskhWaiting || canManagerConfirm)?"none":"inline-flex";
   }
 
-  if(canConfirm || canManagerConfirm){
+  if(cskhWaiting || canManagerConfirm){
     ["customerId","buildingId","elevatorId","contractId","periodNumber",
      "scheduledDate","completedDate","status","technicianId",
      "assignmentReason","condition","result","issueFound","note"]
