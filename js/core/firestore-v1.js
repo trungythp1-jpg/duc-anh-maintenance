@@ -931,6 +931,37 @@ export async function updateMaintenance(maintenanceId, data){
  * completionReportedAt là thời điểm bắt đầu cửa sổ xác nhận 18 giờ.
  * customerConfirmationDeadline = completionReportedAt + 18 giờ.
  */
+export async function startMaintenanceByTechnician(maintenanceId){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(existing.status === "completed"){
+    throw new Error("Phiếu bảo trì đã hoàn thành.");
+  }
+
+  if(existing.status === "cancelled"){
+    throw new Error("Phiếu bảo trì đã hủy.");
+  }
+
+  if(existing.status === "waiting_confirmation"){
+    throw new Error("Phiếu đang chờ CSKH xác nhận.");
+  }
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    {
+      status: "in_progress",
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  return getMaintenance(maintenanceId);
+}
+
 export async function reportMaintenanceCompletion(maintenanceId, data = {}){
   requireValue(maintenanceId, "maintenanceId");
 
