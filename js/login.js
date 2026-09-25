@@ -94,6 +94,11 @@ async function getPostLoginPath(user) {
     return "cong-viec-cua-toi.html";
   }
 
+  /* CSKH có màn hình nghiệp vụ riêng, không đi qua Dashboard tổng. */
+  if (role === "CSKH" || role === "CUSTOMER_SERVICE") {
+    return "cskh.html";
+  }
+
   /*
    * Các role quản lý vẫn giữ luồng cũ.
    */
