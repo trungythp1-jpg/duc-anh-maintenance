@@ -48,14 +48,6 @@ body{
   border:1px solid var(--da-border)!important;
 }
 
-.contract-row-clickable{
-  cursor:pointer;
-  transition:background .15s ease;
-}
-.contract-row-clickable:hover{
-  background:rgba(217,173,50,.045);
-}
-
 .contract-table{width:100%;border-collapse:collapse}
 .contract-table th,.contract-table td{
   text-align:left;padding:14px;border-bottom:1px solid #252525;vertical-align:middle;
@@ -101,64 +93,6 @@ body{
   padding:24px;
   border:1px solid #303030;
   box-shadow:0 24px 80px rgba(0,0,0,.65);
-}
-
-
-.contract-detail-modal{
-  width:min(980px,100%);
-}
-.contract-detail-content{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
-  padding-bottom:8px;
-}
-.detail-section{
-  grid-column:1/-1;
-  color:var(--da-gold);
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.12em;
-  padding:12px 0 7px;
-  border-bottom:1px solid #292929;
-}
-.detail-item{
-  background:#171717;
-  border:1px solid #292929;
-  border-radius:10px;
-  padding:11px 13px;
-  min-width:0;
-}
-.detail-item.full{grid-column:1/-1}
-.detail-label{
-  color:#777;
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.07em;
-  text-transform:uppercase;
-  margin-bottom:5px;
-}
-.detail-value{
-  color:#f2f2f2;
-  font-size:14px;
-  line-height:1.45;
-  overflow-wrap:anywhere;
-}
-.detail-value.muted{color:#999}
-.detail-status{
-  display:inline-block;
-  padding:5px 9px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-}
-.detail-status.active{background:#123b23;color:#78d394}
-.detail-status.pending{background:#3a2e10;color:#e5bf48}
-.detail-status.expired{background:#3b1717;color:#ef8585}
-
-@media(max-width:700px){
-  .contract-detail-content{grid-template-columns:1fr}
-  .detail-section,.detail-item.full{grid-column:auto}
 }
 
 .modal-head{
@@ -363,25 +297,6 @@ body{
 }
 .contract-search:focus{outline:none;border-color:var(--da-gold);box-shadow:0 0 0 2px rgba(214,168,79,.10)}
 .contract-list-note{color:var(--da-muted);font-size:12px}
-.contract-filter{
-  min-height:42px;
-  padding:9px 11px;
-  color:var(--da-text)!important;
-  background:#171717!important;
-  border:1px solid #3a3a3a!important;
-  border-radius:9px;
-  font:inherit;
-  outline:none;
-}
-.contract-filter:focus{
-  border-color:var(--da-gold)!important;
-  box-shadow:0 0 0 2px rgba(217,173,50,.10);
-}
-.contract-clear-filter{
-  min-height:42px;
-  padding:9px 13px;
-  white-space:nowrap;
-}
 
 @media(max-width:1100px){
   .contract-page{padding:18px}
@@ -420,8 +335,6 @@ body{
   .contract-kpi-value{font-size:23px}
   .contract-list-tools{align-items:stretch;flex-direction:column}
   .contract-search{width:100%;max-width:none;min-width:0}
-  .contract-filter,
-  .contract-clear-filter{width:100%}
   .contract-list-note{white-space:normal}
   .table-wrap{overflow-x:auto}
   .contract-table{min-width:850px}
@@ -488,12 +401,12 @@ body{
     <a class="nav-item" href="buildings.html">⌂ <span>Tòa nhà</span></a>
     <a class="nav-item" href="elevators.html">↕ <span>Thang máy</span></a>
     <a class="nav-item active" href="contracts.html">▤ <span>Hợp đồng</span></a>
-    <a class="nav-item" href="#" data-module="maintenance">◷ <span>Bảo trì</span></a>
-    <a class="nav-item" href="#" data-module="work-orders">✓ <span>Work Order</span></a>
+    <a class="nav-item" href="maintenance.html">◷ <span>Bảo trì</span></a>
+    <a class="nav-item" href="work-orders.html">✓ <span>Work Order</span></a>
 
     <div class="nav-label">NHÂN SỰ</div>
-    <a class="nav-item" href="#" data-module="technicians">♟ <span>Kỹ thuật viên</span></a>
-    <a class="nav-item" href="#" data-module="kpi">▥ <span>KPI</span></a>
+    <a class="nav-item" href="technicians.html">♟ <span>Kỹ thuật viên</span></a>
+    <a class="nav-item" href="kpi.html">▥ <span>KPI</span></a>
 
     <div class="nav-label">HỆ THỐNG</div>
     <a class="nav-item" href="#" data-module="import-center">⇧ <span>Import Center</span></a>
@@ -542,35 +455,6 @@ body{
     <input id="contractSearch" class="contract-search" type="search"
       placeholder="Tìm mã HĐ, tên hợp đồng, khách hàng, tòa nhà, thang máy..."
       autocomplete="off">
-
-    <select id="contractStatusFilter" class="contract-filter">
-      <option value="">Tất cả trạng thái</option>
-      <option value="active">Đang hiệu lực</option>
-      <option value="pending">Chờ hiệu lực</option>
-      <option value="expired">Hết hạn</option>
-    </select>
-
-    <select id="contractMaintenanceFilter" class="contract-filter">
-      <option value="">Tất cả bảo trì</option>
-      <option value="yes">Có bảo trì</option>
-      <option value="no">Không bảo trì</option>
-    </select>
-
-    <select id="contractCycleFilter" class="contract-filter">
-      <option value="">Tất cả chu kỳ</option>
-      <option value="monthly">1 tháng/lần</option>
-      <option value="bi_monthly">2 tháng/lần</option>
-      <option value="quarterly">3 tháng/lần</option>
-    </select>
-
-    <select id="contractYearFilter" class="contract-filter">
-      <option value="">Tất cả năm</option>
-    </select>
-
-    <button id="clearContractFilters" class="secondary-button contract-clear-filter" type="button">
-      Xóa lọc
-    </button>
-
     <div id="contractListNote" class="contract-list-note">Hiển thị 5 hợp đồng gần nhất</div>
   </div>
 
@@ -589,26 +473,6 @@ body{
 </div>
 
 <div class="overlay" id="overlay"></div>
-
-
-<div class="modal-backdrop" id="contractDetailModal">
-  <div class="contract-modal contract-detail-modal" role="dialog" aria-modal="true">
-    <div class="modal-head">
-      <div>
-        <div class="eyebrow">CHI TIẾT HỢP ĐỒNG</div>
-        <h2 id="detailModalTitle">Thông tin hợp đồng</h2>
-      </div>
-      <button class="close-button" id="closeDetailModal" type="button" aria-label="Đóng">×</button>
-    </div>
-
-    <div id="contractDetailContent" class="contract-detail-content"></div>
-
-    <div class="modal-foot">
-      <button class="secondary-button" id="closeDetailButton" type="button">Đóng</button>
-      <button class="primary-button" id="editFromDetailButton" type="button">Sửa hợp đồng</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal-backdrop" id="contractModal">
   <div class="contract-modal" role="dialog" aria-modal="true">
@@ -832,10 +696,6 @@ let authReady = false;
 
 const modal = $("contractModal");
 const form = $("contractForm");
-
-const detailModal = $("contractDetailModal");
-let detailContractId = null;
-
 
 function esc(value){
   return String(value ?? "")
@@ -1164,7 +1024,6 @@ async function loadContracts(){
   $("pageStatus").textContent = "Đang tải hợp đồng...";
   try{
     contracts=await getContracts();
-    populateContractYearFilter();
     render();
     $("pageStatus").textContent =
       `${contracts.length} hợp đồng`;
@@ -1199,193 +1058,6 @@ async function refreshReferencesForEdit(c){
   $("buildingId").value=String(c.buildingId||"");
   renderElevatorOptions(c.buildingId,c.elevatorId);
   $("elevatorId").value=String(c.elevatorId||"");
-}
-
-
-function detailValue(value, fallback="—"){
-  const s=String(value ?? "").trim();
-  return s ? esc(s) : fallback;
-}
-
-function openContractDetail(id){
-  const c=contracts.find(x=>String(x.id)===String(id));
-  if(!c) return;
-
-  detailContractId=id;
-
-  const effectiveStatus=getContractEffectiveStatus(c);
-  const statusLabel=getContractStatusLabel(effectiveStatus);
-  const statusClass=getContractStatusClass(effectiveStatus);
-
-  const maintenanceEnabled =
-    c.maintenanceEnabled==="yes" ||
-    c.maintenanceEnabled===true ||
-    c.maintenanceEnabled==="true";
-
-  const warrantyEnabled =
-    c.warrantyEnabled==="yes" ||
-    c.warrantyEnabled===true ||
-    c.warrantyEnabled==="true";
-
-  const total=Number(c.maintenanceTotal||0);
-  const completed=Number(c.maintenanceCompleted||0);
-  const remaining=Number(c.maintenanceRemaining ?? Math.max(0,total-completed));
-
-  $("detailModalTitle").textContent =
-    `${c.code || "Hợp đồng"} · ${c.name || ""}`;
-
-  $("contractDetailContent").innerHTML=`
-    <div class="detail-section">THÔNG TIN HỢP ĐỒNG</div>
-
-    <div class="detail-item">
-      <div class="detail-label">Mã hợp đồng</div>
-      <div class="detail-value">${detailValue(c.code)}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Tên hợp đồng</div>
-      <div class="detail-value">${detailValue(c.name)}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Trạng thái thực tế</div>
-      <div class="detail-value">
-        <span class="detail-status ${statusClass}">${statusLabel}</span>
-      </div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Giá trị hợp đồng</div>
-      <div class="detail-value">${c.contractValue!=="" && c.contractValue!=null
-        ? Number(c.contractValue||0).toLocaleString("vi-VN")+" VNĐ"
-        : "—"}</div>
-    </div>
-
-    <div class="detail-section">ĐỐI TƯỢNG HỢP ĐỒNG</div>
-
-    <div class="detail-item">
-      <div class="detail-label">Khách hàng</div>
-      <div class="detail-value">${detailValue(c.customerName || customerName(c.customerId))}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Tòa nhà</div>
-      <div class="detail-value">${detailValue(c.buildingName || buildingName(c.buildingId))}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Thang máy</div>
-      <div class="detail-value">${detailValue(c.elevatorName || elevatorName(c.elevatorId))}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Mã thang</div>
-      <div class="detail-value">${detailValue(c.elevatorAssetCode || "Chưa có")}</div>
-    </div>
-
-    <div class="detail-section">THỜI HẠN</div>
-
-    <div class="detail-item">
-      <div class="detail-label">Ngày ký</div>
-      <div class="detail-value">${detailValue(c.signedDate)}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Ngày hiệu lực</div>
-      <div class="detail-value">${detailValue(c.startDate)}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Thời hạn</div>
-      <div class="detail-value">${c.contractDurationMonths
-        ? detailValue(`${c.contractDurationMonths} tháng`)
-        : "—"}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Ngày kết thúc</div>
-      <div class="detail-value">${detailValue(c.endDate)}</div>
-    </div>
-
-    <div class="detail-section">BẢO HÀNH</div>
-
-    <div class="detail-item">
-      <div class="detail-label">Áp dụng bảo hành</div>
-      <div class="detail-value">${warrantyEnabled ? "Có" : "Không"}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Thời hạn bảo hành</div>
-      <div class="detail-value">${detailValue(c.warrantyPeriod)}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Bảo hành từ</div>
-      <div class="detail-value">${detailValue(c.warrantyStart)}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Bảo hành đến</div>
-      <div class="detail-value">${detailValue(c.warrantyEnd)}</div>
-    </div>
-    <div class="detail-item full">
-      <div class="detail-label">Phạm vi / điều kiện bảo hành</div>
-      <div class="detail-value">${detailValue(c.warrantyNote)}</div>
-    </div>
-
-    <div class="detail-section">BẢO TRÌ</div>
-
-    <div class="detail-item">
-      <div class="detail-label">Áp dụng bảo trì</div>
-      <div class="detail-value">${maintenanceEnabled ? "Có" : "Không"}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Loại bảo trì</div>
-      <div class="detail-value">${c.maintenanceType==="free" ? "Miễn phí" : "Có phí"}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Chu kỳ</div>
-      <div class="detail-value">${
-        c.maintenanceCycle==="bi_monthly"
-          ? "2 tháng/lần"
-          : c.maintenanceCycle==="quarterly"
-            ? "3 tháng/lần"
-            : "1 tháng/lần"
-      }</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Tổng số lần</div>
-      <div class="detail-value">${total}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Đã làm</div>
-      <div class="detail-value">${completed}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Còn lại</div>
-      <div class="detail-value">${remaining}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Lần bảo trì gần nhất</div>
-      <div class="detail-value">${detailValue(c.maintenanceLastDate)}</div>
-    </div>
-
-    <div class="detail-section">THANH TOÁN & GHI CHÚ</div>
-
-    <div class="detail-item">
-      <div class="detail-label">Đã thanh toán</div>
-      <div class="detail-value">${c.paidValue!=="" && c.paidValue!=null
-        ? Number(c.paidValue||0).toLocaleString("vi-VN")+" VNĐ"
-        : "—"}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Hạn thanh toán</div>
-      <div class="detail-value">${detailValue(c.paymentDue)}</div>
-    </div>
-    <div class="detail-item full">
-      <div class="detail-label">Ghi chú</div>
-      <div class="detail-value">${detailValue(c.note)}</div>
-    </div>
-  `;
-
-  detailModal.classList.add("show");
-  document.body.style.overflow="hidden";
-  const box=detailModal.querySelector(".contract-detail-modal");
-  if(box) box.scrollTop=0;
-}
-
-function closeContractDetail(){
-  detailModal.classList.remove("show");
-  detailContractId=null;
-  document.body.style.overflow="";
 }
 
 function resetForm(){
@@ -1518,72 +1190,6 @@ function contractSearchHaystack(c){
   ].join(" ").toLowerCase();
 }
 
-function populateContractYearFilter(){
-  const select=$("contractYearFilter");
-  if(!select) return;
-
-  const years=new Set();
-
-  contracts.forEach(c=>{
-    [c.signedDate,c.startDate,c.endDate].forEach(value=>{
-      const match=String(value||"").match(/^(\d{4})-/);
-      if(match) years.add(match[1]);
-    });
-  });
-
-  const current=select.value;
-  select.innerHTML=
-    '<option value="">Tất cả năm</option>'+
-    [...years]
-      .sort((a,b)=>Number(b)-Number(a))
-      .map(year=>`<option value="${esc(year)}">${esc(year)}</option>`)
-      .join("");
-
-  if(years.has(current)) select.value=current;
-}
-
-function contractMatchesFilters(c, query){
-  if(query && !contractSearchHaystack(c).includes(query)) return false;
-
-  const statusFilter=$("contractStatusFilter")?.value || "";
-  if(statusFilter && getContractEffectiveStatus(c)!==statusFilter) return false;
-
-  const maintenanceFilter=$("contractMaintenanceFilter")?.value || "";
-  if(maintenanceFilter){
-    const enabled =
-      c.maintenanceEnabled==="yes" ||
-      c.maintenanceEnabled===true ||
-      c.maintenanceEnabled==="true";
-    if((enabled ? "yes" : "no")!==maintenanceFilter) return false;
-  }
-
-  const cycleFilter=$("contractCycleFilter")?.value || "";
-  if(cycleFilter && String(c.maintenanceCycle||"")!==cycleFilter) return false;
-
-  const yearFilter=$("contractYearFilter")?.value || "";
-  if(yearFilter){
-    const haystack=[
-      c.signedDate,
-      c.startDate,
-      c.endDate
-    ].map(v=>String(v||""));
-
-    if(!haystack.some(v=>v.startsWith(`${yearFilter}-`))) return false;
-  }
-
-  return true;
-}
-
-function hasContractFilters(){
-  return Boolean(
-    String($("contractSearch")?.value||"").trim() ||
-    $("contractStatusFilter")?.value ||
-    $("contractMaintenanceFilter")?.value ||
-    $("contractCycleFilter")?.value ||
-    $("contractYearFilter")?.value
-  );
-}
-
 function render(){
   const rows=$("contractRows");
   const query=String($("contractSearch")?.value||"").trim().toLowerCase();
@@ -1606,9 +1212,8 @@ function render(){
     return byCreated!==0 ? byCreated : String(b.code||"").localeCompare(String(a.code||""),"vi");
   });
 
-  const filtering=hasContractFilters();
-  const filtered=filtering
-    ? sortedContracts.filter(c=>contractMatchesFilters(c,query))
+  const filtered=query
+    ? sortedContracts.filter(c=>contractSearchHaystack(c).includes(query))
     : sortedContracts.slice(0,5);
 
   $("emptyState").style.display=filtered.length?"none":"block";
@@ -1619,10 +1224,10 @@ function render(){
     return;
   }
 
-  $("contractListNote").textContent=filtering
+  $("contractListNote").textContent=query
     ? `Tìm thấy ${filtered.length} / ${contracts.length} hợp đồng`
     : contracts.length>5
-      ? `Hiển thị 5 hợp đồng gần nhất · còn ${contracts.length-5} hợp đồng, dùng Tìm kiếm hoặc Lọc để xem`
+      ? `Hiển thị 5 hợp đồng gần nhất · còn ${contracts.length-5} hợp đồng, dùng Tìm kiếm để xem`
       : `Hiển thị ${contracts.length} hợp đồng gần nhất`;
 
   rows.innerHTML=filtered.map(c=>{
@@ -1630,7 +1235,7 @@ function render(){
     const badgeClass=getContractStatusClass(effectiveStatus);
     const status=getContractStatusLabel(effectiveStatus);
     return `
-      <tr class="contract-row-clickable" data-contract-detail="${esc(c.id)}">
+      <tr>
         <td data-label="Mã HĐ"><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
         <td data-label="Khách hàng">${esc(customerName(c.customerId))}</td>
         <td data-label="Tòa nhà">${esc(buildingName(c.buildingId))}</td>
@@ -1644,18 +1249,8 @@ function render(){
       </tr>`;
   }).join("");
 
-  rows.querySelectorAll("[data-contract-detail]").forEach(row=>{
-    row.addEventListener("click",e=>{
-      if(e.target.closest("[data-edit]")) return;
-      openContractDetail(row.dataset.contractDetail);
-    });
-  });
-
   rows.querySelectorAll("[data-edit]").forEach(btn=>{
-    btn.addEventListener("click",e=>{
-      e.stopPropagation();
-      openEdit(btn.dataset.edit);
-    });
+    btn.addEventListener("click",()=>openEdit(btn.dataset.edit));
   });
 }
 
@@ -1680,33 +1275,6 @@ async function openEdit(id){
 
 $("addContract").addEventListener("click",openAdd);
 $("contractSearch").addEventListener("input",render);
-
-["contractStatusFilter","contractMaintenanceFilter","contractCycleFilter","contractYearFilter"]
-  .forEach(id=>{
-    $(id).addEventListener("change",render);
-  });
-
-$("clearContractFilters").addEventListener("click",()=>{
-  $("contractSearch").value="";
-  $("contractStatusFilter").value="";
-  $("contractMaintenanceFilter").value="";
-  $("contractCycleFilter").value="";
-  $("contractYearFilter").value="";
-  render();
-});
-
-$("closeDetailModal").addEventListener("click",closeContractDetail);
-$("closeDetailButton").addEventListener("click",closeContractDetail);
-
-detailModal.addEventListener("click",e=>{
-  if(e.target===detailModal) closeContractDetail();
-});
-
-$("editFromDetailButton").addEventListener("click",async ()=>{
-  const id=detailContractId;
-  closeContractDetail();
-  if(id) await openEdit(id);
-});
 
 $("closeModal").addEventListener("click",closeModal);
 $("cancelModal").addEventListener("click",closeModal);
