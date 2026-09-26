@@ -53,12 +53,12 @@ button{cursor:pointer}
   <section class="title">
     <div class="eyebrow">CÔNG VIỆC CSKH</div>
     <h1 id="pageTitle">Đang tải…</h1>
-    <p>Tiếp nhận khách hàng, tạo hợp đồng khách cũ hoặc gửi yêu cầu khách hàng mới + hợp đồng cho Admin.</p>
+    <p>Tiếp nhận khách hàng, tạo hợp đồng khách cũ hoặc gửi yêu cầu khách hàng mới cho Admin.</p>
   </section>
 
   <div class="actions">
     <button class="btn primary" id="newExistingContract">＋ Tạo hợp đồng khách cũ</button>
-    <button class="btn secondary" id="newExternalRequest">＋ Khách hàng mới + Hợp đồng / Gửi Admin</button>
+    <button class="btn secondary" id="newExternalRequest">＋ Khách hàng mới / Gửi Admin</button>
     <button class="btn secondary" id="refresh">↻ Cập nhật</button>
   </div>
 
@@ -85,7 +85,7 @@ button{cursor:pointer}
       <div class="head"><strong>THAO TÁC NHANH</strong><span>CSKH</span></div>
       <div class="quick">
         <button class="btn" id="quickContract"><b>Hợp đồng khách cũ</b><small>Tạo trực tiếp từ Customer → Building → Elevator</small></button>
-        <button class="btn" id="quickExternal"><b>Khách hàng mới + Hợp đồng</b><small>Tạo phiếu gửi Admin duyệt</small></button>
+        <button class="btn" id="quickExternal"><b>Khách hàng mới</b><small>Tạo phiếu gửi Admin duyệt</small></button>
         <button class="btn" id="quickContracts"><b>Danh sách hợp đồng</b><small>Mở module Hợp đồng</small></button>
         <button class="btn" id="quickRequests"><b>Phiếu CSKH</b><small>Xem toàn bộ phiếu của tôi</small></button>
         <button class="btn" id="quickMaintenanceConfirm"><b>Xác nhận bảo trì</b><small>Xác nhận phiếu KTV đã báo hoàn thành</small></button>
@@ -140,7 +140,7 @@ button{cursor:pointer}
 <!-- EXTERNAL CUSTOMER REQUEST -->
 <div class="modal" id="requestModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Khách hàng mới + Hợp đồng — Gửi Admin</h2><button class="btn" data-close="requestModal">Đóng</button></div>
+    <div class="modal-head"><h2>Khách hàng mới — Gửi Admin</h2><button class="btn" data-close="requestModal">Đóng</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field"><label>Tên khách hàng *</label><input id="extCustomerName"></div>
@@ -156,15 +156,6 @@ button{cursor:pointer}
         <div class="field"><label>Mã thang cũ (nếu có)</label><input id="extExistingCode"></div>
         <div class="field"><label>Tải trọng (kg)</label><input id="extCapacity" type="number" min="0"></div>
         <div class="field"><label>Hãng sản xuất</label><input id="extManufacturer"></div>
-
-        <div class="field full"><label style="margin-top:8px">THÔNG TIN HỢP ĐỒNG</label></div>
-        <div class="field"><label>Mã hợp đồng *</label><input id="extContractCode" placeholder="VD: HĐ-BT-2026-001"></div>
-        <div class="field"><label>Tên hợp đồng *</label><input id="extContractName" placeholder="Hợp đồng bảo trì thang máy"></div>
-        <div class="field"><label>Giá trị hợp đồng</label><input id="extContractValue" type="number" min="0" step="1000" placeholder="0"></div>
-        <div class="field"><label>Ngày hiệu lực *</label><input id="extContractStart" type="date"></div>
-        <div class="field"><label>Thời hạn *</label><select id="extContractDuration"><option value="">Chọn</option><option value="12">12 tháng</option><option value="24">24 tháng</option><option value="36">36 tháng</option></select></div>
-        <div class="field"><label>Bảo trì</label><select id="extMaintenanceEnabled"><option value="yes">Có</option><option value="no">Không</option></select></div>
-        <div class="field"><label>Chu kỳ bảo trì</label><select id="extMaintenanceCycle"><option value="monthly">Hàng tháng</option><option value="bimonthly">2 tháng/lần</option><option value="quarterly">3 tháng/lần</option></select></div>
 
         <div class="field full"><label>Nội dung yêu cầu</label><textarea id="extDescription" placeholder="Khách hàng yêu cầu bảo trì, khảo sát, báo giá..."></textarea></div>
         <div class="field full"><label>Ghi chú</label><textarea id="extNote"></textarea></div>
@@ -431,12 +422,8 @@ async function saveExistingContract(){
 }
 
 function resetRequest(){
-  ["extCustomerName","extCustomerPhone","extCustomerEmail","extCustomerTax","extCustomerAddress","extBuildingName","extBuildingAddress","extManager","extManagerPhone","extElevatorName","extExistingCode","extCapacity","extManufacturer","extContractCode","extContractName","extContractValue","extContractStart","extContractDuration","extMaintenanceEnabled","extMaintenanceCycle","extDescription","extNote"].forEach(id=>$(id).value="");
+  ["extCustomerName","extCustomerPhone","extCustomerEmail","extCustomerTax","extCustomerAddress","extBuildingName","extBuildingAddress","extManager","extManagerPhone","extElevatorName","extExistingCode","extCapacity","extManufacturer","extDescription","extNote"].forEach(id=>$(id).value="");
   $("requestError").style.display="none";
-  $("extContractStart").value=new Date().toISOString().slice(0,10);
-  $("extContractDuration").value="12";
-  $("extMaintenanceEnabled").value="yes";
-  $("extMaintenanceCycle").value="monthly";
 }
 async function submitExternalRequest(){
   const btn=$("submitRequest");btn.disabled=true;btn.textContent="Đang gửi…";$("requestError").style.display="none";
@@ -448,24 +435,10 @@ async function submitExternalRequest(){
       externalCustomer:{name:$("extCustomerName").value.trim(),phone:$("extCustomerPhone").value.trim(),email:$("extCustomerEmail").value.trim(),taxCode:$("extCustomerTax").value.trim(),address:$("extCustomerAddress").value.trim()},
       externalBuilding:{name:$("extBuildingName").value.trim(),address:{detail:$("extBuildingAddress").value.trim()},manager:{name:$("extManager").value.trim(),phone:$("extManagerPhone").value.trim()}},
       externalElevator:{name:$("extElevatorName").value.trim(),existingCode:$("extExistingCode").value.trim(),technical:{capacityKg:Number($("extCapacity").value)||null},manufacturer:$("extManufacturer").value.trim()},
-      externalContract:{
-        code:$("extContractCode").value.trim(),
-        name:$("extContractName").value.trim(),
-        contractValue:Number($("extContractValue").value)||0,
-        startDate:$("extContractStart").value,
-        durationMonths:Number($("extContractDuration").value||0),
-        maintenanceEnabled:$("extMaintenanceEnabled").value,
-        maintenanceType:"paid",
-        maintenanceCycle:$("extMaintenanceCycle").value,
-        warrantyEnabled:"yes",
-        warrantyPeriod:"",
-        warrantyStart:$("extContractStart").value,
-        warrantyNote:$("extNote").value.trim(),
-        note:$("extNote").value.trim()
-      }
+
     };
     const requestId=await createAndSubmitCSKHRequestDirect(data);
-    closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng + hợp đồng cho Admin. Mã phiếu: ${requestId}`);
+    closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng cho Admin. Mã phiếu: ${requestId}`);
   }catch(e){$("requestError").textContent=e?.message||"Không thể gửi phiếu.";$("requestError").style.display="block"}
   finally{btn.disabled=false;btn.textContent="Gửi Admin"}
 }
