@@ -214,9 +214,8 @@ service cloud.firestore {
     //      ↓
     //   CREATED / DUPLICATE / NEED_INFO / REJECTED
     //
-    // Client không được tự chuyển trạng thái sang CREATED.
-    // Việc duyệt/tạo master data thực hiện qua Cloud Functions
-    // bằng Admin SDK.
+    // Client ADMIN được phép hoàn tất trực tiếp trên Spark/no-Blaze
+    // sau khi đã tạo đủ Customer → Building → Elevator trong cùng batch.
     //
     // CSKH:
     //   - tạo phiếu của chính mình ở DRAFT.
@@ -226,8 +225,10 @@ service cloud.firestore {
     //
     // ADMIN / MANAGER:
     //   - được đọc phiếu.
-    //   - không dùng Firestore client để tự sửa trạng thái;
-    //     thao tác duyệt/từ chối/yêu cầu bổ sung đi qua Cloud Functions.
+    // ADMIN:
+    //   - tiếp nhận SUBMITTED -> ADMIN_REVIEW.
+    //   - yêu cầu bổ sung SUBMITTED/ADMIN_REVIEW -> NEED_INFO.
+    // ADMIN hoàn tất phiếu sau khi tạo đủ master data.
     //
 
     match /cskhRequests/{requestId} {
@@ -262,6 +263,7 @@ service cloud.firestore {
         && request.resource.data.processedAt == null
         && request.resource.data.resultNote == '';
 
+      // CSKH: sửa dữ liệu nghiệp vụ theo các trạng thái được phép.
       allow update: if
         isCSKH()
         && resource.data.createdByUid == request.auth.uid
@@ -300,7 +302,111 @@ service cloud.firestore {
             && request.resource.data.history.size()
                == resource.data.history.size() + 1
           )
+          ||
+          (
+            resource.data.status == 'SUBMITTED'
+            && request.resource.data.status == 'SUBMITTED'
+            && resource.data.assignedAdminUid == ''
+            && request.resource.data.assignedAdminUid == ''
+            && resource.data.processedAt == null
+            && request.resource.data.processedAt == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'requestSource',
+              'requestType',
+              'customerId',
+              'buildingId',
+              'elevatorId',
+              'externalCustomer',
+              'externalBuilding',
+              'externalElevator',
+              'externalContract',
+              'description',
+              'note',
+              'history',
+              'updatedAt'
+            ])
+            && request.resource.data.history.size()
+               == resource.data.history.size() + 1
+          )
         );
+
+      // ADMIN: tiếp nhận phiếu SUBMITTED -> ADMIN_REVIEW.
+      // Không dùng Cloud Functions; phù hợp Spark / no-Blaze.
+      allow update: if
+        isAdmin()
+        && request.resource.data.createdByUid == resource.data.createdByUid
+        && resource.data.status == 'SUBMITTED'
+        && request.resource.data.status == 'ADMIN_REVIEW'
+        && resource.data.assignedAdminUid == ''
+        && resource.data.processedAt == null
+        && request.resource.data.assignedAdminUid == request.auth.uid
+        && request.resource.data.assignedAdminName is string
+        && request.resource.data.processedAt == null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'assignedAdminUid',
+          'assignedAdminName',
+          'updatedAt',
+          'history'
+        ])
+        && request.resource.data.history.size()
+           == resource.data.history.size() + 1;
+
+      // ADMIN: hoàn tất phiếu sau khi đã tạo đủ 3 master data.
+      // ADMIN_REVIEW -> CREATED, đồng thời liên kết Customer / Building / Elevator.
+      allow update: if
+        isAdmin()
+        && request.resource.data.createdByUid == resource.data.createdByUid
+        && resource.data.status == 'ADMIN_REVIEW'
+        && request.resource.data.status == 'CREATED'
+        && resource.data.assignedAdminUid == request.auth.uid
+        && request.resource.data.assignedAdminUid == request.auth.uid
+        && request.resource.data.customerId is string
+        && request.resource.data.customerId.size() > 0
+        && request.resource.data.buildingId is string
+        && request.resource.data.buildingId.size() > 0
+        && request.resource.data.elevatorId is string
+        && request.resource.data.elevatorId.size() > 0
+        && request.resource.data.processedAt != null
+        && request.resource.data.resultNote is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'customerId',
+          'buildingId',
+          'elevatorId',
+          'processedAt',
+          'resultNote',
+          'updatedAt',
+          'history'
+        ])
+        && request.resource.data.history.size()
+           == resource.data.history.size() + 1;
+
+      // ADMIN: yêu cầu CSKH bổ sung thông tin.
+      // Có thể từ SUBMITTED hoặc ADMIN_REVIEW -> NEED_INFO.
+      allow update: if
+        isAdmin()
+        && request.resource.data.createdByUid == resource.data.createdByUid
+        && resource.data.status in ['SUBMITTED', 'ADMIN_REVIEW']
+        && request.resource.data.status == 'NEED_INFO'
+        && resource.data.processedAt == null
+        && request.resource.data.processedAt == null
+        && request.resource.data.assignedAdminUid == request.auth.uid
+        && request.resource.data.assignedAdminName is string
+        && request.resource.data.resultNote is string
+        && request.resource.data.resultNote.size() > 0
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'assignedAdminUid',
+          'assignedAdminName',
+          'resultNote',
+          'updatedAt',
+          'history'
+        ])
+        && request.resource.data.history.size()
+           == resource.data.history.size() + 1;
+
+      allow delete: if false;
 
       allow delete: if false;
     }
@@ -777,10 +883,41 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isServiceStaff();
 
-      allow create, update: if
+      allow create: if
         (settingId == 'maintenanceTicket'
           && (isAdmin() || isManager() || isTechnician()))
-        || isAdmin();
+        || isAdmin()
+        || (
+          settingId == 'materialQuoteCounter'
+          && isCSKH()
+          && request.resource.data.prefix == 'BGVT-'
+          && request.resource.data.year is int
+          && request.resource.data.lastNumber == 1
+          && request.resource.data.updatedAt != null
+        );
+
+      allow update: if
+        (settingId == 'maintenanceTicket'
+          && (isAdmin() || isManager() || isTechnician()))
+        || isAdmin()
+        || (
+          settingId == 'materialQuoteCounter'
+          && isCSKH()
+          && request.resource.data.prefix == 'BGVT-'
+          && request.resource.data.year is int
+          && request.resource.data.lastNumber is int
+          && request.resource.data.updatedAt != null
+          && (
+            (
+              request.resource.data.year == resource.data.year
+              && request.resource.data.lastNumber == resource.data.lastNumber + 1
+            )
+            || (
+              request.resource.data.year > resource.data.year
+              && request.resource.data.lastNumber == 1
+            )
+          )
+        );
 
       allow delete: if false;
     }
@@ -867,6 +1004,52 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
+    // =========================================================
+    // MATERIAL QUOTES — CSKH
+    // =========================================================
+    //
+    // CSKH tạo báo giá vật tư từ Work Order.
+    // Mã BGVT do client sinh thông qua counter transaction.
+    // Counter chỉ được tăng đúng +1, không cho sửa tùy ý.
+    //
+    match /materialQuotes/{quoteId} {
+      allow get, list: if isServiceStaff();
+
+      allow create: if
+        isCSKH()
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.status == 'DRAFT'
+        && request.resource.data.quoteNo is string
+        && request.resource.data.quoteNo.matches('BGVT-[0-9]{4}-[0-9]{6}')
+        && request.resource.data.workOrderId != ''
+        && request.resource.data.customerId != ''
+        && request.resource.data.buildingId != ''
+        && request.resource.data.elevatorId != ''
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.total >= 0;
+
+      allow update: if
+        isCSKH()
+        && resource.data.createdByUid == request.auth.uid
+        && request.resource.data.createdByUid == resource.data.createdByUid
+        && request.resource.data.quoteNo == resource.data.quoteNo
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'items',
+          'subtotal',
+          'discount',
+          'vatRate',
+          'vatAmount',
+          'total',
+          'validityDays',
+          'note',
+          'status',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
 
     // =========================================================
     // DEFAULT DENY
