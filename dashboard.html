@@ -109,8 +109,6 @@ body.dashboard-auth-pending::before{
 }
 
 
-.dashboard-action-center + .dashboard-grid .work-row[role="button"]{cursor:pointer}
-.dashboard-action-center + .dashboard-grid .work-row[role="button"]:hover{border-color:#6a5520;background:#181712}
 /* DASHBOARD ACTION CENTER V2.5 — COMPACT + CLICKABLE */
 .dashboard-action-compact{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .dashboard-action-group{background:#151512;border:1px solid #343028;border-radius:12px;padding:12px;min-width:0}
@@ -1165,7 +1163,12 @@ function renderLatestElevators() {
       elevatorStatusLabel(elevator.status);
 
     return `
-      <div class="work-row" role="button" tabindex="0" data-href="elevators.html?id=${encodeURIComponent(elevator.id)}" title="Mở hồ sơ thang máy">
+      <div
+        class="work-row"
+        role="button"
+        tabindex="0"
+        data-href="elevators.html?id=${encodeURIComponent(elevator.id)}"
+        title="Mở hồ sơ thang máy">
 
         <time>↕</time>
         <i></i>
