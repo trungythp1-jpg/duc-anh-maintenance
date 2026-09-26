@@ -8,6 +8,49 @@
 
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
+/* DASHBOARD ACTION CENTER */
+.dashboard-action-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.dashboard-action-card {
+  background:#151512;
+  border:1px solid #343028;
+  border-radius:12px;
+  padding:14px;
+  min-width:0;
+}
+.dashboard-action-card-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.dashboard-action-card-head h3 {
+  margin:4px 0 0;
+  font-size:16px;
+  line-height:1.35;
+}
+.dashboard-action-card-head > strong {
+  min-width:42px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #5b4921;
+  border-radius:10px;
+  color:#f0ca76;
+  font-size:22px;
+}
+.dashboard-action-list .work-row {
+  min-height:64px;
+}
+@media (max-width:700px) {
+  .dashboard-action-grid { grid-template-columns:1fr !important; }
+}
+
 <style>
 @media (max-width: 700px) {
   #cskhAdminKpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
@@ -301,6 +344,61 @@ body.dashboard-auth-pending::before{
       </section>
 
 
+      <!-- DASHBOARD ACTION CENTER -->
+      <section class="panel dashboard-action-center" id="dashboardActionCenter" style="margin-top:18px;">
+
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">CẦN XỬ LÝ</p>
+            <h2>Phiếu chờ quản trị</h2>
+            <div class="muted" style="margin-top:6px;">
+              Dashboard chỉ hiển thị 2 loại phiếu Admin cần xử lý.
+            </div>
+          </div>
+
+          <button class="text-button" type="button" id="dashboardActionRefresh">↻ Làm mới</button>
+        </div>
+
+        <div class="dashboard-action-grid">
+
+          <article class="dashboard-action-card">
+            <div class="dashboard-action-card-head">
+              <div>
+                <p class="eyebrow">KHÁCH HÀNG MỚI</p>
+                <h3>Phiếu yêu cầu tạo khách hàng ngoài hệ thống</h3>
+              </div>
+              <strong id="newCustomerRequestCount">0</strong>
+            </div>
+
+            <div id="newCustomerRequestList" class="work-list dashboard-action-list">
+              <div class="work-row">
+                <time>…</time><i></i>
+                <div><strong>Đang tải...</strong><span>Đang đọc phiếu từ Firebase.</span></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="dashboard-action-card">
+            <div class="dashboard-action-card-head">
+              <div>
+                <p class="eyebrow">BẢO TRÌ</p>
+                <h3>Phiếu bảo trì quá 18 giờ chờ xác nhận</h3>
+              </div>
+              <strong id="overdueMaintenanceCount">0</strong>
+            </div>
+
+            <div id="overdueMaintenanceList" class="work-list dashboard-action-list">
+              <div class="work-row">
+                <time>…</time><i></i>
+                <div><strong>Đang tải...</strong><span>Đang kiểm tra các phiếu quá 18 giờ.</span></div>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+
       <!-- DATA STATUS -->
       <section class="dashboard-grid">
 
@@ -560,7 +658,8 @@ body.dashboard-auth-pending::before{
 import {
   getCustomers,
   getBuildings,
-  getElevators
+  getElevators,
+  getMaintenances
 } from "./js/core/firestore-v1.js";
 
 import { auth, db } from "./js/core/firebase.js";
@@ -1040,6 +1139,141 @@ function renderLatestElevators() {
 
 
 /* =========================================================
+   DASHBOARD ACTION CENTER
+   Chỉ hiển thị đúng 2 loại phiếu Admin cần xử lý.
+========================================================= */
+
+let dashboardRequests = [];
+let dashboardMaintenances = [];
+
+function dashboardRequestCustomerName(request) {
+  return request.externalCustomer?.name ||
+    customers.find(item => item.id === request.customerId)?.name ||
+    "Khách hàng mới";
+}
+
+function dashboardRequestBuildingName(request) {
+  return request.externalBuilding?.name ||
+    buildings.find(item => item.id === request.buildingId)?.name ||
+    "—";
+}
+
+function dashboardRequestElevatorName(request) {
+  return request.externalElevator?.name ||
+    elevators.find(item => item.id === request.elevatorId)?.name ||
+    "—";
+}
+
+function dashboardMaintenanceDeadline(value) {
+  const timestamp = safeDate(value);
+  if (!timestamp) return "Không có thời hạn";
+  return new Date(timestamp).toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function dashboardRenderActionCenter() {
+  const requestList = $("newCustomerRequestList");
+  const maintenanceList = $("overdueMaintenanceList");
+  if (!requestList || !maintenanceList) return;
+
+  // 1) Chỉ phiếu yêu cầu tạo khách hàng ngoài hệ thống.
+  const newCustomerRequests = dashboardRequests
+    .filter(request =>
+      String(request.requestSource || "") === "EXTERNAL_CUSTOMER" &&
+      String(request.requestType || "") === "CONTRACT_REQUEST" &&
+      ["SUBMITTED", "ADMIN_REVIEW", "NEED_INFO"].includes(String(request.status || ""))
+    )
+    .sort((a, b) =>
+      safeDate(b.updatedAt || b.createdAt) - safeDate(a.updatedAt || a.createdAt)
+    );
+
+  // 2) Chỉ phiếu bảo trì đã chờ xác nhận và quá thời hạn 18 giờ.
+  const overdueMaintenance = dashboardMaintenances
+    .filter(item =>
+      String(item.status || "") === "waiting_confirmation" &&
+      String(item.customerConfirmationStatus || "") === "pending" &&
+      safeDate(item.customerConfirmationDeadline) > 0 &&
+      safeDate(item.customerConfirmationDeadline) <= Date.now()
+    )
+    .sort((a, b) =>
+      safeDate(a.customerConfirmationDeadline) -
+      safeDate(b.customerConfirmationDeadline)
+    );
+
+  $("newCustomerRequestCount").textContent = String(newCustomerRequests.length);
+  $("overdueMaintenanceCount").textContent = String(overdueMaintenance.length);
+
+  if (!newCustomerRequests.length) {
+    requestList.innerHTML = `
+      <div class="work-row">
+        <time>✓</time><i></i>
+        <div><strong>Không có phiếu chờ</strong><span>Hiện chưa có yêu cầu tạo khách hàng ngoài hệ thống.</span></div>
+      </div>`;
+  } else {
+    requestList.innerHTML = newCustomerRequests.slice(0, 8).map(request => `
+      <div class="work-row">
+        <time>KH</time><i></i>
+        <div style="min-width:0;">
+          <strong>${escapeHtml(dashboardRequestCustomerName(request))}</strong>
+          <span>${escapeHtml(dashboardRequestBuildingName(request))} · ${escapeHtml(dashboardRequestElevatorName(request))}</span>
+        </div>
+        <label class="warning">${escapeHtml(request.status || "SUBMITTED")}</label>
+      </div>
+    `).join("");
+  }
+
+  if (!overdueMaintenance.length) {
+    maintenanceList.innerHTML = `
+      <div class="work-row">
+        <time>✓</time><i></i>
+        <div><strong>Không có phiếu quá hạn</strong><span>Chưa có phiếu bảo trì quá 18 giờ chờ xử lý.</span></div>
+      </div>`;
+  } else {
+    maintenanceList.innerHTML = overdueMaintenance.slice(0, 8).map(item => `
+      <div class="work-row">
+        <time>18h+</time><i></i>
+        <div style="min-width:0;">
+          <strong>${escapeHtml(item.ticketNo || item.id || "Phiếu bảo trì")}</strong>
+          <span>${escapeHtml(item.customerName || "—")} · ${escapeHtml(item.elevatorName || "—")} · Quá hạn từ ${escapeHtml(dashboardMaintenanceDeadline(item.customerConfirmationDeadline))}</span>
+        </div>
+        <label class="warning">QUÁ HẠN</label>
+      </div>
+    `).join("");
+  }
+}
+
+async function loadDashboardActionCenter() {
+  try {
+    const [requestSnapshot, maintenanceRows] = await Promise.all([
+      getDocs(collection(db, "cskhRequests")),
+      getMaintenances()
+    ]);
+
+    dashboardRequests = requestSnapshot.docs.map(item => ({
+      id: item.id,
+      ...item.data()
+    }));
+
+    dashboardMaintenances = Array.isArray(maintenanceRows) ? maintenanceRows : [];
+    dashboardRenderActionCenter();
+  } catch (error) {
+    console.error("DASHBOARD ACTION CENTER ERROR:", error);
+    const requestList = $("newCustomerRequestList");
+    const maintenanceList = $("overdueMaintenanceList");
+    const message = escapeHtml(error?.message || "Lỗi Firebase");
+    if (requestList) requestList.innerHTML = `<div class="work-row"><time>!</time><i></i><div><strong>Không tải được phiếu</strong><span>${message}</span></div></div>`;
+    if (maintenanceList) maintenanceList.innerHTML = `<div class="work-row"><time>!</time><i></i><div><strong>Không tải được dữ liệu bảo trì</strong><span>${message}</span></div></div>`;
+  }
+}
+
+$("dashboardActionRefresh")?.addEventListener("click", loadDashboardActionCenter);
+
+
+/* =========================================================
    LOAD FIREBASE
 ========================================================= */
 
@@ -1091,6 +1325,7 @@ async function loadDashboardData() {
     renderStats();
     renderBuildings();
     renderLatestElevators();
+    await loadDashboardActionCenter();
 
 
     const errors = results
