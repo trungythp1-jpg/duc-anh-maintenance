@@ -1,0 +1,1718 @@
+/*
+ * ĐỨC ANH MAINTENANCE — CONTRACT MODULE V1.0
+ *
+ * Source of truth: contracts-v9.6-filter.txt
+ * App Shell architecture: Customer / Building / Elevator modules
+ * No Firestore schema changes.
+ * No business-logic redesign.
+ */
+
+import { onAuthStateChanged } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { auth } from "../core/firebase.js";
+import * as Firestore from "../core/firestore-v1.js";
+
+const CONTRACT_CSS = `
+.contract-module{
+  --da-bg:#090909;
+  --da-panel:#121212;
+  --da-panel-2:#171717;
+  --da-border:#2b2b2b;
+  --da-gold:#d9ad32;
+  --da-gold-2:#f0c53d;
+  --da-text:#f4f4f4;
+  --da-muted:#929292;
+  --da-green:#69c58b;
+  --da-red:#ef7777;
+}.contract-module{
+  background:var(--da-bg)!important;
+  color:var(--da-text)!important;
+}.contract-module .contract-page{padding:28px;max-width:1500px;margin:auto}.contract-module .contract-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}.contract-module .contract-toolbar h1{margin:0;color:var(--da-text)}.contract-module .contract-toolbar p{margin:6px 0 0}.contract-module .contract-actions{display:flex;gap:10px;flex-wrap:wrap}.contract-module .primary-button,
+.contract-module .secondary-button{
+  border:1px solid var(--da-border);
+  border-radius:12px;
+  padding:12px 17px;
+  cursor:pointer;
+  font:inherit;
+}.contract-module .primary-button{background:var(--da-gold);color:#090909;border-color:var(--da-gold);font-weight:800}.contract-module .secondary-button{background:#181818;color:var(--da-text)}.contract-module .panel{
+  background:linear-gradient(145deg,#141414,#101010)!important;
+  border:1px solid var(--da-border)!important;
+}.contract-module .contract-row-clickable{
+  cursor:pointer;
+  transition:background .15s ease;
+}.contract-module .contract-row-clickable:hover{
+  background:rgba(217,173,50,.045);
+}.contract-module .contract-table{width:100%;border-collapse:collapse}.contract-module .contract-table th,
+.contract-module .contract-table td{
+  text-align:left;padding:14px;border-bottom:1px solid #252525;vertical-align:middle;
+}.contract-module .contract-table th{font-size:12px;text-transform:uppercase;color:#858585}.contract-module .contract-table td{color:#e9e9e9}.contract-module .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;background:#292929;color:#ddd}.contract-module .badge.active{background:#123b23;color:#78d394}.contract-module .badge.expired{background:#3b1717;color:#ef8585}.contract-module .badge.pending{background:#3a2e10;color:#e5bf48}.contract-module .edit-button{
+  border:1px solid #3a3a3a;
+  background:#191919;
+  color:#eee;
+  border-radius:8px;
+  padding:7px 11px;
+  cursor:pointer;
+}.contract-module .empty-state{text-align:center;padding:60px 20px;color:#777}.contract-module .modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.72);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  z-index:1000;
+}.contract-module .modal-backdrop.show{display:flex}.contract-module .contract-modal{
+  background:#111!important;
+  color:var(--da-text)!important;
+  width:min(940px,100%);
+  max-height:calc(100dvh - 32px);
+  overflow:auto;
+  border-radius:18px;
+  box-sizing:border-box;
+  padding:24px;
+  border:1px solid #303030;
+  box-shadow:0 24px 80px rgba(0,0,0,.65);
+}.contract-module .contract-detail-modal{
+  width:min(980px,100%);
+}.contract-module .contract-detail-content{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  padding-bottom:8px;
+}.contract-module .detail-section{
+  grid-column:1/-1;
+  color:var(--da-gold);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.12em;
+  padding:12px 0 7px;
+  border-bottom:1px solid #292929;
+}.contract-module .detail-item{
+  background:#171717;
+  border:1px solid #292929;
+  border-radius:10px;
+  padding:11px 13px;
+  min-width:0;
+}.contract-module .detail-item.full{grid-column:1/-1}.contract-module .detail-label{
+  color:#777;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  margin-bottom:5px;
+}.contract-module .detail-value{
+  color:#f2f2f2;
+  font-size:14px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}.contract-module .detail-value.muted{color:#999}.contract-module .detail-status{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}.contract-module .detail-status.active{background:#123b23;color:#78d394}.contract-module .detail-status.pending{background:#3a2e10;color:#e5bf48}.contract-module .detail-status.expired{background:#3b1717;color:#ef8585}
+
+@media(max-width:700px){.contract-module .contract-detail-content{grid-template-columns:1fr}.contract-module .detail-section,
+.contract-module .detail-item.full{grid-column:auto}
+}.contract-module .modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+  position:sticky;
+  top:-24px;
+  padding:4px 0 16px;
+  background:#111;
+  z-index:2;
+}.contract-module .modal-head h2{margin:0;color:#fff}.contract-module .close-button{
+  border:1px solid #333;
+  background:#1b1b1b;
+  color:#f5c637;
+  border-radius:50%;
+  width:38px;
+  height:38px;
+  cursor:pointer;
+  font-size:22px;
+  line-height:1;
+}.contract-module .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.contract-module .form-group{display:flex;flex-direction:column;gap:7px}.contract-module .form-group.full{grid-column:1/-1}.contract-module .field-hint{
+  color:#777;
+  font-size:11px;
+  line-height:1.4;
+  margin-top:-2px;
+}.contract-module .form-group label{
+  font-size:13px;
+  font-weight:700;
+  color:#b7b7b7;
+}.contract-module .form-group input,
+.contract-module .form-group select,
+.contract-module .form-group textarea{
+  width:100%;
+  min-height:48px;
+  font:inherit;
+  color:#f3f3f3!important;
+  padding:12px 13px;
+  border:1px solid #3a3a3a!important;
+  border-radius:10px;
+  background:#171717!important;
+  outline:none;
+  appearance:auto;
+}.contract-module .form-group input::placeholder,
+.contract-module .form-group textarea::placeholder{color:#777}.contract-module .form-group select:focus,
+.contract-module .form-group input:focus,
+.contract-module .form-group textarea:focus{
+  border-color:var(--da-gold)!important;
+  box-shadow:0 0 0 2px rgba(217,173,50,.12);
+}.contract-module .form-group select:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}.contract-module .form-group input[readonly].calculated-field{
+  background:#101d15!important;
+  border-color:#244b33!important;
+  color:#79d39a!important;
+  font-weight:800;
+}.contract-module .form-group input[readonly]{
+  cursor:default;
+}.contract-module .form-group textarea{min-height:100px;resize:vertical}.contract-module .section-title{
+  grid-column:1/-1;
+  font-size:13px;
+  font-weight:800;
+  color:var(--da-gold);
+  letter-spacing:.12em;
+  padding-top:12px;
+  border-bottom:1px solid #2b2b2b;
+  padding-bottom:9px;
+}.contract-module .reference-status{
+  grid-column:1/-1;
+  display:none;
+  padding:10px 12px;
+  border-radius:9px;
+  font-size:13px;
+  background:#181818;
+  color:#9b9b9b;
+}.contract-module .reference-status.show{display:block}.contract-module .reference-status.success{color:#73cf91;background:#102719}.contract-module .reference-status.error{color:#ef8585;background:#2b1515}.contract-module .modal-foot{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+  margin-top:22px;
+  position:sticky;
+  bottom:0;
+  width:100%;
+  min-height:72px;
+  padding:12px 0 14px;
+  margin-bottom:0;
+  background:#111!important;
+  z-index:100;
+  border-top:1px solid #242424;
+  box-sizing:border-box;
+}.contract-module .modal-foot .primary-button,
+.contract-module .modal-foot .secondary-button{
+  position:relative;
+  z-index:51;
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:120px!important;
+  max-width:220px!important;
+  height:48px!important;
+  min-height:48px!important;
+  max-height:48px!important;
+  padding:0 17px!important;
+  margin:0!important;
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  line-height:1;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)){.contract-module .modal-foot{
+    padding-bottom:max(14px, env(safe-area-inset-bottom));
+  }
+}.contract-module .loading-option{color:#999}.contract-module .form-error{
+  display:none;
+  grid-column:1/-1;
+  padding:11px 12px;
+  border-radius:9px;
+  background:#2b1515;
+  color:#ef8585;
+  font-size:13px;
+}.contract-module .form-error.show{display:block}.contract-module /* iOS Safari: keep the modal and its action bar inside the dynamic viewport. */
+@supports (height: 100dvh){.contract-module .modal-backdrop{
+    min-height:100dvh;
+    padding:12px;
+    box-sizing:border-box;
+    align-items:flex-start;
+  }.contract-module .contract-modal{
+    max-height:calc(100dvh - 24px);
+  }
+}.contract-module /* =========================================================
+   RESPONSIVE CONTRACT LIST
+   Tablet / iPad: convert table rows into readable cards.
+   This prevents the 7-column table from being squeezed
+   into a narrow content area beside the sidebar.
+========================================================= */
+
+.contract-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 16px;
+}.contract-module .contract-kpi{
+  background:linear-gradient(180deg,#151512,#10100e)!important;
+  border:1px solid var(--da-border)!important;
+  border-radius:14px;
+  padding:14px 16px;
+}.contract-module .contract-kpi-label{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--da-gold)!important}.contract-module .contract-kpi-value{margin-top:5px;font-size:27px;line-height:1.1;font-weight:800;color:var(--da-text)!important}.contract-module .contract-list-tools{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:0 0 14px;flex-wrap:wrap;
+}.contract-module .contract-search{
+  flex:1 1 420px;min-width:220px;max-width:700px;
+  background:#171717;color:var(--da-text);
+  border:1px solid #4a4438;border-radius:9px;padding:11px 12px;font:inherit;
+}.contract-module .contract-search:focus{outline:none;border-color:var(--da-gold);box-shadow:0 0 0 2px rgba(214,168,79,.10)}.contract-module .contract-list-note{color:var(--da-muted);font-size:12px}.contract-module .contract-filter{
+  min-height:42px;
+  padding:9px 11px;
+  color:var(--da-text)!important;
+  background:#171717!important;
+  border:1px solid #3a3a3a!important;
+  border-radius:9px;
+  font:inherit;
+  outline:none;
+}.contract-module .contract-filter:focus{
+  border-color:var(--da-gold)!important;
+  box-shadow:0 0 0 2px rgba(217,173,50,.10);
+}.contract-module .contract-clear-filter{
+  min-height:42px;
+  padding:9px 13px;
+  white-space:nowrap;
+}
+
+@media(max-width:1100px){.contract-module .contract-page{padding:18px}.contract-module .contract-toolbar{align-items:flex-start;flex-direction:column}.contract-module .contract-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.contract-module .table-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }.contract-module .contract-table{
+    width:100%;
+    min-width:900px;
+    border-collapse:collapse;
+  }.contract-module .form-grid{
+    grid-template-columns:1fr;
+  }.contract-module .form-group.full,
+.contract-module .section-title,
+.contract-module .reference-status,
+.contract-module .form-error{
+    grid-column:auto;
+  }
+}
+
+@media(max-width:700px){.contract-module .contract-kpis{
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+  }.contract-module .contract-kpi{padding:12px}.contract-module .contract-kpi-value{font-size:23px}.contract-module .contract-list-tools{align-items:stretch;flex-direction:column}.contract-module .contract-search{width:100%;max-width:none;min-width:0}.contract-module .contract-filter,
+.contract-module .contract-clear-filter{width:100%}.contract-module .contract-list-note{white-space:normal}.contract-module .table-wrap{overflow-x:auto}.contract-module .contract-table{min-width:850px}.contract-module .contract-page{
+    padding:14px;
+  }.contract-module .contract-modal{
+    width:100%;
+    max-height:calc(100dvh - 24px);
+    padding:18px;
+    border-radius:15px;
+  }.contract-module .modal-head{
+    top:-18px;
+  }.contract-module .modal-foot{
+    bottom:0;
+    width:100%;
+    min-height:72px;
+    margin-bottom:0;
+    padding:12px 0 14px;
+    justify-content:flex-end;
+    align-items:center;
+    background:#111!important;
+    z-index:100;
+  }.contract-module .modal-foot .primary-button,
+.contract-module .modal-foot .secondary-button{
+    width:auto!important;
+    min-width:120px!important;
+    max-width:calc(50% - 5px)!important;
+    height:48px!important;
+    min-height:48px!important;
+    max-height:48px!important;
+    padding:0 14px!important;
+  }
+}
+
+`;
+
+export async function mountContractModule(root) {
+  if (!root) throw new Error("Contract module root is required.");
+
+  root.innerHTML = `
+    <div class="contract-module">
+      <main class="contract-page">
+<section class="contract-toolbar">
+  <div>
+    <p class="eyebrow">QUẢN LÝ VẬN HÀNH</p>
+    <h1>Hợp đồng</h1>
+    <p class="muted">Mỗi hợp đồng gắn với 1 khách hàng, 1 tòa nhà và 1 thang máy.</p>
+  </div>
+  <div class="contract-actions">
+    <button class="primary-button" id="addContract" type="button">＋ Thêm hợp đồng</button>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div><p class="eyebrow">DANH SÁCH</p><h2>Hợp đồng hiện tại</h2></div>
+    <div id="pageStatus" class="muted"></div>
+  </div>
+  <div class="contract-kpis">
+    <div class="contract-kpi"><div class="contract-kpi-label">TỔNG HỢP ĐỒNG</div><div class="contract-kpi-value" id="kpiContractTotal">0</div></div>
+    <div class="contract-kpi"><div class="contract-kpi-label">ĐANG HIỆU LỰC</div><div class="contract-kpi-value" id="kpiContractActive">0</div></div>
+    <div class="contract-kpi"><div class="contract-kpi-label">CHỜ HIỆU LỰC</div><div class="contract-kpi-value" id="kpiContractPending">0</div></div>
+    <div class="contract-kpi"><div class="contract-kpi-label">HẾT HẠN</div><div class="contract-kpi-value" id="kpiContractExpired">0</div></div>
+  </div>
+
+  <div class="contract-list-tools">
+    <input id="contractSearch" class="contract-search" type="search"
+      placeholder="Tìm mã HĐ, tên hợp đồng, khách hàng, tòa nhà, thang máy..."
+      autocomplete="off">
+
+    <select id="contractStatusFilter" class="contract-filter">
+      <option value="">Tất cả trạng thái</option>
+      <option value="active">Đang hiệu lực</option>
+      <option value="pending">Chờ hiệu lực</option>
+      <option value="expired">Hết hạn</option>
+    </select>
+
+    <select id="contractMaintenanceFilter" class="contract-filter">
+      <option value="">Tất cả bảo trì</option>
+      <option value="yes">Có bảo trì</option>
+      <option value="no">Không bảo trì</option>
+    </select>
+
+    <select id="contractCycleFilter" class="contract-filter">
+      <option value="">Tất cả chu kỳ</option>
+      <option value="monthly">1 tháng/lần</option>
+      <option value="bi_monthly">2 tháng/lần</option>
+      <option value="quarterly">3 tháng/lần</option>
+    </select>
+
+    <select id="contractYearFilter" class="contract-filter">
+      <option value="">Tất cả năm</option>
+    </select>
+
+    <button id="clearContractFilters" class="secondary-button contract-clear-filter" type="button">
+      Xóa lọc
+    </button>
+
+    <div id="contractListNote" class="contract-list-note">Hiển thị 5 hợp đồng gần nhất</div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="contract-table">
+      <thead>
+        <tr><th>Mã HĐ</th><th>Khách hàng</th><th>Tòa nhà</th><th>Thang máy</th><th>Thời hạn</th><th>Trạng thái</th><th></th></tr>
+      </thead>
+      <tbody id="contractRows"></tbody>
+    </table>
+  </div>
+  <div class="empty-state" id="emptyState">Chưa có hợp đồng. Bấm “Thêm hợp đồng” để tạo mới.</div>
+</section>
+</main>
+      <div class="modal-backdrop" id="contractDetailModal">
+  <div class="contract-modal contract-detail-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow">CHI TIẾT HỢP ĐỒNG</div>
+        <h2 id="detailModalTitle">Thông tin hợp đồng</h2>
+      </div>
+      <button class="close-button" id="closeDetailModal" type="button" aria-label="Đóng">×</button>
+    </div>
+
+    <div id="contractDetailContent" class="contract-detail-content"></div>
+
+    <div class="modal-foot">
+      <button class="secondary-button" id="closeDetailButton" type="button">Đóng</button>
+      <button class="primary-button" id="editFromDetailButton" type="button">Sửa hợp đồng</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="contractModal">
+  <div class="contract-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2 id="modalTitle">Thêm hợp đồng</h2>
+      <button class="close-button" id="closeModal" type="button" aria-label="Đóng">×</button>
+    </div>
+
+    <form id="contractForm">
+      <div class="form-grid">
+
+        <div class="section-title">THÔNG TIN HỢP ĐỒNG</div>
+
+        <div class="form-group">
+          <label for="contractCode">Mã hợp đồng *</label>
+          <input id="contractCode" required placeholder="VD: HĐ-BT-2026-001">
+        </div>
+
+        <div class="form-group">
+          <label for="contractName">Tên hợp đồng *</label>
+          <input id="contractName" required placeholder="Hợp đồng bảo trì thang máy">
+        </div>
+
+        <div class="form-group">
+          <label for="customerId">Khách hàng *</label>
+          <select id="customerId" required>
+            <option value="">Đang tải khách hàng...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="buildingId">Tòa nhà *</label>
+          <select id="buildingId" required disabled>
+            <option value="">Chọn khách hàng trước</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="elevatorId">Thang máy *</label>
+          <select id="elevatorId" required disabled>
+            <option value="">Chọn tòa nhà trước</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="status">Trạng thái</label>
+          <select id="status">
+            <option value="active">Đang hiệu lực</option>
+            <option value="pending">Chờ hiệu lực</option>
+          </select>
+          <small class="field-hint">
+            “Hết hạn” do hệ thống tự xác định theo ngày kết thúc và số lần bảo trì còn lại.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="signedDate">Ngày ký</label>
+          <input id="signedDate" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="startDate">Ngày hiệu lực</label>
+          <input id="startDate" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="contractDurationMonths">Thời hạn hợp đồng</label>
+          <select id="contractDurationMonths">
+            <option value="">Chọn thời hạn</option>
+            <option value="12">1 năm</option>
+            <option value="24">2 năm</option>
+            <option value="36">3 năm</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="endDate">Ngày kết thúc</label>
+          <input id="endDate" type="date" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="contractValue">Giá trị hợp đồng (VNĐ)</label>
+          <input id="contractValue" type="number" min="0" step="1000">
+        </div>
+
+        <div class="section-title">BẢO HÀNH</div>
+
+        <div class="form-group">
+          <label for="warrantyEnabled">Áp dụng bảo hành</label>
+          <select id="warrantyEnabled">
+            <option value="yes">Có</option>
+            <option value="no">Không</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="warrantyPeriod">Thời hạn bảo hành</label>
+          <input id="warrantyPeriod" placeholder="VD: 12 tháng">
+        </div>
+
+        <div class="form-group">
+          <label for="warrantyStart">Bảo hành từ</label>
+          <input id="warrantyStart" type="date">
+        </div>
+
+        <div class="form-group">
+          <label for="warrantyEnd">Bảo hành đến</label>
+          <input id="warrantyEnd" type="date">
+        </div>
+
+        <div class="form-group full">
+          <label for="warrantyNote">Phạm vi / điều kiện bảo hành</label>
+          <textarea id="warrantyNote"></textarea>
+        </div>
+
+        <div class="section-title">BẢO TRÌ</div>
+
+        <div class="form-group">
+          <label for="maintenanceEnabled">Áp dụng bảo trì</label>
+          <select id="maintenanceEnabled">
+            <option value="yes">Có</option>
+            <option value="no">Không</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceType">Loại bảo trì</label>
+          <select id="maintenanceType">
+            <option value="paid">Có phí</option>
+            <option value="free">Miễn phí</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceCycle">Chu kỳ bảo trì</label>
+          <select id="maintenanceCycle">
+            <option value="monthly">1 tháng/lần</option>
+            <option value="bi_monthly">2 tháng/lần</option>
+            <option value="quarterly">3 tháng/lần</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceTotal">Tổng số lần bảo trì</label>
+          <input id="maintenanceTotal" class="calculated-field" type="number" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceCompleted">Số lần đã làm</label>
+          <input id="maintenanceCompleted" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceRemaining">Số lần còn lại</label>
+          <input id="maintenanceRemaining" class="calculated-field" type="number" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="maintenanceLastDate">Lần bảo trì gần nhất</label>
+          <input id="maintenanceLastDate" type="date">
+        </div>
+
+        <div class="section-title">THANH TOÁN & TÀI LIỆU</div>
+
+        <div class="form-group">
+          <label for="paidValue">Đã thanh toán (VNĐ)</label>
+          <input id="paidValue" type="number" min="0" step="1000">
+        </div>
+
+        <div class="form-group">
+          <label for="paymentDue">Hạn thanh toán</label>
+          <input id="paymentDue" type="date">
+        </div>
+
+        <div class="form-group full">
+          <label for="note">Ghi chú</label>
+          <textarea id="note"></textarea>
+        </div>
+
+        <div id="referenceStatus" class="reference-status"></div>
+        <div id="formError" class="form-error"></div>
+      </div>
+
+      <div class="modal-foot">
+        <button class="secondary-button" id="cancelModal" type="button">Hủy</button>
+        <button class="primary-button" id="saveButton" type="submit">Lưu hợp đồng</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/ui/app.js"></script>
+    </div>
+  `;
+
+  if (!document.head.querySelector('style[data-contract-module="v1.0"]')) {
+    const style = document.createElement("style");
+    style.dataset.contractModule = "v1.0";
+    style.textContent = CONTRACT_CSS;
+    document.head.appendChild(style);
+  }
+
+const {
+  getCustomers,
+  getBuildings,
+  getElevators,
+  getContracts,
+  createContract,
+  updateContract
+} = Firestore;
+
+const $ = id => root.querySelector(`#${id}`);
+
+let customers = [];
+let buildings = [];
+let elevators = [];
+let contracts = [];
+let editingId = null;
+let loadingContracts = false;
+let authUser = null;
+let authReady = false;
+
+const modal = $("contractModal");
+const form = $("contractForm");
+
+const detailModal = $("contractDetailModal");
+let detailContractId = null;
+
+
+function esc(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function setReferenceStatus(message="", type=""){
+  const el=$("referenceStatus");
+  el.textContent=message;
+  el.className="reference-status";
+  if(message) el.classList.add("show");
+  if(type) el.classList.add(type);
+}
+
+function setFormError(message=""){
+  const el=$("formError");
+  el.textContent=message;
+  el.classList.toggle("show",!!message);
+}
+
+function customerName(id){
+  return customers.find(x=>String(x.id)===String(id))?.name || "Không xác định";
+}
+
+function buildingName(id){
+  return buildings.find(x=>String(x.id)===String(id))?.name || "Không xác định";
+}
+
+function elevatorName(id){
+  return elevators.find(x=>String(x.id)===String(id))?.name || "Không xác định";
+}
+
+/* =========================================================
+   CONTRACT DURATION + MAINTENANCE CALCULATOR
+========================================================= */
+
+const CYCLE_MONTHS = {
+  monthly: 1,
+  bi_monthly: 2,
+  quarterly: 3
+};
+
+function parseDateInput(value){
+  if(!value) return null;
+
+  const parts=String(value).split("-").map(Number);
+
+  if(parts.length!==3 || parts.some(x=>!Number.isFinite(x))){
+    return null;
+  }
+
+  const date=new Date(parts[0],parts[1]-1,parts[2]);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateInput(date){
+  if(!(date instanceof Date) || Number.isNaN(date.getTime())){
+    return "";
+  }
+
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,"0");
+  const d=String(date.getDate()).padStart(2,"0");
+
+  return `${y}-${m}-${d}`;
+}
+
+function addMonths(date, months){
+  const result=new Date(date.getTime());
+  const originalDay=result.getDate();
+
+  result.setDate(1);
+  result.setMonth(result.getMonth()+Number(months));
+
+  const lastDay=new Date(
+    result.getFullYear(),
+    result.getMonth()+1,
+    0
+  ).getDate();
+
+  result.setDate(Math.min(originalDay,lastDay));
+
+  return result;
+}
+
+function calculateEndDate(){
+  const start=parseDateInput($("startDate").value);
+  const months=Number($("contractDurationMonths").value);
+
+  if(!start || ![12,24,36].includes(months)){
+    $("endDate").value="";
+    return "";
+  }
+
+  const end=addMonths(start,months);
+  end.setDate(end.getDate()-1);
+
+  const value=formatDateInput(end);
+
+  $("endDate").value=value;
+
+  return value;
+}
+
+function deriveDurationMonths(startValue,endValue){
+  const start=parseDateInput(startValue);
+  const end=parseDateInput(endValue);
+
+  if(!start || !end) return "";
+
+  const nextDay=new Date(end.getTime());
+  nextDay.setDate(nextDay.getDate()+1);
+
+  const months=
+    (nextDay.getFullYear()-start.getFullYear())*12+
+    (nextDay.getMonth()-start.getMonth());
+
+  return [12,24,36].includes(months)
+    ? String(months)
+    : "";
+}
+
+function calculateMaintenanceTotal(){
+  const enabled=$("maintenanceEnabled").value==="yes";
+  const start=parseDateInput($("startDate").value);
+  const end=parseDateInput($("endDate").value);
+  const cycleMonths=CYCLE_MONTHS[$("maintenanceCycle").value] || 0;
+
+  if(!enabled || !start || !end || !cycleMonths){
+    $("maintenanceTotal").value=0;
+    updateMaintenanceRemaining();
+    return 0;
+  }
+
+  const nextAfterEnd=new Date(end.getTime());
+  nextAfterEnd.setDate(nextAfterEnd.getDate()+1);
+
+  const totalMonths=
+    (nextAfterEnd.getFullYear()-start.getFullYear())*12+
+    (nextAfterEnd.getMonth()-start.getMonth());
+
+  const total=Math.max(
+    0,
+    Math.floor(totalMonths/cycleMonths)
+  );
+
+  $("maintenanceTotal").value=total;
+
+  updateMaintenanceRemaining();
+
+  return total;
+}
+
+function updateMaintenanceRemaining(){
+  const total=Math.max(
+    0,
+    Number($("maintenanceTotal").value)||0
+  );
+
+  let completed=Math.max(
+    0,
+    Number($("maintenanceCompleted").value)||0
+  );
+
+  if(completed>total){
+    completed=total;
+    $("maintenanceCompleted").value=completed;
+  }
+
+  $("maintenanceRemaining").value=
+    Math.max(0,total-completed);
+}
+
+function refreshContractCalculations(){
+  calculateEndDate();
+  calculateMaintenanceTotal();
+}
+
+
+function renderCustomerOptions(selectedId=""){
+  const select=$("customerId");
+
+  if(!customers.length){
+    select.innerHTML='<option value="">Chưa có khách hàng</option>';
+    select.disabled=true;
+    $("buildingId").innerHTML='<option value="">Chưa có tòa nhà</option>';
+    $("buildingId").disabled=true;
+    $("elevatorId").innerHTML='<option value="">Chưa có thang máy</option>';
+    $("elevatorId").disabled=true;
+    return;
+  }
+
+  const sorted=customers.slice().sort((a,b)=>
+    String(a.name||"").localeCompare(String(b.name||""),"vi")
+  );
+
+  select.disabled=false;
+  select.innerHTML=
+    '<option value="">Chọn khách hàng</option>'+
+    sorted.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+
+  if(selectedId) select.value=String(selectedId);
+
+  renderBuildingOptions(select.value,"");
+}
+
+function renderBuildingOptions(customerId="",selectedId=""){
+  const select=$("buildingId");
+
+  if(!customerId){
+    select.innerHTML='<option value="">Chọn khách hàng trước</option>';
+    select.disabled=true;
+    renderElevatorOptions("");
+    return;
+  }
+
+  const related=buildings
+    .filter(x=>String(x.customerId||"")===String(customerId))
+    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
+
+  if(!related.length){
+    select.innerHTML='<option value="">Khách hàng chưa có tòa nhà</option>';
+    select.disabled=true;
+    renderElevatorOptions("");
+    return;
+  }
+
+  select.disabled=false;
+  select.innerHTML=
+    '<option value="">Chọn tòa nhà</option>'+
+    related.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+
+  if(selectedId) select.value=String(selectedId);
+
+  renderElevatorOptions(select.value,"");
+}
+
+function renderElevatorOptions(buildingId="",selectedId=""){
+  const select=$("elevatorId");
+
+  if(!buildingId){
+    select.innerHTML='<option value="">Chọn tòa nhà trước</option>';
+    select.disabled=true;
+    return;
+  }
+
+  const related=elevators
+    .filter(x=>String(x.buildingId||"")===String(buildingId))
+    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"vi"));
+
+  if(!related.length){
+    select.innerHTML='<option value="">Tòa nhà chưa có thang máy</option>';
+    select.disabled=true;
+    return;
+  }
+
+  select.disabled=false;
+  select.innerHTML=
+    '<option value="">Chọn thang máy</option>'+
+    related.map(x=>`<option value="${esc(x.id)}">${esc(x.name || x.id)}</option>`).join("");
+
+  if(selectedId) select.value=String(selectedId);
+}
+
+async function loadReferences(){
+  setReferenceStatus("Đang tải khách hàng, tòa nhà và thang máy từ Firebase...");
+
+  if(
+    typeof getCustomers!=="function" ||
+    typeof getBuildings!=="function" ||
+    typeof getElevators!=="function"
+  ){
+    setReferenceStatus("Thiếu hàm Firestore tham chiếu. Kiểm tra js/core/firestore-v1.js.","error");
+    renderCustomerOptions("");
+    return false;
+  }
+
+  const results=await Promise.allSettled([
+    getCustomers(),
+    getBuildings(),
+    getElevators()
+  ]);
+
+  customers=results[0].status==="fulfilled" ? (results[0].value||[]) : [];
+  buildings=results[1].status==="fulfilled" ? (results[1].value||[]) : [];
+  elevators=results[2].status==="fulfilled" ? (results[2].value||[]) : [];
+
+  renderCustomerOptions("");
+
+  const errors=results
+    .filter(x=>x.status==="rejected")
+    .map(x=>x.reason?.message||"Lỗi Firebase");
+
+  if(errors.length){
+    console.error("CONTRACT REFERENCE ERRORS:",errors);
+    setReferenceStatus(
+      `Một phần dữ liệu chưa tải được: ${errors.join(" | ")}`,
+      "error"
+    );
+    return false;
+  }
+
+  setReferenceStatus(
+    `Đã tải ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy.`,
+    "success"
+  );
+  return true;
+}
+
+async function loadContracts(){
+  if(!authReady || !authUser){
+    return false;
+  }
+
+  if(typeof getContracts!=="function"){
+    setReferenceStatus("Module Firestore chưa có getContracts(). Hãy cập nhật firestore-v1.js.","error");
+    return false;
+  }
+
+  loadingContracts=true;
+  $("pageStatus").textContent = "Đang tải hợp đồng...";
+  try{
+    contracts=await getContracts();
+    populateContractYearFilter();
+    render();
+    $("pageStatus").textContent =
+      `${contracts.length} hợp đồng`;
+    return true;
+  }catch(error){
+    console.error("CONTRACT LOAD ERROR:",error);
+    contracts=[];
+    $("pageStatus").textContent = "Không tải được hợp đồng";
+    setReferenceStatus(error?.message || "Không thể tải hợp đồng từ Firebase.","error");
+    return false;
+  }finally{
+    loadingContracts=false;
+
+    /*
+     * Phải render lại SAU KHI loadingContracts=false.
+     * Nếu render trước finally, render() vẫn thấy loadingContracts=true
+     * và giữ nguyên trạng thái "Đang tải..." thay vì hiển thị các hợp đồng.
+     */
+    render();
+  }
+}
+
+async function refreshAll(){
+  await Promise.allSettled([loadReferences(),loadContracts()]);
+}
+
+async function refreshReferencesForEdit(c){
+  await loadReferences();
+
+  $("customerId").value=String(c.customerId||"");
+  renderBuildingOptions(c.customerId,c.buildingId);
+  $("buildingId").value=String(c.buildingId||"");
+  renderElevatorOptions(c.buildingId,c.elevatorId);
+  $("elevatorId").value=String(c.elevatorId||"");
+}
+
+
+function detailValue(value, fallback="—"){
+  const s=String(value ?? "").trim();
+  return s ? esc(s) : fallback;
+}
+
+function openContractDetail(id){
+  const c=contracts.find(x=>String(x.id)===String(id));
+  if(!c) return;
+
+  detailContractId=id;
+
+  const effectiveStatus=getContractEffectiveStatus(c);
+  const statusLabel=getContractStatusLabel(effectiveStatus);
+  const statusClass=getContractStatusClass(effectiveStatus);
+
+  const maintenanceEnabled =
+    c.maintenanceEnabled==="yes" ||
+    c.maintenanceEnabled===true ||
+    c.maintenanceEnabled==="true";
+
+  const warrantyEnabled =
+    c.warrantyEnabled==="yes" ||
+    c.warrantyEnabled===true ||
+    c.warrantyEnabled==="true";
+
+  const total=Number(c.maintenanceTotal||0);
+  const completed=Number(c.maintenanceCompleted||0);
+  const remaining=Number(c.maintenanceRemaining ?? Math.max(0,total-completed));
+
+  $("detailModalTitle").textContent =
+    `${c.code || "Hợp đồng"} · ${c.name || ""}`;
+
+  $("contractDetailContent").innerHTML=`
+    <div class="detail-section">THÔNG TIN HỢP ĐỒNG</div>
+
+    <div class="detail-item">
+      <div class="detail-label">Mã hợp đồng</div>
+      <div class="detail-value">${detailValue(c.code)}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Tên hợp đồng</div>
+      <div class="detail-value">${detailValue(c.name)}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Trạng thái thực tế</div>
+      <div class="detail-value">
+        <span class="detail-status ${statusClass}">${statusLabel}</span>
+      </div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Giá trị hợp đồng</div>
+      <div class="detail-value">${c.contractValue!=="" && c.contractValue!=null
+        ? Number(c.contractValue||0).toLocaleString("vi-VN")+" VNĐ"
+        : "—"}</div>
+    </div>
+
+    <div class="detail-section">ĐỐI TƯỢNG HỢP ĐỒNG</div>
+
+    <div class="detail-item">
+      <div class="detail-label">Khách hàng</div>
+      <div class="detail-value">${detailValue(c.customerName || customerName(c.customerId))}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Tòa nhà</div>
+      <div class="detail-value">${detailValue(c.buildingName || buildingName(c.buildingId))}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Thang máy</div>
+      <div class="detail-value">${detailValue(c.elevatorName || elevatorName(c.elevatorId))}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Mã thang</div>
+      <div class="detail-value">${detailValue(c.elevatorAssetCode || "Chưa có")}</div>
+    </div>
+
+    <div class="detail-section">THỜI HẠN</div>
+
+    <div class="detail-item">
+      <div class="detail-label">Ngày ký</div>
+      <div class="detail-value">${detailValue(c.signedDate)}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Ngày hiệu lực</div>
+      <div class="detail-value">${detailValue(c.startDate)}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Thời hạn</div>
+      <div class="detail-value">${c.contractDurationMonths
+        ? detailValue(`${c.contractDurationMonths} tháng`)
+        : "—"}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Ngày kết thúc</div>
+      <div class="detail-value">${detailValue(c.endDate)}</div>
+    </div>
+
+    <div class="detail-section">BẢO HÀNH</div>
+
+    <div class="detail-item">
+      <div class="detail-label">Áp dụng bảo hành</div>
+      <div class="detail-value">${warrantyEnabled ? "Có" : "Không"}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Thời hạn bảo hành</div>
+      <div class="detail-value">${detailValue(c.warrantyPeriod)}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Bảo hành từ</div>
+      <div class="detail-value">${detailValue(c.warrantyStart)}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Bảo hành đến</div>
+      <div class="detail-value">${detailValue(c.warrantyEnd)}</div>
+    </div>
+    <div class="detail-item full">
+      <div class="detail-label">Phạm vi / điều kiện bảo hành</div>
+      <div class="detail-value">${detailValue(c.warrantyNote)}</div>
+    </div>
+
+    <div class="detail-section">BẢO TRÌ</div>
+
+    <div class="detail-item">
+      <div class="detail-label">Áp dụng bảo trì</div>
+      <div class="detail-value">${maintenanceEnabled ? "Có" : "Không"}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Loại bảo trì</div>
+      <div class="detail-value">${c.maintenanceType==="free" ? "Miễn phí" : "Có phí"}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Chu kỳ</div>
+      <div class="detail-value">${
+        c.maintenanceCycle==="bi_monthly"
+          ? "2 tháng/lần"
+          : c.maintenanceCycle==="quarterly"
+            ? "3 tháng/lần"
+            : "1 tháng/lần"
+      }</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Tổng số lần</div>
+      <div class="detail-value">${total}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Đã làm</div>
+      <div class="detail-value">${completed}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Còn lại</div>
+      <div class="detail-value">${remaining}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Lần bảo trì gần nhất</div>
+      <div class="detail-value">${detailValue(c.maintenanceLastDate)}</div>
+    </div>
+
+    <div class="detail-section">THANH TOÁN & GHI CHÚ</div>
+
+    <div class="detail-item">
+      <div class="detail-label">Đã thanh toán</div>
+      <div class="detail-value">${c.paidValue!=="" && c.paidValue!=null
+        ? Number(c.paidValue||0).toLocaleString("vi-VN")+" VNĐ"
+        : "—"}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Hạn thanh toán</div>
+      <div class="detail-value">${detailValue(c.paymentDue)}</div>
+    </div>
+    <div class="detail-item full">
+      <div class="detail-label">Ghi chú</div>
+      <div class="detail-value">${detailValue(c.note)}</div>
+    </div>
+  `;
+
+  detailModal.classList.add("show");
+  document.body.style.overflow="hidden";
+  const box=detailModal.querySelector(".contract-detail-modal");
+  if(box) box.scrollTop=0;
+}
+
+function closeContractDetail(){
+  detailModal.classList.remove("show");
+  detailContractId=null;
+  document.body.style.overflow="";
+}
+
+function resetForm(){
+  form.reset();
+  editingId=null;
+  $("modalTitle").textContent="Thêm hợp đồng";
+  $("status").value="active";
+  $("warrantyEnabled").value="yes";
+  $("maintenanceEnabled").value="yes";
+  $("maintenanceType").value="paid";
+  $("maintenanceCycle").value="monthly";
+  $("contractDurationMonths").value="";
+  $("endDate").value="";
+  $("maintenanceTotal").value=0;
+  $("maintenanceCompleted").value=0;
+  $("maintenanceRemaining").value=0;
+  setFormError("");
+}
+
+function openModal(){
+  modal.classList.add("show");
+  document.body.style.overflow="hidden";
+  const box=modal.querySelector(".contract-modal");
+  if(box) box.scrollTop=0;
+}
+
+function closeModal(){
+  modal.classList.remove("show");
+  document.body.style.overflow="";
+  resetForm();
+}
+
+function fillForm(c){
+  const fields=[
+    "contractCode","contractName","status","signedDate","startDate","endDate",
+    "contractValue","warrantyEnabled","warrantyPeriod","warrantyStart","warrantyEnd",
+    "warrantyNote","maintenanceEnabled","maintenanceType","maintenanceCycle",
+    "maintenanceLastDate","paidValue","paymentDue","note"
+  ];
+
+  fields.forEach(id=>$(id).value=c[id]??"");
+
+  if($("status").value === "expired"){
+    $("status").value="active";
+  }
+
+  const durationMonths=
+    c.contractDurationMonths ||
+    deriveDurationMonths(c.startDate,c.endDate);
+
+  $("contractDurationMonths").value=String(durationMonths||"");
+
+  $("maintenanceCompleted").value=
+    Math.max(0,Number(c.maintenanceCompleted)||0);
+
+  refreshContractCalculations();
+}
+
+function getContractEffectiveStatus(c){
+  const storedStatus = c?.status === "pending" ? "pending" : "active";
+
+  // Chỉ hệ thống tự chuyển ACTIVE -> EXPIRED.
+  // PENDING vẫn do người dùng quyết định, không tự chuyển thành ACTIVE.
+  if(storedStatus !== "active"){
+    return storedStatus;
+  }
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const endDate = parseDateInput(c?.endDate);
+  if(endDate){
+    endDate.setHours(0,0,0,0);
+
+    if(today > endDate){
+      return "expired";
+    }
+  }
+
+  const maintenanceEnabled =
+    c?.maintenanceEnabled === "yes" ||
+    c?.maintenanceEnabled === true ||
+    c?.maintenanceEnabled === "true";
+
+  if(maintenanceEnabled){
+    const total = Number(c?.maintenanceTotal ?? 0);
+    const remaining = Number(c?.maintenanceRemaining ?? 0);
+
+    if(total > 0 && remaining <= 0){
+      return "expired";
+    }
+  }
+
+  return "active";
+}
+
+function getContractStatusLabel(status){
+  return status === "expired"
+    ? "Hết hạn"
+    : status === "pending"
+      ? "Chờ hiệu lực"
+      : "Đang hiệu lực";
+}
+
+function getContractStatusClass(status){
+  return status === "expired"
+    ? "expired"
+    : status === "pending"
+      ? "pending"
+      : "active";
+}
+
+function contractTimestamp(c){
+  const value=c?.createdAt;
+  if(value?.toMillis) return value.toMillis();
+  if(value?.seconds) return Number(value.seconds)*1000;
+  if(value instanceof Date) return value.getTime();
+  if(value){
+    const parsed=Date.parse(value);
+    if(!Number.isNaN(parsed)) return parsed;
+  }
+  const fallback=Date.parse(String(c?.startDate||""));
+  return Number.isNaN(fallback)?0:fallback;
+}
+
+function contractSearchHaystack(c){
+  return [
+    c.code,c.name,c.customerName,c.buildingName,c.elevatorName,
+    customerName(c.customerId),buildingName(c.buildingId),elevatorName(c.elevatorId)
+  ].join(" ").toLowerCase();
+}
+
+function populateContractYearFilter(){
+  const select=$("contractYearFilter");
+  if(!select) return;
+
+  const years=new Set();
+
+  contracts.forEach(c=>{
+    [c.signedDate,c.startDate,c.endDate].forEach(value=>{
+      const match=String(value||"").match(/^(\d{4})-/);
+      if(match) years.add(match[1]);
+    });
+  });
+
+  const current=select.value;
+  select.innerHTML=
+    '<option value="">Tất cả năm</option>'+
+    [...years]
+      .sort((a,b)=>Number(b)-Number(a))
+      .map(year=>`<option value="${esc(year)}">${esc(year)}</option>`)
+      .join("");
+
+  if(years.has(current)) select.value=current;
+}
+
+function contractMatchesFilters(c, query){
+  if(query && !contractSearchHaystack(c).includes(query)) return false;
+
+  const statusFilter=$("contractStatusFilter")?.value || "";
+  if(statusFilter && getContractEffectiveStatus(c)!==statusFilter) return false;
+
+  const maintenanceFilter=$("contractMaintenanceFilter")?.value || "";
+  if(maintenanceFilter){
+    const enabled =
+      c.maintenanceEnabled==="yes" ||
+      c.maintenanceEnabled===true ||
+      c.maintenanceEnabled==="true";
+    if((enabled ? "yes" : "no")!==maintenanceFilter) return false;
+  }
+
+  const cycleFilter=$("contractCycleFilter")?.value || "";
+  if(cycleFilter && String(c.maintenanceCycle||"")!==cycleFilter) return false;
+
+  const yearFilter=$("contractYearFilter")?.value || "";
+  if(yearFilter){
+    const haystack=[
+      c.signedDate,
+      c.startDate,
+      c.endDate
+    ].map(v=>String(v||""));
+
+    if(!haystack.some(v=>v.startsWith(`${yearFilter}-`))) return false;
+  }
+
+  return true;
+}
+
+function hasContractFilters(){
+  return Boolean(
+    String($("contractSearch")?.value||"").trim() ||
+    $("contractStatusFilter")?.value ||
+    $("contractMaintenanceFilter")?.value ||
+    $("contractCycleFilter")?.value ||
+    $("contractYearFilter")?.value
+  );
+}
+
+function render(){
+  const rows=$("contractRows");
+  const query=String($("contractSearch")?.value||"").trim().toLowerCase();
+
+  const effectiveStatuses=contracts.map(c=>({
+    contract:c,
+    status:getContractEffectiveStatus(c)
+  }));
+
+  $("kpiContractTotal").textContent=contracts.length;
+  $("kpiContractActive").textContent=
+    effectiveStatuses.filter(x=>x.status==="active").length;
+  $("kpiContractPending").textContent=
+    effectiveStatuses.filter(x=>x.status==="pending").length;
+  $("kpiContractExpired").textContent=
+    effectiveStatuses.filter(x=>x.status==="expired").length;
+
+  const sortedContracts=contracts.slice().sort((a,b)=>{
+    const byCreated=contractTimestamp(b)-contractTimestamp(a);
+    return byCreated!==0 ? byCreated : String(b.code||"").localeCompare(String(a.code||""),"vi");
+  });
+
+  const filtering=hasContractFilters();
+  const filtered=filtering
+    ? sortedContracts.filter(c=>contractMatchesFilters(c,query))
+    : sortedContracts.slice(0,5);
+
+  $("emptyState").style.display=filtered.length?"none":"block";
+
+  if(loadingContracts){
+    rows.innerHTML='<tr><td colspan="7" style="text-align:center;color:#888;padding:30px">Đang tải hợp đồng từ Firebase...</td></tr>';
+    $("contractListNote").textContent="Đang tải...";
+    return;
+  }
+
+  $("contractListNote").textContent=filtering
+    ? `Tìm thấy ${filtered.length} / ${contracts.length} hợp đồng`
+    : contracts.length>5
+      ? `Hiển thị 5 hợp đồng gần nhất · còn ${contracts.length-5} hợp đồng, dùng Tìm kiếm hoặc Lọc để xem`
+      : `Hiển thị ${contracts.length} hợp đồng gần nhất`;
+
+  rows.innerHTML=filtered.map(c=>{
+    const effectiveStatus=getContractEffectiveStatus(c);
+    const badgeClass=getContractStatusClass(effectiveStatus);
+    const status=getContractStatusLabel(effectiveStatus);
+    return `
+      <tr class="contract-row-clickable" data-contract-detail="${esc(c.id)}">
+        <td data-label="Mã HĐ"><strong>${esc(c.code)}</strong><br><small>${esc(c.name)}</small></td>
+        <td data-label="Khách hàng">${esc(customerName(c.customerId))}</td>
+        <td data-label="Tòa nhà">${esc(buildingName(c.buildingId))}</td>
+        <td data-label="Thang máy">${esc(elevatorName(c.elevatorId))}</td>
+        <td data-label="Thời hạn">
+          ${esc(c.startDate||"—")} → ${esc(c.endDate||"—")}
+          ${c.maintenanceEnabled==="yes" ? `<br><small>${Number(c.maintenanceRemaining ?? 0)} lần bảo trì còn lại</small>` : ""}
+        </td>
+        <td data-label="Trạng thái"><span class="badge ${badgeClass}">${status}</span></td>
+        <td data-label=""><button class="edit-button" type="button" data-edit="${esc(c.id)}">Sửa</button></td>
+      </tr>`;
+  }).join("");
+
+  rows.querySelectorAll("[data-contract-detail]").forEach(row=>{
+    row.addEventListener("click",e=>{
+      if(e.target.closest("[data-edit]")) return;
+      openContractDetail(row.dataset.contractDetail);
+    });
+  });
+
+  rows.querySelectorAll("[data-edit]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      openEdit(btn.dataset.edit);
+    });
+  });
+}
+
+async function openAdd(){
+  resetForm();
+  openModal();
+  await loadReferences();
+}
+
+async function openEdit(id){
+  const c=contracts.find(x=>String(x.id)===String(id));
+  if(!c)return;
+
+  resetForm();
+  editingId=id;
+  $("modalTitle").textContent="Sửa hợp đồng";
+  fillForm(c);
+  openModal();
+
+  await refreshReferencesForEdit(c);
+}
+
+$("addContract").addEventListener("click",openAdd);
+$("contractSearch").addEventListener("input",render);
+
+["contractStatusFilter","contractMaintenanceFilter","contractCycleFilter","contractYearFilter"]
+  .forEach(id=>{
+    $(id).addEventListener("change",render);
+  });
+
+$("clearContractFilters").addEventListener("click",()=>{
+  $("contractSearch").value="";
+  $("contractStatusFilter").value="";
+  $("contractMaintenanceFilter").value="";
+  $("contractCycleFilter").value="";
+  $("contractYearFilter").value="";
+  render();
+});
+
+$("closeDetailModal").addEventListener("click",closeContractDetail);
+$("closeDetailButton").addEventListener("click",closeContractDetail);
+
+detailModal.addEventListener("click",e=>{
+  if(e.target===detailModal) closeContractDetail();
+});
+
+$("editFromDetailButton").addEventListener("click",async ()=>{
+  const id=detailContractId;
+  closeContractDetail();
+  if(id) await openEdit(id);
+});
+
+$("closeModal").addEventListener("click",closeModal);
+$("cancelModal").addEventListener("click",closeModal);
+
+modal.addEventListener("click",e=>{
+  if(e.target===modal) closeModal();
+});
+
+$("customerId").addEventListener("change",()=>{
+  renderBuildingOptions($("customerId").value,"");
+  setFormError("");
+});
+
+$("buildingId").addEventListener("change",()=>{
+  renderElevatorOptions($("buildingId").value,"");
+  setFormError("");
+});
+
+$("startDate").addEventListener("change",refreshContractCalculations);
+$("contractDurationMonths").addEventListener("change",refreshContractCalculations);
+$("maintenanceEnabled").addEventListener("change",refreshContractCalculations);
+$("maintenanceCycle").addEventListener("change",calculateMaintenanceTotal);
+$("maintenanceCompleted").addEventListener("input",updateMaintenanceRemaining);
+
+form.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  if(!authReady || !authUser){
+    setFormError("Phiên đăng nhập Firebase chưa sẵn sàng. Vui lòng đăng nhập lại.");
+    return;
+  }
+
+  const customer=$("customerId");
+  const building=$("buildingId");
+  const elevator=$("elevatorId");
+  const saveButton=form.querySelector('[type="submit"]');
+
+  setFormError("");
+
+  if(!customer.value || !building.value || !elevator.value){
+    setFormError("Vui lòng chọn đủ Khách hàng → Tòa nhà → Thang máy.");
+    return;
+  }
+
+  const selectedBuilding=buildings.find(x=>String(x.id)===String(building.value));
+  const selectedElevator=elevators.find(x=>String(x.id)===String(elevator.value));
+
+  if(!selectedBuilding || String(selectedBuilding.customerId)!==String(customer.value)){
+    setFormError("Tòa nhà không thuộc khách hàng đã chọn.");
+    return;
+  }
+
+  if(!selectedElevator ||
+     String(selectedElevator.buildingId)!==String(building.value)){
+    setFormError("Thang máy không thuộc tòa nhà đã chọn.");
+    return;
+  }
+
+  const obj={
+    code:$("contractCode").value.trim(),
+    name:$("contractName").value.trim(),
+    customerId:customer.value,
+    customerName:customer.options[customer.selectedIndex]?.text || "",
+    buildingId:building.value,
+    buildingName:building.options[building.selectedIndex]?.text || "",
+    elevatorId:elevator.value,
+    elevatorName:elevator.options[elevator.selectedIndex]?.text || "",
+    status:$("status").value,
+    signedDate:$("signedDate").value,
+    startDate:$("startDate").value,
+    contractDurationMonths:Number($("contractDurationMonths").value||0),
+    endDate:$("endDate").value,
+    contractValue:$("contractValue").value,
+
+    warrantyEnabled:$("warrantyEnabled").value,
+    warrantyPeriod:$("warrantyPeriod").value,
+    warrantyStart:$("warrantyStart").value,
+    warrantyEnd:$("warrantyEnd").value,
+    warrantyNote:$("warrantyNote").value,
+
+    maintenanceEnabled:$("maintenanceEnabled").value,
+    maintenanceType:$("maintenanceType").value,
+    maintenanceCycle:$("maintenanceCycle").value,
+    maintenanceLastDate:$("maintenanceLastDate").value,
+    maintenanceTotal:Number($("maintenanceTotal").value||0),
+    maintenanceCompleted:Number($("maintenanceCompleted").value||0),
+    maintenanceRemaining:Number($("maintenanceRemaining").value||0),
+
+    paidValue:$("paidValue").value,
+    paymentDue:$("paymentDue").value,
+    note:$("note").value
+  };
+
+  if(!obj.code || !obj.name){
+    setFormError("Mã hợp đồng và tên hợp đồng là bắt buộc.");
+    return;
+  }
+
+  if(!obj.startDate){
+    setFormError("Vui lòng nhập Ngày hiệu lực.");
+    return;
+  }
+
+  if(![12,24,36].includes(obj.contractDurationMonths)){
+    setFormError("Vui lòng chọn thời hạn hợp đồng 1 năm, 2 năm hoặc 3 năm.");
+    return;
+  }
+
+  refreshContractCalculations();
+
+  obj.endDate=$("endDate").value;
+  obj.maintenanceTotal=Number($("maintenanceTotal").value||0);
+  obj.maintenanceCompleted=Number($("maintenanceCompleted").value||0);
+  obj.maintenanceRemaining=Number($("maintenanceRemaining").value||0);
+
+  if(typeof createContract!=="function" || typeof updateContract!=="function"){
+    setFormError("Firestore chưa có createContract/updateContract. Hãy cập nhật js/core/firestore-v1.js.");
+    return;
+  }
+
+  saveButton.disabled=true;
+  saveButton.textContent=editingId?"Đang cập nhật...":"Đang lưu...";
+
+  try{
+    if(editingId){
+      await updateContract(editingId,obj);
+    }else{
+      await createContract(obj);
+    }
+
+    const wasEditing = Boolean(editingId);
+    await loadContracts();
+    closeModal();
+
+    $("pageStatus").textContent =
+      wasEditing
+        ? `Đã cập nhật hợp đồng · ${contracts.length} hợp đồng`
+        : `Đã lưu hợp đồng · ${contracts.length} hợp đồng`;
+
+  }catch(error){
+    console.error("CONTRACT SAVE ERROR:",error);
+    setFormError(error?.message || "Không thể lưu hợp đồng vào Firebase.");
+  }finally{
+    saveButton.disabled=false;
+    saveButton.textContent="Lưu hợp đồng";
+  }
+});
+
+render();
+
+/*
+ * AUTH GATE
+ *
+ * Không gọi Firestore khi trang vừa mở.
+ * Chờ Firebase khôi phục phiên đăng nhập trước.
+ */
+onAuthStateChanged(auth, async (user) => {
+  authReady = true;
+  authUser = user || null;
+
+  if(!user){
+    $("pageStatus").textContent = "Chưa đăng nhập";
+    contracts = [];
+    render();
+
+    setReferenceStatus(
+      "Phiên đăng nhập Firebase không còn hoạt động. Vui lòng đăng nhập lại.",
+      "error"
+    );
+    return;
+  }
+
+  $("pageStatus").textContent = "Đang xác thực...";
+
+  await refreshAll();
+
+  $("pageStatus").textContent =
+    `${contracts.length} hợp đồng`;
+});
+
+}
