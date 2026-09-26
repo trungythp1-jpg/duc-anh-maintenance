@@ -591,6 +591,7 @@ $("refresh").addEventListener("click",loadAll);
 $("contractCustomer").addEventListener("change",fillBuildings);
 $("contractBuilding").addEventListener("change",fillElevators);
 $("saveContract").addEventListener("click",saveExistingContract);
+$("submitRequest").addEventListener("click",submitExternalRequest);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>closeModal(m.id))});
