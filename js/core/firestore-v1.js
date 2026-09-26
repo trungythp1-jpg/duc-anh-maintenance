@@ -929,6 +929,64 @@ export async function updateMaintenance(maintenanceId, data){
 }
 
 
+/*
+ * Sau 18 giờ, chỉ cấp quản lý được xác nhận.
+ * CSKH không sử dụng API này.
+ */
+export async function confirmMaintenanceAfterExpiry(
+  maintenanceId,
+  data = {}
+){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(existing.status !== "waiting_confirmation"){
+    throw new Error("Phiếu không ở trạng thái chờ xác nhận.");
+  }
+
+  if(existing.customerConfirmationStatus !== "pending"){
+    throw new Error("Phiếu không còn ở trạng thái chờ xác nhận.");
+  }
+
+  if(
+    existing.customerConfirmationDeadline &&
+    typeof existing.customerConfirmationDeadline.toDate === "function" &&
+    Date.now() <= existing.customerConfirmationDeadline.toDate().getTime()
+  ){
+    throw new Error("Phiếu chưa quá 18 giờ. CSKH vẫn còn thời gian xác nhận.");
+  }
+
+  const confirmedBy =
+    String(data.confirmedBy || data.confirmedByName || "").trim();
+
+  if(!confirmedBy){
+    throw new Error("Người xác nhận cấp quản lý là bắt buộc.");
+  }
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    {
+      status: "completed",
+      customerConfirmationStatus: "manager_confirmed",
+      customerConfirmedBy: confirmedBy,
+      customerConfirmedAt: serverTimestamp(),
+      customerConfirmationNote:
+        String(data.note || "").trim(),
+      confirmationEscalatedBy: confirmedBy,
+      confirmationEscalatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  return getMaintenance(maintenanceId);
+}
+
+
 /* =========================
    WORK ORDERS / PHIẾU CÔNG VIỆC
    V2 — INDEPENDENT SOURCE / ASSET CONTEXT / ASSIGNMENT
