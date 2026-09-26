@@ -266,24 +266,41 @@ service cloud.firestore {
         isCSKH()
         && resource.data.createdByUid == request.auth.uid
         && request.resource.data.createdByUid == resource.data.createdByUid
-        && request.resource.data.status in ['DRAFT', 'NEED_INFO']
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'requestSource',
-          'requestType',
-          'customerId',
-          'buildingId',
-          'elevatorId',
-          'externalCustomer',
-          'externalBuilding',
-          'externalElevator',
-          'externalContract',
-          'description',
-          'note',
-          'history',
-          'updatedAt'
-        ])
-        && request.resource.data.history.size()
-           == resource.data.history.size() + 1;
+        && (
+          (
+            resource.data.status in ['DRAFT', 'NEED_INFO']
+            && request.resource.data.status in ['DRAFT', 'NEED_INFO']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'requestSource',
+              'requestType',
+              'customerId',
+              'buildingId',
+              'elevatorId',
+              'externalCustomer',
+              'externalBuilding',
+              'externalElevator',
+              'externalContract',
+              'description',
+              'note',
+              'history',
+              'updatedAt'
+            ])
+            && request.resource.data.history.size()
+               == resource.data.history.size() + 1
+          )
+          ||
+          (
+            resource.data.status == 'DRAFT'
+            && request.resource.data.status == 'SUBMITTED'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status',
+              'updatedAt',
+              'history'
+            ])
+            && request.resource.data.history.size()
+               == resource.data.history.size() + 1
+          )
+        );
 
       allow delete: if false;
     }
