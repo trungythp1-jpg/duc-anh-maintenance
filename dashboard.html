@@ -11,7 +11,6 @@
 <style>
 @media (max-width: 700px) {
   #cskhAdminKpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  #adminCSKH > div:nth-of-type(2) { grid-template-columns: 1fr !important; }
 }
 
 .da-nav-item[data-module="import-center"],
@@ -94,15 +93,12 @@ body.dashboard-auth-pending::before{
 
       <div class="nav-label">VẬN HÀNH</div>
 
-      <a class="nav-item" href="#adminCSKH" id="navCSKHAdmin">
-        ◉ <span>Quản trị CSKH</span>
-      </a>
 
       <a class="nav-item" href="#customers" data-app-module="customers">
         ♙ <span>Khách hàng</span>
       </a>
 
-      <a class="nav-item" href="buildings.html">
+      <a class="nav-item" href="#buildings" data-app-module="buildings">
         ⌂ <span>Tòa nhà</span>
       </a>
 
@@ -254,7 +250,7 @@ body.dashboard-auth-pending::before{
         </article>
 
 
-        <article class="stat-card" data-href="buildings.html" role="button" tabindex="0">
+        <article class="stat-card" data-app-module="buildings" role="button" tabindex="0">
 
           <div class="stat-top">
             TỔNG TÒA NHÀ
@@ -301,94 +297,6 @@ body.dashboard-auth-pending::before{
 
         </article>
 
-
-      </section>
-
-
-      <!-- ADMIN CSKH -->
-      <section class="panel" id="adminCSKH" style="margin-top:18px;">
-
-        <div class="panel-heading">
-
-          <div>
-            <p class="eyebrow">TRUNG TÂM QUẢN TRỊ CSKH</p>
-            <h2>Hàng đợi phiếu CSKH</h2>
-            <div id="cskhAdminStatus" class="muted" style="margin-top:6px;">
-              Đang kiểm tra quyền và tải dữ liệu...
-            </div>
-          </div>
-
-          <button
-            class="text-button"
-            type="button"
-            id="cskhAdminRefresh">
-            ↻ Làm mới
-          </button>
-
-        </div>
-
-        <div id="cskhAdminKpis"
-             style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px;">
-
-          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
-            <small style="color:#a7a198;">CHỜ ADMIN XỬ LÝ</small>
-            <strong id="cskhPendingCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
-          </div>
-
-          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
-            <small style="color:#a7a198;">ĐANG XỬ LÝ</small>
-            <strong id="cskhReviewCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
-          </div>
-
-          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
-            <small style="color:#a7a198;">CẦN BỔ SUNG</small>
-            <strong id="cskhNeedInfoCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
-          </div>
-
-          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
-            <small style="color:#a7a198;">ĐÃ HOÀN TẤT</small>
-            <strong id="cskhCreatedCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
-          </div>
-
-        </div>
-
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:10px;margin-bottom:12px;">
-          <input
-            id="cskhAdminSearch"
-            type="search"
-            placeholder="Tìm mã phiếu, khách hàng, tòa nhà, thang máy..."
-            style="width:100%;background:#171714;border:1px solid #494237;color:#eee9df;border-radius:9px;padding:10px;outline:none;">
-
-          <select
-            id="cskhAdminFilter"
-            style="width:100%;background:#171714;border:1px solid #494237;color:#eee9df;border-radius:9px;padding:10px;outline:none;">
-            <option value="">Tất cả trạng thái</option>
-            <option value="SUBMITTED">Đã gửi Admin</option>
-            <option value="ADMIN_REVIEW">Admin đang xử lý</option>
-            <option value="NEED_INFO">Cần bổ sung</option>
-            <option value="APPROVED">Đã duyệt</option>
-            <option value="CREATED">Đã tạo</option>
-            <option value="DUPLICATE">Trùng dữ liệu</option>
-            <option value="REJECTED">Từ chối</option>
-            <option value="CANCELLED">Đã hủy</option>
-          </select>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px 0;">
-          <span class="muted" style="font-size:12px;">PHẠM VI QUẢN TRỊ:</span>
-          <span class="muted" style="font-size:12px;">Theo dõi → kiểm tra → xử lý phiếu → liên kết dữ liệu nghiệp vụ.</span>
-        </div>
-
-        <div id="cskhAdminList" class="work-list">
-          <div class="work-row">
-            <time>…</time>
-            <i></i>
-            <div>
-              <strong>Đang tải phiếu CSKH...</strong>
-              <span>Đang đọc hàng đợi yêu cầu từ collection cskhRequests</span>
-            </div>
-          </div>
-        </div>
 
       </section>
 
@@ -638,28 +546,6 @@ body.dashboard-auth-pending::before{
 
 
 
-<!-- CSKH ADMIN DETAIL MODAL -->
-<div
-  id="cskhAdminModal"
-  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:80;align-items:center;justify-content:center;padding:12px;">
-
-  <div
-    style="width:min(860px,100%);max-height:92dvh;overflow:hidden;display:flex;flex-direction:column;background:#10100e;border:1px solid #4b4334;border-radius:16px;">
-
-    <div style="padding:16px 18px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;align-items:center;gap:12px;">
-      <div>
-        <p class="eyebrow" style="margin:0 0 4px;">QUẢN TRỊ CSKH</p>
-        <h2 id="cskhAdminModalTitle" style="margin:0;color:#f0ca76;font-size:20px;">Chi tiết phiếu</h2>
-      </div>
-      <button class="text-button" type="button" id="cskhAdminModalClose">Đóng</button>
-    </div>
-
-    <div id="cskhAdminModalBody" style="padding:18px;overflow:auto;"></div>
-
-  </div>
-</div>
-
-
 <!-- MOBILE OVERLAY -->
 <div class="overlay" id="overlay"></div>
 
@@ -764,17 +650,14 @@ async function loadCurrentUserProfile() {
       roleElement.textContent = roleInfo.label;
     }
 
-    applyCSKHAdminRole(profile);
 
     if (avatarElement) {
-      const initials = normalizedRole === "CSKH" || normalizedRole === "CUSTOMER_SERVICE"
-        ? "CS"
-        : displayName
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(-2)
-            .map(part => part.charAt(0).toUpperCase())
-            .join("") || "DA";
+      const initials = displayName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map(part => part.charAt(0).toUpperCase())
+        .join("") || "DA";
       avatarElement.textContent = initials;
     }
 
@@ -1157,446 +1040,6 @@ function renderLatestElevators() {
 
 
 /* =========================================================
-   ADMIN CSKH — SPARK / NO-BLAZE
-========================================================= */
-
-let cskhAdminRequests = [];
-let cskhAdminAllowed = false;
-
-const cskhStatusText = {
-  DRAFT: "Nháp",
-  SUBMITTED: "Đã gửi Admin",
-  ADMIN_REVIEW: "Admin đang xử lý",
-  NEED_INFO: "Cần bổ sung",
-  APPROVED: "Đã duyệt",
-  CREATED: "Đã tạo",
-  DUPLICATE: "Trùng dữ liệu",
-  REJECTED: "Từ chối",
-  CANCELLED: "Đã hủy"
-};
-
-function cskhAdminDate(value) {
-  if (!value) return "—";
-
-  try {
-    if (typeof value?.toDate === "function") {
-      return value.toDate().toLocaleString("vi-VN");
-    }
-
-    if (typeof value?.seconds === "number") {
-      return new Date(value.seconds * 1000).toLocaleString("vi-VN");
-    }
-
-    return new Date(value).toLocaleString("vi-VN");
-  } catch {
-    return "—";
-  }
-}
-
-function cskhAdminCustomerName(r) {
-  return r.externalCustomer?.name ||
-    r.customerId ||
-    "—";
-}
-
-function cskhAdminBuildingName(r) {
-  return r.externalBuilding?.name ||
-    r.buildingId ||
-    "—";
-}
-
-function cskhAdminElevatorName(r) {
-  return r.externalElevator?.name ||
-    r.elevatorId ||
-    "—";
-}
-
-function cskhAdminStatusClass(status) {
-  if (status === "CREATED" || status === "APPROVED") return "success";
-  if (status === "NEED_INFO" || status === "ADMIN_REVIEW") return "warning";
-  if (status === "REJECTED" || status === "DUPLICATE") return "";
-  return "primary";
-}
-
-function cskhAdminSetStatus(message, error = false) {
-  const el = $("cskhAdminStatus");
-  if (!el) return;
-
-  el.textContent = message;
-  el.style.color = error ? "#d9534f" : "";
-}
-
-function cskhAdminRender() {
-  const list = $("cskhAdminList");
-  if (!list) return;
-
-  const query = String($("cskhAdminSearch")?.value || "")
-    .trim()
-    .toLowerCase();
-
-  const statusFilter = $("cskhAdminFilter")?.value || "";
-
-  const filtered = cskhAdminRequests.filter(request => {
-    if (statusFilter && request.status !== statusFilter) {
-      return false;
-    }
-
-    if (!query) return true;
-
-    const haystack = [
-      request.id,
-      request.createdByName,
-      request.externalCustomer?.name,
-      request.externalCustomer?.phone,
-      request.externalBuilding?.name,
-      request.externalElevator?.name,
-      request.externalElevator?.existingCode,
-      request.externalContract?.code,
-      request.description,
-      request.note
-    ]
-      .map(value => String(value || "").toLowerCase())
-      .join(" ");
-
-    return haystack.includes(query);
-  });
-
-  $("cskhPendingCount").textContent =
-    cskhAdminRequests.filter(r => r.status === "SUBMITTED").length;
-
-  $("cskhReviewCount").textContent =
-    cskhAdminRequests.filter(r => r.status === "ADMIN_REVIEW").length;
-
-  $("cskhNeedInfoCount").textContent =
-    cskhAdminRequests.filter(r => r.status === "NEED_INFO").length;
-
-  $("cskhCreatedCount").textContent =
-    cskhAdminRequests.filter(r => r.status === "CREATED").length;
-
-  if (!filtered.length) {
-    list.innerHTML = `
-      <div class="work-row">
-        <time>—</time>
-        <i></i>
-        <div>
-          <strong>Không có phiếu phù hợp</strong>
-          <span>Thay đổi bộ lọc hoặc chờ CSKH gửi phiếu mới.</span>
-        </div>
-        <label>0</label>
-      </div>
-    `;
-    return;
-  }
-
-  list.innerHTML = filtered.slice(0, 20).map(request => `
-    <div class="work-row" style="cursor:pointer;" data-cskh-open="${escapeHtml(request.id)}">
-      <time>CS</time>
-      <i></i>
-
-      <div style="min-width:0;">
-        <strong>
-          ${escapeHtml(request.id.slice(0, 8).toUpperCase())}
-        </strong>
-        <span>
-          ${escapeHtml(cskhAdminCustomerName(request))}
-          · ${escapeHtml(cskhAdminBuildingName(request))}
-        </span>
-      </div>
-
-      <div style="min-width:0;">
-        <strong>
-          ${escapeHtml(cskhAdminElevatorName(request))}
-        </strong>
-        <span>
-          ${escapeHtml(request.createdByName || "CSKH")}
-          · ${escapeHtml(cskhAdminDate(request.updatedAt || request.createdAt))}
-        </span>
-      </div>
-
-      <label class="${cskhAdminStatusClass(request.status)}">
-        ${escapeHtml(cskhStatusText[request.status] || request.status || "—")}
-      </label>
-
-      <button
-        type="button"
-        class="text-button"
-        data-cskh-open="${escapeHtml(request.id)}">
-        Mở phiếu →
-      </button>
-    </div>
-  `).join("");
-}
-
-function cskhAdminOpenDetail(id) {
-  const request = cskhAdminRequests.find(item => item.id === id);
-  if (!request) return;
-
-  const c = request.externalCustomer || {};
-  const b = request.externalBuilding || {};
-  const e = request.externalElevator || {};
-  const h = request.externalContract || {};
-
-  $("cskhAdminModalTitle").textContent =
-    `Phiếu ${request.id.slice(0, 8).toUpperCase()}`;
-
-  $("cskhAdminModalBody").innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">TRẠNG THÁI</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(cskhStatusText[request.status] || request.status || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">CSKH TẠO</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(request.createdByName || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">KHÁCH HÀNG</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(c.name || request.customerId || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">SỐ ĐIỆN THOẠI</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(c.phone || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">TÒA NHÀ</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(b.name || request.buildingId || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">ĐỊA CHỈ TÒA NHÀ</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(b.address?.detail || b.address || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">THANG MÁY</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(e.name || request.elevatorId || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">MÃ THANG CŨ</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(e.existingCode || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">TẢI TRỌNG</small>
-        <strong style="display:block;margin-top:4px;">
-          ${e.technical?.capacityKg ? escapeHtml(e.technical.capacityKg) + " kg" : "—"}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">HÃNG SẢN XUẤT</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(e.manufacturer || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">MÃ HỢP ĐỒNG</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(h.code || "—")}
-        </strong>
-      </div>
-
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
-        <small style="color:#a7a198;">TÊN HỢP ĐỒNG</small>
-        <strong style="display:block;margin-top:4px;">
-          ${escapeHtml(h.name || "—")}
-        </strong>
-      </div>
-
-    </div>
-
-    <div style="margin-top:16px;">
-      <p class="eyebrow">NỘI DUNG YÊU CẦU</p>
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;white-space:pre-wrap;">
-        ${escapeHtml(request.description || "—")}
-      </div>
-    </div>
-
-    <div style="margin-top:16px;">
-      <p class="eyebrow">GHI CHÚ CSKH</p>
-      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;white-space:pre-wrap;">
-        ${escapeHtml(request.note || "—")}
-      </div>
-    </div>
-
-    ${request.assignedAdminName ? `
-      <div style="margin-top:16px;">
-        <p class="eyebrow">ADMIN ĐANG XỬ LÝ</p>
-        <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;">
-          ${escapeHtml(request.assignedAdminName)}
-        </div>
-      </div>
-    ` : ""}
-
-    ${request.resultNote ? `
-      <div style="margin-top:16px;">
-        <p class="eyebrow">PHẢN HỒI / KẾT QUẢ</p>
-        <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;white-space:pre-wrap;">
-          ${escapeHtml(request.resultNote)}
-        </div>
-      </div>
-    ` : ""}
-
-    <div style="margin-top:16px;padding:12px;border:1px solid #3b3327;border-radius:10px;background:#121210;">
-      <p class="eyebrow" style="margin-bottom:6px;">QUY TẮC QUẢN TRỊ</p>
-      <div class="muted" style="line-height:1.55;">
-        Dashboard chỉ quản trị <strong>phiếu CSKH</strong> và trạng thái xử lý.
-        Không dùng màn hình này để sửa trực tiếp hợp đồng. Dữ liệu khách hàng, tòa nhà và thang máy chỉ được liên kết khi quy trình quản trị được xác nhận.
-      </div>
-    </div>
-  `;
-
-  $("cskhAdminModal").style.display = "flex";
-}
-
-function cskhAdminCloseDetail() {
-  $("cskhAdminModal").style.display = "none";
-}
-
-async function loadCSKHAdmin() {
-  if (!cskhAdminAllowed) return;
-
-  cskhAdminSetStatus("Đang tải danh sách phiếu CSKH...");
-
-  try {
-    const snapshot = await getDocs(collection(db, "cskhRequests"));
-
-    cskhAdminRequests = snapshot.docs
-      .map(item => ({
-        id: item.id,
-        ...item.data()
-      }))
-      .sort(
-        (a, b) =>
-          safeDate(b.updatedAt || b.createdAt) -
-          safeDate(a.updatedAt || a.createdAt)
-      );
-
-    cskhAdminRender();
-
-    cskhAdminSetStatus(
-      `Đã tải ${cskhAdminRequests.length} phiếu · đang ở chế độ quản trị hệ thống.`,
-      false
-    );
-  } catch (error) {
-    console.error("DASHBOARD CSKH ADMIN ERROR:", error);
-
-    cskhAdminSetStatus(
-      `Không thể tải phiếu CSKH: ${error?.message || "UNKNOWN_ERROR"}`,
-      true
-    );
-  }
-}
-
-function initCSKHAdminEvents() {
-  $("cskhAdminRefresh")?.addEventListener(
-    "click",
-    loadCSKHAdmin
-  );
-
-  $("cskhAdminSearch")?.addEventListener(
-    "input",
-    cskhAdminRender
-  );
-
-  $("cskhAdminFilter")?.addEventListener(
-    "change",
-    cskhAdminRender
-  );
-
-  $("cskhAdminList")?.addEventListener(
-    "click",
-    event => {
-      const target = event.target.closest("[data-cskh-open]");
-      if (!target) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      cskhAdminOpenDetail(target.dataset.cskhOpen);
-    }
-  );
-
-  $("cskhAdminModalClose")?.addEventListener(
-    "click",
-    cskhAdminCloseDetail
-  );
-
-  $("cskhAdminModal")?.addEventListener(
-    "click",
-    event => {
-      if (event.target.id === "cskhAdminModal") {
-        cskhAdminCloseDetail();
-      }
-    }
-  );
-
-  $("navCSKHAdmin")?.addEventListener(
-    "click",
-    event => {
-      if (!cskhAdminAllowed) {
-        event.preventDefault();
-        return;
-      }
-
-      setTimeout(() => {
-        document.getElementById("adminCSKH")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      }, 0);
-    }
-  );
-}
-
-function applyCSKHAdminRole(profile) {
-  const role = String(profile?.role || "")
-    .trim()
-    .toLowerCase();
-
-  // Dashboard là màn hình quản trị hệ thống.
-  // Chỉ các role quản trị cấp hệ thống được nhìn thấy khu vực Quản trị CSKH.
-  cskhAdminAllowed = ["admin", "manager", "director"].includes(role);
-
-  const panel = $("adminCSKH");
-  const nav = $("navCSKHAdmin");
-
-  if (cskhAdminAllowed) {
-    if (panel) panel.style.display = "";
-    if (nav) nav.style.display = "";
-    initCSKHAdminEvents();
-    loadCSKHAdmin();
-  } else {
-    if (panel) panel.style.display = "none";
-    if (nav) nav.style.display = "none";
-  }
-}
-
-
-/* =========================================================
    LOAD FIREBASE
 ========================================================= */
 
@@ -1838,6 +1281,7 @@ watchCurrentUserProfile();
 <!-- APP SHELL ROUTER -->
 <script type="module">
 import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
+import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -1908,6 +1352,46 @@ async function showCustomers() {
   }
 }
 
+async function showBuildings() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "buildings";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("buildings");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Tòa nhà...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountBuildingModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL BUILDING MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Tòa nhà</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -1917,6 +1401,8 @@ async function route() {
 
     if (hash === "customers") {
       await showCustomers();
+    } else if (hash === "buildings") {
+      await showBuildings();
     } else {
       showDashboard();
     }
@@ -1930,13 +1416,14 @@ document.addEventListener("click", event => {
   if (!target) return;
 
   const moduleName = String(target.dataset.appModule || "").trim();
-  if (moduleName !== "customers") return;
+  if (moduleName !== "customers" && moduleName !== "buildings") return;
 
   event.preventDefault();
   event.stopPropagation();
 
-  if (location.hash !== "#customers") {
-    location.hash = "customers";
+  const nextHash = `#${moduleName}`;
+  if (location.hash !== nextHash) {
+    location.hash = moduleName;
   } else {
     route();
   }
