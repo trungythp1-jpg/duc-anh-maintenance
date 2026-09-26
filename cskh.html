@@ -166,6 +166,18 @@ button{cursor:pointer}
   </div>
 </div>
 
+<!-- CSKH REQUEST DETAIL -->
+<div class="modal" id="requestDetailModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Chi tiết phiếu CSKH</h2><button class="btn" data-close="requestDetailModal">Đóng</button></div>
+    <div class="modal-body">
+      <div id="requestDetailContent"></div>
+      <div class="error" id="requestDetailError"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close="requestDetailModal">Đóng</button></div>
+  </div>
+</div>
+
 <script type="module">
 import { auth, db } from "./js/core/firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
@@ -306,6 +318,37 @@ function pendingConfirmations(){
       const bd=maintenanceDate(b.customerConfirmationDeadline)?.getTime()||Number.MAX_SAFE_INTEGER;
       return ad-bd;
     });
+}
+
+function openRequestDetail(id){
+  const r=requests.find(x=>x.id===id);
+  const box=$("requestDetailContent");
+  const err=$("requestDetailError");
+  err.style.display="none";
+  if(!r){err.textContent="Không tìm thấy phiếu CSKH.";err.style.display="block";openModal("requestDetailModal");return}
+  const c=r.externalCustomer||{};
+  const b=r.externalBuilding||{};
+  const e=r.externalElevator||{};
+  box.innerHTML=`
+    <div class="confirm-detail">
+      <div class="confirm-row"><span>Mã phiếu</span><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong></div>
+      <div class="confirm-row"><span>Trạng thái</span><strong>${esc(statusText[r.status]||r.status||"—")}</strong></div>
+      <div class="confirm-row"><span>Khách hàng</span><strong>${esc(c.name||sourceName(r)||"—")}</strong></div>
+      <div class="confirm-row"><span>Số điện thoại</span><strong>${esc(c.phone||"—")}</strong></div>
+      <div class="confirm-row"><span>Email</span><strong>${esc(c.email||"—")}</strong></div>
+      <div class="confirm-row"><span>Địa chỉ khách hàng</span><strong>${esc(c.address||"—")}</strong></div>
+      <div class="confirm-row"><span>Tòa nhà</span><strong>${esc(b.name||buildingName(r)||"—")}</strong></div>
+      <div class="confirm-row"><span>Địa chỉ tòa nhà</span><strong>${esc(b.address?.detail||b.address||"—")}</strong></div>
+      <div class="confirm-row"><span>Người phụ trách</span><strong>${esc(b.manager?.name||"—")}</strong></div>
+      <div class="confirm-row"><span>Thang máy</span><strong>${esc(e.name||elevatorName(r)||"—")}</strong></div>
+      <div class="confirm-row"><span>Mã thang cũ</span><strong>${esc(e.existingCode||"—")}</strong></div>
+      <div class="confirm-row"><span>Tải trọng</span><strong>${e.technical?.capacityKg?esc(e.technical.capacityKg)+" kg":"—"}</strong></div>
+      <div class="confirm-row"><span>Hãng sản xuất</span><strong>${esc(e.manufacturer||"—")}</strong></div>
+      <div class="confirm-row"><span>Nội dung yêu cầu</span><strong>${esc(r.description||"—")}</strong></div>
+      <div class="confirm-row"><span>Ghi chú</span><strong>${esc(r.note||"—")}</strong></div>
+      <div class="confirm-row"><span>Cập nhật</span><strong>${esc(formatDate(r.updatedAt||r.createdAt))}</strong></div>
+    </div>`;
+  openModal("requestDetailModal");
 }
 
 function renderMaintenanceConfirmations(){
@@ -555,6 +598,10 @@ $("quickExternal").addEventListener("click",()=>{resetRequest();openModal("reque
 $("quickContracts").addEventListener("click",()=>location.href="contracts.html");
 $("quickRequests").addEventListener("click",()=>document.querySelector("#allTasks")?.scrollIntoView({behavior:"smooth"}));
 $("quickMaintenanceConfirm").addEventListener("click",()=>document.querySelector("#maintenanceConfirmList")?.scrollIntoView({behavior:"smooth"}));
+$("urgent").addEventListener("click",event=>{
+  const button=event.target.closest("[data-request]");
+  if(button) openRequestDetail(button.dataset.request);
+});
 $("maintenanceConfirmList").addEventListener("click",event=>{
   const button=event.target.closest("[data-maintenance]");
   if(button && !button.disabled) openMaintenanceConfirmation(button.dataset.maintenance);
