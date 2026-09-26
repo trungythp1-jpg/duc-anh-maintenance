@@ -156,7 +156,7 @@ button{cursor:pointer}
 <!-- EXTERNAL CUSTOMER REQUEST -->
 <div class="modal" id="requestModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Khách hàng mới — Gửi Admin</h2><button class="btn" data-close="requestModal">Đóng</button></div>
+    <div class="modal-head"><h2 id="requestModalTitle">Khách hàng mới — Gửi Admin</h2><button class="btn" data-close="requestModal">Đóng</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field"><label>Tên khách hàng *</label><input id="extCustomerName"></div>
@@ -262,7 +262,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const statusText={DRAFT:"Nháp",SUBMITTED:"Đã gửi Admin",ADMIN_REVIEW:"Admin đang xử lý",NEED_INFO:"Cần bổ sung",APPROVED:"Đã duyệt",CREATED:"Đã tạo",DUPLICATE:"Trùng dữ liệu",REJECTED:"Từ chối",CANCELLED:"Đã hủy"};
 const profileRole=r=>String(r||"").trim().toLowerCase();
-let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[],maintenances=[],currentMaterialQuote=null;
+let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[],maintenances=[],currentMaterialQuote=null,editingRequestId="";
 
 function callable(name){return httpsCallable(getFunctions(auth.app,"asia-southeast1"),name)}
 
@@ -399,6 +399,7 @@ function openRequestDetail(id){
   const c=r.externalCustomer||{};
   const b=r.externalBuilding||{};
   const e=r.externalElevator||{};
+  const editable=["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""));
   box.innerHTML=`
     <div class="confirm-detail">
       <div class="confirm-row"><span>Mã phiếu</span><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong></div>
@@ -410,6 +411,7 @@ function openRequestDetail(id){
       <div class="confirm-row"><span>Tòa nhà</span><strong>${esc(b.name||buildingName(r)||"—")}</strong></div>
       <div class="confirm-row"><span>Địa chỉ tòa nhà</span><strong>${esc(b.address?.detail||b.address||"—")}</strong></div>
       <div class="confirm-row"><span>Người phụ trách</span><strong>${esc(b.manager?.name||"—")}</strong></div>
+      <div class="confirm-row"><span>Số điện thoại phụ trách</span><strong>${esc(b.manager?.phone||"—")}</strong></div>
       <div class="confirm-row"><span>Thang máy</span><strong>${esc(e.name||elevatorName(r)||"—")}</strong></div>
       <div class="confirm-row"><span>Mã thang cũ</span><strong>${esc(e.existingCode||"—")}</strong></div>
       <div class="confirm-row"><span>Tải trọng</span><strong>${e.technical?.capacityKg?esc(e.technical.capacityKg)+" kg":"—"}</strong></div>
@@ -417,8 +419,42 @@ function openRequestDetail(id){
       <div class="confirm-row"><span>Nội dung yêu cầu</span><strong>${esc(r.description||"—")}</strong></div>
       <div class="confirm-row"><span>Ghi chú</span><strong>${esc(r.note||"—")}</strong></div>
       <div class="confirm-row"><span>Cập nhật</span><strong>${esc(formatDate(r.updatedAt||r.createdAt))}</strong></div>
+      ${editable?`<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="editRequestBtn" data-edit-request="${esc(r.id)}">✎ Sửa phiếu</button></div>`:""}
     </div>`;
   openModal("requestDetailModal");
+}
+
+function startEditRequest(id){
+  const r=requests.find(x=>x.id===id);
+  if(!r) return;
+  if(!["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""))){
+    alert("Phiếu đã được Admin duyệt hoặc xử lý, không thể sửa.");
+    return;
+  }
+  editingRequestId=r.id;
+  const c=r.externalCustomer||{};
+  const b=r.externalBuilding||{};
+  const e=r.externalElevator||{};
+  $("extCustomerName").value=c.name||"";
+  $("extCustomerPhone").value=c.phone||"";
+  $("extCustomerEmail").value=c.email||"";
+  $("extCustomerTax").value=c.taxCode||"";
+  $("extCustomerAddress").value=c.address||"";
+  $("extBuildingName").value=b.name||"";
+  $("extBuildingAddress").value=b.address?.detail||b.address||"";
+  $("extManager").value=b.manager?.name||"";
+  $("extManagerPhone").value=b.manager?.phone||"";
+  $("extElevatorName").value=e.name||"";
+  $("extExistingCode").value=e.existingCode||"";
+  $("extCapacity").value=e.technical?.capacityKg??"";
+  $("extManufacturer").value=e.manufacturer||"";
+  $("extDescription").value=r.description||"";
+  $("extNote").value=r.note||"";
+  $("requestModalTitle").textContent="Sửa phiếu CSKH";
+  $("submitRequest").textContent="Lưu thay đổi";
+  $("requestError").style.display="none";
+  closeModal("requestDetailModal");
+  openModal("requestModal");
 }
 
 function renderMaintenanceConfirmations(){
@@ -481,7 +517,7 @@ function render(){
       <div><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong><small>${esc(statusText[r.status]||r.status)}</small></div>
       <div><strong>${esc(sourceName(r))}</strong><small>${esc(buildingName(r))}</small></div>
       <div><strong>${esc(elevatorName(r))}</strong><small>${esc(r.description||"—")}</small></div>
-      <div><span class="tag ${r.status==="CREATED"?"green":r.status==="NEED_INFO"?"gold":"blue"}">${esc(statusText[r.status]||r.status)}</span></div>
+      <div><span class="tag ${r.status==="CREATED"?"green":r.status==="NEED_INFO"?"gold":"blue"}">${esc(statusText[r.status]||r.status)}</span>${["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""))?` <button class="btn" style="margin-left:8px" data-edit-request="${esc(r.id)}">✎ Sửa</button>`:""}</div>
     </div>`).join(""):`<div style="padding:25px;color:var(--muted)">Chưa có phiếu CSKH.</div>`;
 }
 
@@ -535,11 +571,14 @@ async function saveExistingContract(){
 }
 
 function resetRequest(){
+  editingRequestId="";
+  $("requestModalTitle").textContent="Khách hàng mới — Gửi Admin";
+  $("submitRequest").textContent="Gửi Admin";
   ["extCustomerName","extCustomerPhone","extCustomerEmail","extCustomerTax","extCustomerAddress","extBuildingName","extBuildingAddress","extManager","extManagerPhone","extElevatorName","extExistingCode","extCapacity","extManufacturer","extDescription","extNote"].forEach(id=>$(id).value="");
   $("requestError").style.display="none";
 }
 async function submitExternalRequest(){
-  const btn=$("submitRequest");btn.disabled=true;btn.textContent="Đang gửi…";$("requestError").style.display="none";
+  const btn=$("submitRequest");btn.disabled=true;btn.textContent=editingRequestId?"Đang lưu…":"Đang gửi…";$('requestError').style.display="none";
   try{
     const data={
       requestSource:"EXTERNAL_CUSTOMER",requestType:"CONTRACT_REQUEST",
@@ -547,13 +586,43 @@ async function submitExternalRequest(){
       customerId:"",buildingId:"",elevatorId:"",
       externalCustomer:{name:$("extCustomerName").value.trim(),phone:$("extCustomerPhone").value.trim(),email:$("extCustomerEmail").value.trim(),taxCode:$("extCustomerTax").value.trim(),address:$("extCustomerAddress").value.trim()},
       externalBuilding:{name:$("extBuildingName").value.trim(),address:{detail:$("extBuildingAddress").value.trim()},manager:{name:$("extManager").value.trim(),phone:$("extManagerPhone").value.trim()}},
-      externalElevator:{name:$("extElevatorName").value.trim(),existingCode:$("extExistingCode").value.trim(),technical:{capacityKg:Number($("extCapacity").value)||null},manufacturer:$("extManufacturer").value.trim()},
-
+      externalElevator:{name:$("extElevatorName").value.trim(),existingCode:$("extExistingCode").value.trim(),technical:{capacityKg:Number($("extCapacity").value)||null},manufacturer:$("extManufacturer").value.trim()}
     };
-    const requestId=await createAndSubmitCSKHRequestDirect(data);
-    closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng cho Admin. Mã phiếu: ${requestId}`);
-  }catch(e){$("requestError").textContent=e?.message||"Không thể gửi phiếu.";$("requestError").style.display="block"}
-  finally{btn.disabled=false;btn.textContent="Gửi Admin"}
+
+    if(!data.externalCustomer.name||!data.externalCustomer.phone) throw new Error("Tên khách hàng và số điện thoại là bắt buộc.");
+    if(!data.externalBuilding.name||!data.externalElevator.name) throw new Error("Tên tòa nhà và tên thang máy là bắt buộc.");
+
+    if(editingRequestId){
+      const user=auth.currentUser;
+      const r=requests.find(x=>x.id===editingRequestId);
+      if(!user||!r) throw new Error("Không tìm thấy phiếu cần sửa.");
+      if(!["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""))) throw new Error("Phiếu đã được Admin duyệt hoặc xử lý, không thể sửa.");
+      const oldHistory=Array.isArray(r.history)?r.history:[];
+      const now=Timestamp.now();
+      await updateDoc(doc(db,"cskhRequests",editingRequestId),{
+        requestSource:data.requestSource,
+        requestType:data.requestType,
+        customerId:data.customerId,
+        buildingId:data.buildingId,
+        elevatorId:data.elevatorId,
+        externalCustomer:data.externalCustomer,
+        externalBuilding:data.externalBuilding,
+        externalElevator:data.externalElevator,
+        description:data.description,
+        note:data.note,
+        history:[...oldHistory,{action:"EDITED",byUid:user.uid,byName:profile?.name||user.displayName||user.email||"CSKH",fromStatus:r.status,toStatus:r.status,note:"CSKH sửa phiếu trước khi Admin duyệt.",metadata:{},createdAt:now}],
+        updatedAt:serverTimestamp()
+      });
+      editingRequestId="";
+      closeModal("requestModal");
+      await loadAll();
+      alert("Đã lưu thay đổi phiếu CSKH.");
+    }else{
+      const requestId=await createAndSubmitCSKHRequestDirect(data);
+      closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng cho Admin. Mã phiếu: ${requestId}`);
+    }
+  }catch(e){$('requestError').textContent=e?.message||"Không thể lưu phiếu.";$('requestError').style.display="block"}
+  finally{btn.disabled=false;btn.textContent=editingRequestId?"Lưu thay đổi":"Gửi Admin"}
 }
 
 
@@ -776,7 +845,8 @@ async function loadRequests(){
     where("createdByUid","==",user.uid)
   ));
 
-  requests=snap.docs.map(item=>({id:item.id,...item.data()}));
+  requests=snap.docs.map(item=>({id:item.id,...item.data()}))
+    .filter(r=>!["APPROVED","CREATED"].includes(String(r.status||"")));
   requests.sort((a,b)=>{
     const av=a.createdAt?.toMillis?.()||0;
     const bv=b.createdAt?.toMillis?.()||0;
@@ -886,6 +956,10 @@ $("quoteDiscount").addEventListener("input",calculateQuoteTotals);
 $("quoteVatRate").addEventListener("input",calculateQuoteTotals);
 $("saveMaterialQuote").addEventListener("click",()=>saveMaterialQuote().catch(()=>{}));
 $("printMaterialQuote").addEventListener("click",printMaterialQuote);
+$("allTasks").addEventListener("click",event=>{
+  const button=event.target.closest("[data-edit-request]");
+  if(button) startEditRequest(button.dataset.editRequest);
+});
 $("urgent").addEventListener("click",event=>{
   const button=event.target.closest("[data-request]");
   if(button) openRequestDetail(button.dataset.request);
