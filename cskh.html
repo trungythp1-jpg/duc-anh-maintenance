@@ -513,11 +513,17 @@ function render(){
   const all=[...requests].sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));
   $("allCount").textContent=all.length;
   $("allTasks").innerHTML=all.length?all.slice(0,12).map(r=>`
-    <div class="list-row">
-      <div><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong><small>${esc(statusText[r.status]||r.status)}</small></div>
-      <div><strong>${esc(sourceName(r))}</strong><small>${esc(buildingName(r))}</small></div>
-      <div><strong>${esc(elevatorName(r))}</strong><small>${esc(r.description||"—")}</small></div>
-      <div><span class="tag ${r.status==="CREATED"?"green":r.status==="NEED_INFO"?"gold":"blue"}">${esc(statusText[r.status]||r.status)}</span>${["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""))?` <button class="btn" style="margin-left:8px" data-edit-request="${esc(r.id)}">✎ Sửa</button>`:""}</div>
+    <div class="list-row" style="grid-template-columns:1fr auto;align-items:center;gap:12px">
+      <div style="min-width:0">
+        <strong>${esc(r.id.slice(0,8).toUpperCase())}</strong>
+        <small style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${esc(sourceName(r))} • ${esc(buildingName(r))} • ${esc(elevatorName(r))} • ${esc(statusText[r.status]||r.status)}
+        </small>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tag ${r.status==="CREATED"?"green":r.status==="NEED_INFO"?"gold":"blue"}">${esc(statusText[r.status]||r.status)}</span>
+
+      </div>
     </div>`).join(""):`<div style="padding:25px;color:var(--muted)">Chưa có phiếu CSKH.</div>`;
 }
 
