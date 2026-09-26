@@ -409,7 +409,7 @@ function openRequestDetail(id){
       <div class="confirm-row"><span>Email</span><strong>${esc(c.email||"—")}</strong></div>
       <div class="confirm-row"><span>Địa chỉ khách hàng</span><strong>${esc(c.address||"—")}</strong></div>
       <div class="confirm-row"><span>Tòa nhà</span><strong>${esc(b.name||buildingName(r)||"—")}</strong></div>
-      <div class="confirm-row"><span>Địa chỉ tòa nhà</span><strong>${esc(b.address?.detail||b.address||"—")}</strong></div>
+      <div class="confirm-row"><span>Địa chỉ tòa nhà</span><strong>${esc(typeof b.address==="object" ? (b.address?.detail||"—") : (b.address||"—"))}</strong></div>
       <div class="confirm-row"><span>Người phụ trách</span><strong>${esc(b.manager?.name||"—")}</strong></div>
       <div class="confirm-row"><span>Số điện thoại phụ trách</span><strong>${esc(b.manager?.phone||"—")}</strong></div>
       <div class="confirm-row"><span>Thang máy</span><strong>${esc(e.name||elevatorName(r)||"—")}</strong></div>
@@ -957,6 +957,11 @@ $("quoteVatRate").addEventListener("input",calculateQuoteTotals);
 $("saveMaterialQuote").addEventListener("click",()=>saveMaterialQuote().catch(()=>{}));
 $("printMaterialQuote").addEventListener("click",printMaterialQuote);
 $("allTasks").addEventListener("click",event=>{
+  const button=event.target.closest("[data-edit-request]");
+  if(button) startEditRequest(button.dataset.editRequest);
+});
+
+$("requestDetailContent").addEventListener("click",event=>{
   const button=event.target.closest("[data-edit-request]");
   if(button) startEditRequest(button.dataset.editRequest);
 });
