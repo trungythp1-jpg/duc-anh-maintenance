@@ -8,6 +8,7 @@
 
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
+  <style>
 /* DASHBOARD ACTION CENTER */
 .dashboard-action-grid {
   display:grid;
@@ -51,7 +52,6 @@
   .dashboard-action-grid { grid-template-columns:1fr !important; }
 }
 
-<style>
 @media (max-width: 700px) {
   #cskhAdminKpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
@@ -108,6 +108,48 @@ body.dashboard-auth-pending::before{
   min-width: 0;
 }
 
+
+/* DASHBOARD ACTION CENTER V2.4 — COMPACT + CLICKABLE */
+.dashboard-action-compact{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dashboard-action-group{background:#151512;border:1px solid #343028;border-radius:12px;padding:12px;min-width:0}
+.dashboard-action-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.dashboard-action-group-head .eyebrow{margin:0 0 3px}
+.dashboard-action-group-head strong{display:block;font-size:14px;line-height:1.35}
+.dashboard-action-group-head>b{min-width:34px;height:34px;border-radius:9px;border:1px solid #5b4921;display:flex;align-items:center;justify-content:center;color:#f0ca76;font-size:17px}
+.dashboard-action-list{display:flex;flex-direction:column;gap:6px}
+.dashboard-action-row{width:100%;border:1px solid #2d2b27;background:#10100e;color:inherit;border-radius:9px;padding:9px 10px;display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:9px;text-align:left;cursor:pointer;transition:.15s ease}
+.dashboard-action-row:hover{border-color:#6a5520;background:#181712}
+.dashboard-action-row:active{transform:scale(.995)}
+.dashboard-action-row .row-icon{font-size:11px;color:#d8ae3d;text-align:center}
+.dashboard-action-row .row-main{min-width:0}
+.dashboard-action-row .row-main strong{display:block;font-size:13px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboard-action-row .row-main span{display:block;margin-top:2px;font-size:11px;color:#8f8f8f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboard-action-row .row-status{font-size:9px;font-weight:700;letter-spacing:.04em;color:#f0ca76;border:1px solid #5b4921;border-radius:999px;padding:4px 7px;white-space:nowrap}
+.dashboard-action-empty{padding:10px 4px;color:#777;font-size:12px}
+.dashboard-action-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:18px}
+.dashboard-action-modal.show{display:flex}
+.dashboard-action-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}
+.dashboard-action-modal-card{position:relative;width:min(620px,100%);max-height:min(82vh,760px);overflow:auto;background:#151512;border:1px solid #4a3c20;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.dashboard-action-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid #302e29}
+.dashboard-action-modal-head h3{margin:4px 0 0;font-size:19px}
+.dashboard-action-modal-body{padding:18px}
+.dashboard-action-modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #302e29;flex-wrap:wrap}
+.action-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.action-detail-item{padding:10px;border:1px solid #2f2d28;border-radius:9px;background:#10100e;min-width:0}
+.action-detail-item small{display:block;color:#777;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.action-detail-item strong{display:block;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.action-detail-note{margin-top:10px;padding:11px;border:1px solid #2f2d28;border-radius:9px;color:#aaa;font-size:12px;line-height:1.5}
+.action-btn{border:1px solid #5b4921;background:#d8ae3d;color:#111;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer}
+.action-btn.secondary{background:transparent;color:#f0ca76}
+.action-btn.danger{background:transparent;color:#d99b8e;border-color:#634039}
+.action-btn:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:700px){
+  .dashboard-action-compact{grid-template-columns:1fr}
+  .dashboard-action-row{grid-template-columns:34px minmax(0,1fr) auto}
+  .action-detail-grid{grid-template-columns:1fr}
+  .dashboard-action-modal{padding:10px}
+  .dashboard-action-modal-card{max-height:88vh;border-radius:13px}
+}
 </style>
 </head>
 
@@ -346,57 +388,59 @@ body.dashboard-auth-pending::before{
 
       <!-- DASHBOARD ACTION CENTER -->
       <section class="panel dashboard-action-center" id="dashboardActionCenter" style="margin-top:18px;">
-
         <div class="panel-heading">
           <div>
             <p class="eyebrow">CẦN XỬ LÝ</p>
             <h2>Phiếu chờ quản trị</h2>
-            <div class="muted" style="margin-top:6px;">
-              Dashboard chỉ hiển thị 2 loại phiếu Admin cần xử lý.
-            </div>
+            <div class="muted" style="margin-top:6px;">Chỉ hiển thị 2 loại phiếu Admin cần xử lý.</div>
           </div>
-
           <button class="text-button" type="button" id="dashboardActionRefresh">↻ Làm mới</button>
         </div>
 
-        <div class="dashboard-action-grid">
-
-          <article class="dashboard-action-card">
-            <div class="dashboard-action-card-head">
+        <div class="dashboard-action-compact">
+          <div class="dashboard-action-group">
+            <div class="dashboard-action-group-head">
               <div>
                 <p class="eyebrow">KHÁCH HÀNG MỚI</p>
-                <h3>Phiếu yêu cầu tạo khách hàng ngoài hệ thống</h3>
+                <strong>Phiếu yêu cầu tạo khách hàng ngoài hệ thống</strong>
               </div>
-              <strong id="newCustomerRequestCount">0</strong>
+              <b id="newCustomerRequestCount">0</b>
             </div>
-
-            <div id="newCustomerRequestList" class="work-list dashboard-action-list">
-              <div class="work-row">
-                <time>…</time><i></i>
-                <div><strong>Đang tải...</strong><span>Đang đọc phiếu từ Firebase.</span></div>
-              </div>
+            <div id="newCustomerRequestList" class="dashboard-action-list">
+              <div class="dashboard-action-empty">Đang tải...</div>
             </div>
-          </article>
+          </div>
 
-          <article class="dashboard-action-card">
-            <div class="dashboard-action-card-head">
+          <div class="dashboard-action-group">
+            <div class="dashboard-action-group-head">
               <div>
                 <p class="eyebrow">BẢO TRÌ</p>
-                <h3>Phiếu bảo trì quá 18 giờ chờ xác nhận</h3>
+                <strong>Phiếu bảo trì quá 18 giờ chờ xác nhận</strong>
               </div>
-              <strong id="overdueMaintenanceCount">0</strong>
+              <b id="overdueMaintenanceCount">0</b>
             </div>
-
-            <div id="overdueMaintenanceList" class="work-list dashboard-action-list">
-              <div class="work-row">
-                <time>…</time><i></i>
-                <div><strong>Đang tải...</strong><span>Đang kiểm tra các phiếu quá 18 giờ.</span></div>
-              </div>
+            <div id="overdueMaintenanceList" class="dashboard-action-list">
+              <div class="dashboard-action-empty">Đang tải...</div>
             </div>
-          </article>
-
+          </div>
         </div>
       </section>
+
+      <!-- ACTION DETAIL MODAL -->
+      <div class="dashboard-action-modal" id="dashboardActionModal" aria-hidden="true">
+        <div class="dashboard-action-modal-backdrop" data-action-close></div>
+        <div class="dashboard-action-modal-card" role="dialog" aria-modal="true" aria-labelledby="dashboardActionModalTitle">
+          <div class="dashboard-action-modal-head">
+            <div>
+              <p class="eyebrow" id="dashboardActionModalEyebrow">CHI TIẾT PHIẾU</p>
+              <h3 id="dashboardActionModalTitle">Chi tiết</h3>
+            </div>
+            <button type="button" class="icon-button" data-action-close aria-label="Đóng">×</button>
+          </div>
+          <div class="dashboard-action-modal-body" id="dashboardActionModalBody"></div>
+          <div class="dashboard-action-modal-foot" id="dashboardActionModalFoot"></div>
+        </div>
+      </div>
 
 
       <!-- DATA STATUS -->
@@ -659,7 +703,8 @@ import {
   getCustomers,
   getBuildings,
   getElevators,
-  getMaintenances
+  getMaintenances,
+  confirmMaintenanceAfterExpiry
 } from "./js/core/firestore-v1.js";
 
 import { auth, db } from "./js/core/firebase.js";
@@ -672,7 +717,9 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs
+  getDocs,
+  updateDoc,
+  Timestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
@@ -709,6 +756,7 @@ async function loadCurrentUserProfile() {
     }
 
     const profile = snapshot.data() || {};
+    currentAdminProfile = profile;
     const rawRole = String(profile.role || "").trim();
     const normalizedRole = rawRole.toUpperCase();
 
@@ -1139,138 +1187,268 @@ function renderLatestElevators() {
 
 
 /* =========================================================
-   DASHBOARD ACTION CENTER
-   Chỉ hiển thị đúng 2 loại phiếu Admin cần xử lý.
+   DASHBOARD ACTION CENTER V2.4
+   - compact list
+   - click row -> detail modal
+   - ADMIN can receive / request info on CSKH request
+   - ADMIN can confirm overdue maintenance
 ========================================================= */
 
 let dashboardRequests = [];
 let dashboardMaintenances = [];
+let currentDashboardAction = null;
+let currentAdminProfile = null;
 
 function dashboardRequestCustomerName(request) {
   return request.externalCustomer?.name ||
     customers.find(item => item.id === request.customerId)?.name ||
     "Khách hàng mới";
 }
-
+function dashboardRequestPhone(request) {
+  return request.externalCustomer?.phone || "—";
+}
+function dashboardRequestEmail(request) {
+  return request.externalCustomer?.email || "—";
+}
+function dashboardRequestAddress(request) {
+  return request.externalCustomer?.address || "—";
+}
 function dashboardRequestBuildingName(request) {
   return request.externalBuilding?.name ||
-    buildings.find(item => item.id === request.buildingId)?.name ||
-    "—";
+    buildings.find(item => item.id === request.buildingId)?.name || "—";
 }
-
+function dashboardRequestBuildingAddress(request) {
+  const address = request.externalBuilding?.address;
+  if (typeof address === "string") return address || "—";
+  if (address && typeof address === "object") return [address.detail,address.district,address.province].filter(Boolean).join(", ") || "—";
+  return "—";
+}
 function dashboardRequestElevatorName(request) {
   return request.externalElevator?.name ||
-    elevators.find(item => item.id === request.elevatorId)?.name ||
-    "—";
+    elevators.find(item => item.id === request.elevatorId)?.name || "—";
 }
-
 function dashboardMaintenanceDeadline(value) {
   const timestamp = safeDate(value);
   if (!timestamp) return "Không có thời hạn";
-  return new Date(timestamp).toLocaleString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  return new Date(timestamp).toLocaleString("vi-VN", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+function dashboardStatusLabel(status) {
+  const map={SUBMITTED:"ĐÃ GỬI",ADMIN_REVIEW:"ĐANG XỬ LÝ",NEED_INFO:"CẦN BỔ SUNG",APPROVED:"ĐÃ DUYỆT",CREATED:"ĐÃ TẠO"};
+  return map[String(status||"")] || String(status||"—");
 }
 
-function dashboardRenderActionCenter() {
-  const requestList = $("newCustomerRequestList");
-  const maintenanceList = $("overdueMaintenanceList");
-  if (!requestList || !maintenanceList) return;
+function closeDashboardActionModal(){
+  const modal=$("dashboardActionModal");
+  if(!modal)return;
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden","true");
+  currentDashboardAction=null;
+}
+function openDashboardActionModal(){
+  const modal=$("dashboardActionModal");
+  if(!modal)return;
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden","false");
+}
 
-  // 1) Chỉ phiếu yêu cầu tạo khách hàng ngoài hệ thống.
-  const newCustomerRequests = dashboardRequests
-    .filter(request =>
-      String(request.requestSource || "") === "EXTERNAL_CUSTOMER" &&
-      String(request.requestType || "") === "CONTRACT_REQUEST" &&
-      ["SUBMITTED", "ADMIN_REVIEW", "NEED_INFO"].includes(String(request.status || ""))
-    )
-    .sort((a, b) =>
-      safeDate(b.updatedAt || b.createdAt) - safeDate(a.updatedAt || a.createdAt)
-    );
+function renderCustomerRequestDetail(request){
+  const body=$("dashboardActionModalBody");
+  const foot=$("dashboardActionModalFoot");
+  if(!body||!foot)return;
+  const status=String(request.status||"");
+  $("dashboardActionModalEyebrow").textContent="PHIẾU YÊU CẦU TẠO KHÁCH HÀNG";
+  $("dashboardActionModalTitle").textContent=dashboardRequestCustomerName(request);
+  body.innerHTML=`
+    <div class="action-detail-grid">
+      <div class="action-detail-item"><small>Trạng thái</small><strong>${escapeHtml(dashboardStatusLabel(status))}</strong></div>
+      <div class="action-detail-item"><small>Mã phiếu</small><strong>${escapeHtml(request.id||"—")}</strong></div>
+      <div class="action-detail-item"><small>Điện thoại</small><strong>${escapeHtml(dashboardRequestPhone(request))}</strong></div>
+      <div class="action-detail-item"><small>Email</small><strong>${escapeHtml(dashboardRequestEmail(request))}</strong></div>
+      <div class="action-detail-item"><small>Tòa nhà</small><strong>${escapeHtml(dashboardRequestBuildingName(request))}</strong></div>
+      <div class="action-detail-item"><small>Thang máy</small><strong>${escapeHtml(dashboardRequestElevatorName(request))}</strong></div>
+      <div class="action-detail-item"><small>Địa chỉ khách hàng</small><strong>${escapeHtml(dashboardRequestAddress(request))}</strong></div>
+      <div class="action-detail-item"><small>Địa chỉ tòa nhà</small><strong>${escapeHtml(dashboardRequestBuildingAddress(request))}</strong></div>
+    </div>
+    <div class="action-detail-note"><strong>Nội dung:</strong> ${escapeHtml(request.description||request.note||"Không có ghi chú.")}</div>`;
 
-  // 2) Chỉ phiếu bảo trì đã chờ xác nhận và quá thời hạn 18 giờ.
-  const overdueMaintenance = dashboardMaintenances
-    .filter(item =>
-      String(item.status || "") === "waiting_confirmation" &&
-      String(item.customerConfirmationStatus || "") === "pending" &&
-      safeDate(item.customerConfirmationDeadline) > 0 &&
-      safeDate(item.customerConfirmationDeadline) <= Date.now()
-    )
-    .sort((a, b) =>
-      safeDate(a.customerConfirmationDeadline) -
-      safeDate(b.customerConfirmationDeadline)
-    );
+  const canReceive=status==="SUBMITTED" && !request.assignedAdminUid && !request.processedAt;
+  const canNeedInfo=["SUBMITTED","ADMIN_REVIEW"].includes(status) && !request.processedAt;
+  foot.innerHTML=`
+    <button type="button" class="action-btn secondary" data-action-close>Đóng</button>
+    ${canNeedInfo?'<button type="button" class="action-btn danger" id="dashboardNeedInfoBtn">Yêu cầu bổ sung</button>':''}
+    ${canReceive?'<button type="button" class="action-btn" id="dashboardReceiveBtn">Tiếp nhận xử lý</button>':''}`;
 
-  $("newCustomerRequestCount").textContent = String(newCustomerRequests.length);
-  $("overdueMaintenanceCount").textContent = String(overdueMaintenance.length);
+  $("dashboardReceiveBtn")?.addEventListener("click",()=>adminReceiveRequest(request),{once:true});
+  $("dashboardNeedInfoBtn")?.addEventListener("click",()=>adminRequestMoreInfo(request),{once:true});
+  openDashboardActionModal();
+}
 
-  if (!newCustomerRequests.length) {
-    requestList.innerHTML = `
-      <div class="work-row">
-        <time>✓</time><i></i>
-        <div><strong>Không có phiếu chờ</strong><span>Hiện chưa có yêu cầu tạo khách hàng ngoài hệ thống.</span></div>
-      </div>`;
-  } else {
-    requestList.innerHTML = newCustomerRequests.slice(0, 8).map(request => `
-      <div class="work-row">
-        <time>KH</time><i></i>
-        <div style="min-width:0;">
-          <strong>${escapeHtml(dashboardRequestCustomerName(request))}</strong>
-          <span>${escapeHtml(dashboardRequestBuildingName(request))} · ${escapeHtml(dashboardRequestElevatorName(request))}</span>
-        </div>
-        <label class="warning">${escapeHtml(request.status || "SUBMITTED")}</label>
-      </div>
-    `).join("");
-  }
+function renderMaintenanceDetail(item){
+  const body=$("dashboardActionModalBody");
+  const foot=$("dashboardActionModalFoot");
+  if(!body||!foot)return;
+  $("dashboardActionModalEyebrow").textContent="PHIẾU BẢO TRÌ QUÁ 18 GIỜ";
+  $("dashboardActionModalTitle").textContent=item.ticketNo||item.id||"Phiếu bảo trì";
+  body.innerHTML=`
+    <div class="action-detail-grid">
+      <div class="action-detail-item"><small>Khách hàng</small><strong>${escapeHtml(item.customerName||"—")}</strong></div>
+      <div class="action-detail-item"><small>Thang máy</small><strong>${escapeHtml(item.elevatorName||"—")}</strong></div>
+      <div class="action-detail-item"><small>Trạng thái</small><strong>Chờ xác nhận</strong></div>
+      <div class="action-detail-item"><small>Quá hạn từ</small><strong>${escapeHtml(dashboardMaintenanceDeadline(item.customerConfirmationDeadline))}</strong></div>
+    </div>
+    <div class="action-detail-note">Phiếu đã quá thời hạn 18 giờ và vẫn chưa được CSKH xác nhận. ADMIN có thể xác nhận hoàn thành theo quy tắc quá hạn.</div>`;
+  foot.innerHTML=`
+    <button type="button" class="action-btn secondary" data-action-close>Đóng</button>
+    <button type="button" class="action-btn" id="dashboardConfirmMaintenanceBtn">Xác nhận hoàn thành</button>`;
+  $("dashboardConfirmMaintenanceBtn")?.addEventListener("click",()=>adminConfirmOverdueMaintenance(item),{once:true});
+  openDashboardActionModal();
+}
 
-  if (!overdueMaintenance.length) {
-    maintenanceList.innerHTML = `
-      <div class="work-row">
-        <time>✓</time><i></i>
-        <div><strong>Không có phiếu quá hạn</strong><span>Chưa có phiếu bảo trì quá 18 giờ chờ xử lý.</span></div>
-      </div>`;
-  } else {
-    maintenanceList.innerHTML = overdueMaintenance.slice(0, 8).map(item => `
-      <div class="work-row">
-        <time>18h+</time><i></i>
-        <div style="min-width:0;">
-          <strong>${escapeHtml(item.ticketNo || item.id || "Phiếu bảo trì")}</strong>
-          <span>${escapeHtml(item.customerName || "—")} · ${escapeHtml(item.elevatorName || "—")} · Quá hạn từ ${escapeHtml(dashboardMaintenanceDeadline(item.customerConfirmationDeadline))}</span>
-        </div>
-        <label class="warning">QUÁ HẠN</label>
-      </div>
-    `).join("");
+async function adminReceiveRequest(request){
+  const btn=$("dashboardReceiveBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang tiếp nhận…";}
+  try{
+    if(String(request.status||"")!=="SUBMITTED" || request.assignedAdminUid || request.processedAt) throw new Error("Phiếu này không còn ở trạng thái có thể tiếp nhận.");
+    const user=auth.currentUser;
+    if(!user) throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    const now=Timestamp.now();
+    const adminName=currentAdminProfile?.name || user.displayName || user.email || "ADMIN";
+    const history=Array.isArray(request.history)?request.history:[];
+    history.push({action:"ADMIN_RECEIVED",byUid:user.uid,byName:adminName,fromStatus:"SUBMITTED",toStatus:"ADMIN_REVIEW",note:"ADMIN đã tiếp nhận phiếu xử lý.",metadata:{},createdAt:now});
+    await updateDoc(doc(db,"cskhRequests",request.id),{
+      status:"ADMIN_REVIEW",
+      assignedAdminUid:user.uid,
+      assignedAdminName:adminName,
+      updatedAt:now,
+      history
+    });
+    closeDashboardActionModal();
+    await loadDashboardActionCenter();
+  }catch(error){
+    console.error("ADMIN RECEIVE CSKH ERROR",error);
+    alert(error?.message||"Không thể tiếp nhận phiếu.");
+    if(btn){btn.disabled=false;btn.textContent="Tiếp nhận xử lý";}
   }
 }
 
-async function loadDashboardActionCenter() {
-  try {
-    const [requestSnapshot, maintenanceRows] = await Promise.all([
-      getDocs(collection(db, "cskhRequests")),
-      getMaintenances()
-    ]);
+async function adminRequestMoreInfo(request){
+  const note=window.prompt("Nhập nội dung cần CSKH bổ sung:",request.resultNote||"");
+  if(note===null)return;
+  const clean=String(note).trim();
+  if(!clean){alert("Vui lòng nhập nội dung cần bổ sung.");return;}
+  const btn=$("dashboardNeedInfoBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang lưu…";}
+  try{
+    const user=auth.currentUser;
+    if(!user) throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    if(!["SUBMITTED","ADMIN_REVIEW"].includes(String(request.status||"")) || request.processedAt) throw new Error("Phiếu này không còn ở trạng thái có thể yêu cầu bổ sung.");
+    const now=Timestamp.now();
+    const adminName=currentAdminProfile?.name || user.displayName || user.email || "ADMIN";
+    const history=Array.isArray(request.history)?request.history:[];
+    history.push({action:"ADMIN_NEED_INFO",byUid:user.uid,byName:adminName,fromStatus:request.status,toStatus:"NEED_INFO",note:clean,metadata:{},createdAt:now});
+    await updateDoc(doc(db,"cskhRequests",request.id),{
+      status:"NEED_INFO",
+      assignedAdminUid:user.uid,
+      assignedAdminName:adminName,
+      resultNote:clean,
+      updatedAt:now,
+      history
+    });
+    closeDashboardActionModal();
+    await loadDashboardActionCenter();
+  }catch(error){
+    console.error("ADMIN NEED INFO ERROR",error);
+    alert(error?.message||"Không thể yêu cầu bổ sung.");
+    if(btn){btn.disabled=false;btn.textContent="Yêu cầu bổ sung";}
+  }
+}
 
-    dashboardRequests = requestSnapshot.docs.map(item => ({
-      id: item.id,
-      ...item.data()
-    }));
+async function adminConfirmOverdueMaintenance(item){
+  const btn=$("dashboardConfirmMaintenanceBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang xác nhận…";}
+  try{
+    if(String(item.status||"")!=="waiting_confirmation" || String(item.customerConfirmationStatus||"")!=="pending") throw new Error("Phiếu này không còn ở trạng thái chờ xác nhận.");
+    if(safeDate(item.customerConfirmationDeadline)>Date.now()) throw new Error("Phiếu chưa quá 18 giờ.");
+    const user=auth.currentUser;
+    if(!user) throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    const adminName=currentAdminProfile?.name || user.displayName || user.email || "ADMIN";
+    await confirmMaintenanceAfterExpiry(item.id,{confirmedBy:adminName,note:"ADMIN xác nhận sau khi phiếu quá thời hạn 18 giờ."});
+    closeDashboardActionModal();
+    await loadDashboardActionCenter();
+  }catch(error){
+    console.error("ADMIN CONFIRM MAINTENANCE ERROR",error);
+    alert(error?.message||"Không thể xác nhận phiếu bảo trì.");
+    if(btn){btn.disabled=false;btn.textContent="Xác nhận hoàn thành";}
+  }
+}
 
-    dashboardMaintenances = Array.isArray(maintenanceRows) ? maintenanceRows : [];
+function dashboardRenderActionCenter(){
+  const requestList=$("newCustomerRequestList");
+  const maintenanceList=$("overdueMaintenanceList");
+  if(!requestList||!maintenanceList)return;
+
+  const newCustomerRequests=dashboardRequests
+    .filter(request=>String(request.requestSource||"")==="EXTERNAL_CUSTOMER" && String(request.requestType||"")==="CONTRACT_REQUEST" && ["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(request.status||"")))
+    .sort((a,b)=>safeDate(b.updatedAt||b.createdAt)-safeDate(a.updatedAt||a.createdAt));
+
+  const overdueMaintenance=dashboardMaintenances
+    .filter(item=>String(item.status||"")==="waiting_confirmation" && String(item.customerConfirmationStatus||"")==="pending" && safeDate(item.customerConfirmationDeadline)>0 && safeDate(item.customerConfirmationDeadline)<=Date.now())
+    .sort((a,b)=>safeDate(a.customerConfirmationDeadline)-safeDate(b.customerConfirmationDeadline));
+
+  $("newCustomerRequestCount").textContent=String(newCustomerRequests.length);
+  $("overdueMaintenanceCount").textContent=String(overdueMaintenance.length);
+
+  requestList.innerHTML=newCustomerRequests.length?newCustomerRequests.slice(0,8).map(request=>`
+    <button type="button" class="dashboard-action-row" data-action-type="customer-request" data-action-id="${escapeHtml(request.id)}">
+      <span class="row-icon">KH</span>
+      <span class="row-main"><strong>${escapeHtml(dashboardRequestCustomerName(request))}</strong><span>${escapeHtml(dashboardRequestBuildingName(request))} · ${escapeHtml(dashboardRequestElevatorName(request))}</span></span>
+      <span class="row-status">${escapeHtml(dashboardStatusLabel(request.status))}</span>
+    </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu chờ.</div>';
+
+  maintenanceList.innerHTML=overdueMaintenance.length?overdueMaintenance.slice(0,8).map(item=>`
+    <button type="button" class="dashboard-action-row" data-action-type="maintenance" data-action-id="${escapeHtml(item.id)}">
+      <span class="row-icon">18h+</span>
+      <span class="row-main"><strong>${escapeHtml(item.ticketNo||item.id||"Phiếu bảo trì")}</strong><span>${escapeHtml(item.customerName||"—")} · ${escapeHtml(item.elevatorName||"—")}</span></span>
+      <span class="row-status">QUÁ HẠN</span>
+    </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu quá hạn.</div>';
+}
+
+function handleDashboardActionClick(event){
+  const row=event.target.closest("[data-action-type]");
+  if(!row)return;
+  const id=row.dataset.actionId;
+  const type=row.dataset.actionType;
+  if(type==="customer-request"){
+    const request=dashboardRequests.find(item=>String(item.id)===String(id));
+    if(request){currentDashboardAction={type,id};renderCustomerRequestDetail(request);}
+  }else if(type==="maintenance"){
+    const item=dashboardMaintenances.find(value=>String(value.id)===String(id));
+    if(item){currentDashboardAction={type,id};renderMaintenanceDetail(item);}
+  }
+}
+
+document.addEventListener("click",event=>{
+  if(event.target.closest("[data-action-close]"))closeDashboardActionModal();
+  else handleDashboardActionClick(event);
+});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")closeDashboardActionModal();});
+
+async function loadDashboardActionCenter(){
+  try{
+    const [requestSnapshot,maintenanceRows]=await Promise.all([getDocs(collection(db,"cskhRequests")),getMaintenances()]);
+    dashboardRequests=requestSnapshot.docs.map(item=>({id:item.id,...item.data()}));
+    dashboardMaintenances=Array.isArray(maintenanceRows)?maintenanceRows:[];
     dashboardRenderActionCenter();
-  } catch (error) {
-    console.error("DASHBOARD ACTION CENTER ERROR:", error);
-    const requestList = $("newCustomerRequestList");
-    const maintenanceList = $("overdueMaintenanceList");
-    const message = escapeHtml(error?.message || "Lỗi Firebase");
-    if (requestList) requestList.innerHTML = `<div class="work-row"><time>!</time><i></i><div><strong>Không tải được phiếu</strong><span>${message}</span></div></div>`;
-    if (maintenanceList) maintenanceList.innerHTML = `<div class="work-row"><time>!</time><i></i><div><strong>Không tải được dữ liệu bảo trì</strong><span>${message}</span></div></div>`;
+  }catch(error){
+    console.error("DASHBOARD ACTION CENTER ERROR:",error);
+    const message=escapeHtml(error?.message||"Lỗi Firebase");
+    const requestList=$("newCustomerRequestList");
+    const maintenanceList=$("overdueMaintenanceList");
+    if(requestList)requestList.innerHTML=`<div class="dashboard-action-empty">Không tải được phiếu: ${message}</div>`;
+    if(maintenanceList)maintenanceList.innerHTML=`<div class="dashboard-action-empty">Không tải được dữ liệu: ${message}</div>`;
   }
 }
-
-$("dashboardActionRefresh")?.addEventListener("click", loadDashboardActionCenter);
+$("dashboardActionRefresh")?.addEventListener("click",loadDashboardActionCenter);
 
 
 /* =========================================================
