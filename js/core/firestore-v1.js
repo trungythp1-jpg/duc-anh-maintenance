@@ -255,56 +255,78 @@ export async function createElevator(data) {
     throw new Error("Không tìm thấy tòa nhà.");
   }
 
-  if (building.customerId !== data.customerId) {
+  if (String(building.customerId) !== String(data.customerId)) {
     throw new Error(
       "customerId của thang máy không khớp với customerId của tòa nhà."
     );
   }
 
-  const elevator = {
-    name: data.name.trim(),
-    buildingId: data.buildingId,
-    customerId: data.customerId,
+  // Mã thang DAE là định danh tài sản lâu dài, tự sinh toàn hệ thống.
+  // Không nhận assetCode từ frontend.
+  const elevatorRef = doc(collection(db, COLLECTIONS.ELEVATORS));
+  const counterRef = doc(db, COLLECTIONS.SETTINGS, "elevatorCodeCounter");
 
-    /* Mã tài sản lâu dài */
-    assetCode: data.assetCode || "",
+  const result = await runTransaction(db, async transaction => {
+    // Firestore transaction: đọc toàn bộ trước khi ghi.
+    const counterSnapshot = await transaction.get(counterRef);
 
-    status: data.status || "active",
+    const currentLastNumber = counterSnapshot.exists()
+      ? Number(counterSnapshot.data()?.lastNumber || 0)
+      : 0;
 
-    technical: {
-      capacityKg: data.technical?.capacityKg || null,
-      speed: data.technical?.speed || null,
-      stops: data.technical?.stops || null,
+    if (!Number.isInteger(currentLastNumber) || currentLastNumber < 0) {
+      throw new Error("Bộ đếm mã thang không hợp lệ.");
+    }
 
-      machine: {
-        brand: data.technical?.machine?.brand || "",
-        model: data.technical?.machine?.model || ""
+    const nextNumber = currentLastNumber + 1;
+
+    if (nextNumber > 999999) {
+      throw new Error("Đã vượt quá giới hạn 999999 mã thang.");
+    }
+
+    const assetCode = `DAE - ${String(nextNumber).padStart(6, "0")}`;
+
+    const elevator = {
+      name: data.name.trim(),
+      buildingId: data.buildingId,
+      customerId: data.customerId,
+      assetCode,
+      status: data.status || "active",
+      technical: {
+        capacityKg: data.technical?.capacityKg || null,
+        speed: data.technical?.speed || null,
+        stops: data.technical?.stops || null,
+        machine: {
+          brand: data.technical?.machine?.brand || "",
+          model: data.technical?.machine?.model || ""
+        },
+        controller: {
+          brand: data.technical?.controller?.brand || "",
+          model: data.technical?.controller?.model || ""
+        },
+        installationYear:
+          data.technical?.installationYear || null
       },
-
-      controller: {
-        brand: data.technical?.controller?.brand || "",
-        model: data.technical?.controller?.model || ""
+      service: {
+        maintenanceStatus:
+          data.service?.maintenanceStatus || "active"
       },
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
 
-      installationYear:
-        data.technical?.installationYear || null
-    },
+    transaction.set(counterRef, {
+      prefix: "DAE - ",
+      lastNumber: nextNumber,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
 
-    service: {
-      maintenanceStatus:
-        data.service?.maintenanceStatus || "active"
-    },
+    transaction.set(elevatorRef, elevator);
 
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
+    return { id: elevatorRef.id, ...elevator };
+  });
 
-  const ref = await addDoc(
-    collection(db, COLLECTIONS.ELEVATORS),
-    elevator
-  );
-
-  return { id: ref.id, ...elevator };
+  return result;
 }
 
 export async function getElevator(elevatorId) {
@@ -364,13 +386,55 @@ export async function getElevatorsByCustomer(customerId) {
 
 export async function updateElevator(elevatorId, data) {
   requireValue(elevatorId, "elevatorId");
+  requireValue(data.name, "Tên thang máy");
+  requireValue(data.buildingId, "buildingId");
+  requireValue(data.customerId, "customerId");
 
+  const current = await getElevator(elevatorId);
+
+  if (!current) {
+    throw new Error("Không tìm thấy thang máy.");
+  }
+
+  const building = await getBuilding(data.buildingId);
+
+  if (!building) {
+    throw new Error("Không tìm thấy tòa nhà.");
+  }
+
+  if (String(building.customerId) !== String(data.customerId)) {
+    throw new Error(
+      "customerId của thang máy không khớp với customerId của tòa nhà."
+    );
+  }
+
+  const payload = {
+    name: data.name.trim(),
+    buildingId: data.buildingId,
+    customerId: data.customerId,
+    status: data.status || "active",
+    technical: {
+      capacityKg: data.technical?.capacityKg || null,
+      speed: data.technical?.speed || null,
+      stops: data.technical?.stops || null,
+      machine: {
+        brand: data.technical?.machine?.brand || "",
+        model: data.technical?.machine?.model || ""
+      },
+      controller: {
+        brand: data.technical?.controller?.brand || "",
+        model: data.technical?.controller?.model || ""
+      },
+      installationYear:
+        data.technical?.installationYear || null
+    },
+    updatedAt: serverTimestamp()
+  };
+
+  // assetCode is immutable. Existing legacy codes are preserved as-is.
   await updateDoc(
     doc(db, COLLECTIONS.ELEVATORS, elevatorId),
-    {
-      ...data,
-      updatedAt: serverTimestamp()
-    }
+    payload
   );
 
   return getElevator(elevatorId);
@@ -515,6 +579,10 @@ function normalizeContractData(data, references) {
 
     signedDate: data.signedDate || "",
     startDate: data.startDate || "",
+
+    contractDurationMonths:
+      Number(data.contractDurationMonths || 0) || 0,
+
     endDate: data.endDate || "",
 
     contractValue:
@@ -544,8 +612,17 @@ function normalizeContractData(data, references) {
     maintenanceCycle:
       data.maintenanceCycle || "monthly",
 
-    maintenanceOwner:
-      data.maintenanceOwner || "",
+    maintenanceTotal:
+      Math.max(0, Number(data.maintenanceTotal || 0)),
+
+    maintenanceCompleted:
+      Math.max(0, Number(data.maintenanceCompleted || 0)),
+
+    maintenanceRemaining:
+      Math.max(0, Number(data.maintenanceRemaining || 0)),
+
+    maintenanceLastDate:
+      data.maintenanceLastDate || "",
 
     paidValue:
       data.paidValue ?? "",
@@ -635,47 +712,8 @@ export async function updateContract(contractId, data) {
 const MAINTENANCE_COUNTER_ID = "maintenanceTicket";
 
 function normalizeMaintenanceStatus(value){
-  const allowed = [
-    "draft",
-    "assigned",
-    "in_progress",
-    "waiting_confirmation",
-    "completed",
-    "cancelled"
-  ];
+  const allowed = ["draft","assigned","in_progress","completed","cancelled"];
   return allowed.includes(value) ? value : "draft";
-}
-
-const MAINTENANCE_CONFIRMATION_HOURS = 18;
-const MAINTENANCE_CONFIRMATION_MS =
-  MAINTENANCE_CONFIRMATION_HOURS * 60 * 60 * 1000;
-
-function addHoursToDate(date, hours){
-  return new Date(date.getTime() + hours * 60 * 60 * 1000);
-}
-
-function toIsoDate(value){
-  const d = value instanceof Date ? value : new Date(value);
-  if(Number.isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0, 10);
-}
-
-function assertMaintenanceCompletionReportable(existing){
-  if(!existing){
-    throw new Error("Không tìm thấy phiếu bảo trì.");
-  }
-
-  if(existing.status === "completed"){
-    throw new Error("Phiếu bảo trì đã hoàn thành.");
-  }
-
-  if(existing.status === "cancelled"){
-    throw new Error("Phiếu bảo trì đã hủy.");
-  }
-
-  if(existing.status === "waiting_confirmation"){
-    throw new Error("Phiếu bảo trì đã được báo hoàn thành và đang chờ xác nhận.");
-  }
 }
 
 async function validateMaintenanceReferences(data){
@@ -798,16 +836,6 @@ export async function createMaintenance(data){
     status,
     technicianId: data.technicianId || "",
     technicianName: data.technicianName || "",
-    completedByTechnicianId: data.completedByTechnicianId || "",
-    completedByTechnicianName: data.completedByTechnicianName || "",
-    completionReportedAt: data.completionReportedAt || null,
-    customerConfirmationStatus: data.customerConfirmationStatus || "not_started",
-    customerConfirmationDeadline: data.customerConfirmationDeadline || null,
-    customerConfirmedBy: data.customerConfirmedBy || "",
-    customerConfirmedAt: data.customerConfirmedAt || null,
-    customerConfirmationNote: data.customerConfirmationNote || "",
-    confirmationEscalatedBy: data.confirmationEscalatedBy || "",
-    confirmationEscalatedAt: data.confirmationEscalatedAt || null,
     checklist: Array.isArray(data.checklist) ? data.checklist : [],
     condition: data.condition || "",
     result: data.result || "",
@@ -888,26 +916,6 @@ export async function updateMaintenance(maintenanceId, data){
     status,
     technicianId: data.technicianId || "",
     technicianName: data.technicianName || "",
-    completedByTechnicianId:
-      data.completedByTechnicianId ?? existing.completedByTechnicianId ?? "",
-    completedByTechnicianName:
-      data.completedByTechnicianName ?? existing.completedByTechnicianName ?? "",
-    completionReportedAt:
-      data.completionReportedAt ?? existing.completionReportedAt ?? null,
-    customerConfirmationStatus:
-      data.customerConfirmationStatus ?? existing.customerConfirmationStatus ?? "not_started",
-    customerConfirmationDeadline:
-      data.customerConfirmationDeadline ?? existing.customerConfirmationDeadline ?? null,
-    customerConfirmedBy:
-      data.customerConfirmedBy ?? existing.customerConfirmedBy ?? "",
-    customerConfirmedAt:
-      data.customerConfirmedAt ?? existing.customerConfirmedAt ?? null,
-    customerConfirmationNote:
-      data.customerConfirmationNote ?? existing.customerConfirmationNote ?? "",
-    confirmationEscalatedBy:
-      data.confirmationEscalatedBy ?? existing.confirmationEscalatedBy ?? "",
-    confirmationEscalatedAt:
-      data.confirmationEscalatedAt ?? existing.confirmationEscalatedAt ?? null,
     checklist: Array.isArray(data.checklist) ? data.checklist : (existing.checklist || []),
     condition: data.condition || "",
     result: data.result || "",
@@ -920,202 +928,6 @@ export async function updateMaintenance(maintenanceId, data){
   return getMaintenance(maintenanceId);
 }
 
-/* =========================
-   MAINTENANCE COMPLETION CONFIRMATION WORKFLOW
-========================= */
-
-/*
- * KTV chỉ báo đã hoàn thành công việc.
- * KTV không được tự chuyển phiếu sang "completed".
- *
- * completionReportedAt là thời điểm bắt đầu cửa sổ xác nhận 18 giờ.
- * customerConfirmationDeadline = completionReportedAt + 18 giờ.
- */
-export async function startMaintenanceByTechnician(maintenanceId){
-  requireValue(maintenanceId, "maintenanceId");
-
-  const existing = await getMaintenance(maintenanceId);
-  if(!existing){
-    throw new Error("Không tìm thấy phiếu bảo trì.");
-  }
-
-  if(existing.status === "completed"){
-    throw new Error("Phiếu bảo trì đã hoàn thành.");
-  }
-
-  if(existing.status === "cancelled"){
-    throw new Error("Phiếu bảo trì đã hủy.");
-  }
-
-  if(existing.status === "waiting_confirmation"){
-    throw new Error("Phiếu đang chờ CSKH xác nhận.");
-  }
-
-  await updateDoc(
-    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
-    {
-      status: "in_progress",
-      updatedAt: serverTimestamp()
-    }
-  );
-
-  return getMaintenance(maintenanceId);
-}
-
-export async function reportMaintenanceCompletion(maintenanceId, data = {}){
-  requireValue(maintenanceId, "maintenanceId");
-
-  const existing = await getMaintenance(maintenanceId);
-  assertMaintenanceCompletionReportable(existing);
-
-  const reportedAt = new Date();
-  const deadline = addHoursToDate(
-    reportedAt,
-    MAINTENANCE_CONFIRMATION_HOURS
-  );
-
-  const completedDate =
-    String(data.completedDate || "").trim() ||
-    toIsoDate(reportedAt);
-
-  const payload = {
-    status: "waiting_confirmation",
-    completedDate,
-    completedByTechnicianId:
-      String(data.completedByTechnicianId || existing.technicianId || "").trim(),
-    completedByTechnicianName:
-      String(data.completedByTechnicianName || existing.technicianName || "").trim(),
-    completionReportedAt: serverTimestamp(),
-    customerConfirmationStatus: "pending",
-    customerConfirmationDeadline: deadline,
-    customerConfirmedBy: "",
-    customerConfirmedAt: null,
-    customerConfirmationNote: "",
-    confirmationEscalatedBy: "",
-    confirmationEscalatedAt: null,
-    updatedAt: serverTimestamp()
-  };
-
-  await updateDoc(
-    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
-    payload
-  );
-
-  return getMaintenance(maintenanceId);
-}
-
-/*
- * CSKH xác nhận trong thời hạn 18 giờ.
- * Hàm này không tự bỏ qua quyền Firestore Rules.
- * Rules là lớp bảo mật cuối cùng.
- */
-export async function confirmMaintenanceByCSKH(
-  maintenanceId,
-  data = {}
-){
-  requireValue(maintenanceId, "maintenanceId");
-
-  const existing = await getMaintenance(maintenanceId);
-
-  if(!existing){
-    throw new Error("Không tìm thấy phiếu bảo trì.");
-  }
-
-  if(existing.status !== "waiting_confirmation"){
-    throw new Error("Phiếu không ở trạng thái chờ CSKH xác nhận.");
-  }
-
-  if(existing.customerConfirmationStatus !== "pending"){
-    throw new Error("Phiếu không còn ở trạng thái chờ xác nhận.");
-  }
-
-  if(
-    existing.customerConfirmationDeadline &&
-    typeof existing.customerConfirmationDeadline.toDate === "function" &&
-    Date.now() > existing.customerConfirmationDeadline.toDate().getTime()
-  ){
-    throw new Error("Đã quá 18 giờ. Phiếu này phải do cấp quản lý xác nhận.");
-  }
-
-  const confirmedBy =
-    String(data.confirmedBy || data.confirmedByName || "").trim();
-
-  if(!confirmedBy){
-    throw new Error("Người xác nhận CSKH là bắt buộc.");
-  }
-
-  await updateDoc(
-    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
-    {
-      status: "completed",
-      customerConfirmationStatus: "confirmed",
-      customerConfirmedBy: confirmedBy,
-      customerConfirmedAt: serverTimestamp(),
-      customerConfirmationNote:
-        String(data.note || "").trim(),
-      updatedAt: serverTimestamp()
-    }
-  );
-
-  return getMaintenance(maintenanceId);
-}
-
-/*
- * Sau 18 giờ, chỉ cấp quản lý được xác nhận.
- * CSKH không sử dụng API này.
- */
-export async function confirmMaintenanceAfterExpiry(
-  maintenanceId,
-  data = {}
-){
-  requireValue(maintenanceId, "maintenanceId");
-
-  const existing = await getMaintenance(maintenanceId);
-
-  if(!existing){
-    throw new Error("Không tìm thấy phiếu bảo trì.");
-  }
-
-  if(existing.status !== "waiting_confirmation"){
-    throw new Error("Phiếu không ở trạng thái chờ xác nhận.");
-  }
-
-  if(existing.customerConfirmationStatus !== "pending"){
-    throw new Error("Phiếu không còn ở trạng thái chờ xác nhận.");
-  }
-
-  if(
-    existing.customerConfirmationDeadline &&
-    typeof existing.customerConfirmationDeadline.toDate === "function" &&
-    Date.now() <= existing.customerConfirmationDeadline.toDate().getTime()
-  ){
-    throw new Error("Phiếu chưa quá 18 giờ. CSKH vẫn còn thời gian xác nhận.");
-  }
-
-  const confirmedBy =
-    String(data.confirmedBy || data.confirmedByName || "").trim();
-
-  if(!confirmedBy){
-    throw new Error("Người xác nhận cấp quản lý là bắt buộc.");
-  }
-
-  await updateDoc(
-    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
-    {
-      status: "completed",
-      customerConfirmationStatus: "manager_confirmed",
-      customerConfirmedBy: confirmedBy,
-      customerConfirmedAt: serverTimestamp(),
-      customerConfirmationNote:
-        String(data.note || "").trim(),
-      confirmationEscalatedBy: confirmedBy,
-      confirmationEscalatedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }
-  );
-
-  return getMaintenance(maintenanceId);
-}
 
 /* =========================
    WORK ORDERS / PHIẾU CÔNG VIỆC
@@ -2016,50 +1828,6 @@ export async function updateWorkOrder(workOrderId, data){
   });
 
   return getWorkOrder(workOrderId);
-}
-
-export async function completeWorkOrderByTechnician(workOrderId) {
-  requireValue(workOrderId, "workOrderId");
-
-  const workOrderRef = doc(
-    db,
-    COLLECTIONS.WORK_ORDERS,
-    workOrderId
-  );
-
-  const snapshot = await getDoc(workOrderRef);
-  if(!snapshot.exists()){
-    throw new Error("Không tìm thấy Work Order.");
-  }
-
-  const existing = snapshot.data() || {};
-
-  if(String(existing.assignedTechnicianId || "").trim() === ""){
-    throw new Error("Work Order chưa được phân công kỹ thuật viên.");
-  }
-
-  if(existing.status === "completed"){
-    throw new Error("Work Order đã hoàn thành.");
-  }
-
-  const today = new Date().toISOString().slice(0,10);
-
-  // Chỉ ghi các trường vận hành cần thiết cho việc hoàn thành.
-  // Không ghi completedAt để giữ tương thích với Rules đang chạy.
-  const payload = {
-    status: "completed",
-    completedDate: existing.completedDate || today,
-    resolution: String(existing.resolution || "KTV xác nhận đã hoàn thành").trim(),
-    updatedAt: serverTimestamp()
-  };
-
-  await updateDoc(workOrderRef, payload);
-
-  return {
-    id: workOrderId,
-    ...existing,
-    ...payload
-  };
 }
 
 export async function reportWorkOrderByTechnician(workOrderId, status) {
