@@ -59,32 +59,100 @@ button{cursor:pointer}
 
 /* ===== MAINTENANCE PRINT / PDF ===== */
 @media print{
-  body{background:#fff!important;color:#111!important}
-  body *{visibility:hidden!important}
-  #maintenancePrintModal,#maintenancePrintModal *{visibility:visible!important}
-  #maintenancePrintModal{position:static!important;display:block!important;background:#fff!important;padding:0!important}
-  #maintenancePrintModal .modal-card{width:100%!important;height:auto!important;max-height:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}
-  #maintenancePrintModal .modal-head,
-  #maintenancePrintModal .modal-foot{display:none!important}
-  #maintenancePrintModal .modal-body{overflow:visible!important;padding:0!important}
-  .maintenance-print-sheet{display:block!important;width:100%!important;max-width:none!important;padding:8mm 10mm!important;background:#fff!important;color:#111!important;font-family:Arial,sans-serif!important}
-  .maintenance-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-start!important;border-bottom:2px solid #111!important;padding-bottom:10px!important;margin-bottom:18px!important}
-  .maintenance-print-brand{font-size:18px!important;font-weight:800!important;letter-spacing:.08em!important}
-  .maintenance-print-brand small{display:block!important;font-size:9px!important;letter-spacing:.22em!important;margin-top:4px!important}
-  .maintenance-print-title{text-align:right!important}
-  .maintenance-print-title h1{font-size:22px!important;margin:0!important}
-  .maintenance-print-title p{font-size:11px!important;margin:5px 0 0!important}
-  .maintenance-print-info{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px 28px!important;margin-bottom:16px!important}
-  .maintenance-print-row{display:flex!important;justify-content:space-between!important;gap:12px!important;border-bottom:1px solid #ddd!important;padding:7px 0!important;font-size:12px!important}
-  .maintenance-print-row span{color:#555!important}
-  .maintenance-print-row strong{text-align:right!important;color:#111!important}
-  .maintenance-print-section{font-weight:800!important;font-size:13px!important;margin:18px 0 8px!important;padding-bottom:5px!important;border-bottom:1px solid #222!important}
-  .maintenance-print-note{border:1px solid #bbb!important;padding:10px!important;min-height:60px!important;font-size:12px!important;line-height:1.5!important}
-  .maintenance-print-sign{display:grid!important;grid-template-columns:1fr 1fr!important;gap:40px!important;margin-top:42px!important;text-align:center!important;font-size:12px!important}
-  .maintenance-print-sign .line{height:58px!important}
-  .maintenance-print-footer{text-align:center!important;font-size:9px!important;color:#666!important;margin-top:24px!important}
-}
+  @page{
+    size:A4 portrait;
+    margin:0;
+  }
 
+  html,body{
+    width:210mm!important;
+    min-width:210mm!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fff!important;
+  }
+
+  body > *{
+    display:none!important;
+  }
+
+  body > #maintenancePrintModal{
+    display:block!important;
+    position:static!important;
+    width:210mm!important;
+    min-height:297mm!important;
+    height:297mm!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fff!important;
+    overflow:hidden!important;
+  }
+
+  #maintenancePrintModal .modal-card{
+    display:block!important;
+    width:210mm!important;
+    min-height:297mm!important;
+    height:297mm!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    background:#fff!important;
+  }
+
+  #maintenancePrintModal .modal-head,
+  #maintenancePrintModal .modal-foot{
+    display:none!important;
+  }
+
+  #maintenancePrintModal .modal-body{
+    display:block!important;
+    width:210mm!important;
+    min-height:297mm!important;
+    height:297mm!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+
+  .maintenance-print-sheet{
+    display:block!important;
+    box-sizing:border-box!important;
+    width:210mm!important;
+    height:297mm!important;
+    min-height:297mm!important;
+    margin:0!important;
+    padding:16mm 16mm 14mm!important;
+    background:#fff!important;
+    color:#111!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+    page-break-after:avoid!important;
+    break-after:avoid-page!important;
+    break-inside:avoid!important;
+    overflow:hidden!important;
+  }
+
+  .maintenance-print-header,
+  .maintenance-print-info,
+  .maintenance-print-section,
+  .maintenance-print-note,
+  .maintenance-print-sign,
+  .maintenance-print-footer{
+    break-inside:avoid!important;
+  }
+
+  .maintenance-print-header{margin-bottom:12px!important}
+  .maintenance-print-title h1{font-size:21px!important}
+  .maintenance-print-info{gap:4px 24px!important;margin-bottom:10px!important}
+  .maintenance-print-row{padding:5px 0!important;font-size:11px!important}
+  .maintenance-print-section{font-size:12px!important;margin:12px 0 6px!important}
+  .maintenance-print-note{padding:8px!important;min-height:45px!important;font-size:11px!important}
+  .maintenance-print-sign{margin-top:30px!important}
+  .maintenance-print-sign .line{height:45px!important}
+  .maintenance-print-footer{margin-top:14px!important}
+}
 </style>
 </head>
 <body>
@@ -507,6 +575,9 @@ function startEditRequest(id){
 }
 
 
+let confirmedMaintenancePage = 1;
+const CONFIRMED_MAINTENANCE_PAGE_SIZE = 5;
+
 function confirmedMaintenances(){
   return maintenances
     .filter(m=>
@@ -520,28 +591,49 @@ function confirmedMaintenances(){
     });
 }
 
+function maintenanceAddress(m){
+  return m.buildingAddress ||
+    m.address ||
+    m.building?.address?.detail ||
+    m.externalBuilding?.address?.detail ||
+    m.buildingName ||
+    "—";
+}
+
 function renderConfirmedMaintenances(){
   const rows=confirmedMaintenances();
+  const totalPages=Math.max(1,Math.ceil(rows.length/CONFIRMED_MAINTENANCE_PAGE_SIZE));
+  if(confirmedMaintenancePage>totalPages) confirmedMaintenancePage=totalPages;
+
   $("maintenanceConfirmedCount").textContent=rows.length;
 
-  $("maintenanceConfirmedList").innerHTML=rows.length
-    ? rows.slice(0,12).map(m=>`
+  const start=(confirmedMaintenancePage-1)*CONFIRMED_MAINTENANCE_PAGE_SIZE;
+  const pageRows=rows.slice(start,start+CONFIRMED_MAINTENANCE_PAGE_SIZE);
+
+  $("maintenanceConfirmedList").innerHTML=pageRows.length
+    ? pageRows.map(m=>`
       <div class="maintenance-task">
-        <div class="task-top">
-          <div>
-            <strong>${esc(m.ticketNo||m.id.slice(0,8).toUpperCase())}</strong>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div style="min-width:0">
+            <strong style="display:block">${esc(m.ticketNo||m.id.slice(0,8).toUpperCase())}</strong>
+            <div class="task-meta" style="margin-top:5px">
+              ${esc(m.customerName||"—")} • ${esc(maintenanceAddress(m))}
+            </div>
           </div>
-          <span class="tag green">Đã xác nhận</span>
-        </div>
-        <div class="task-meta">
-          ${esc(m.customerName||"—")} • ${esc(m.buildingName||"—")} • ${esc(m.elevatorName||"—")}
-        </div>
-        <div class="task-foot">
-          <span class="muted">${esc(m.completedDate||"—")} • ${esc(m.technicianName||"—")}</span>
           <button class="btn primary" data-print-maintenance="${esc(m.id)}">🖨 In / PDF</button>
         </div>
       </div>`).join("")
     : `<div class="empty" style="padding:20px;color:var(--muted)">Chưa có phiếu bảo trì đã xác nhận.</div>`;
+
+  if(rows.length>CONFIRMED_MAINTENANCE_PAGE_SIZE){
+    $("maintenanceConfirmedList").insertAdjacentHTML("beforeend",`
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 0">
+        <button class="btn" id="confirmedPrevBtn" ${confirmedMaintenancePage<=1?"disabled":""}>‹ Trước</button>
+        <span style="font-size:13px;color:var(--muted)">Trang ${confirmedMaintenancePage} / ${totalPages}</span>
+        <button class="btn" id="confirmedNextBtn" ${confirmedMaintenancePage>=totalPages?"disabled":""}>Sau ›</button>
+      </div>
+    `);
+  }
 }
 
 function renderMaintenanceConfirmations(){
@@ -586,6 +678,7 @@ function render(){
   $("kCreated").textContent=created;
   $("kWO").textContent=workOrders.length;
   renderMaintenanceConfirmations();
+  confirmedMaintenancePage=1;
   renderConfirmedMaintenances();
 
   const urgent=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(r.status)).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,3);
@@ -1039,7 +1132,7 @@ function openMaintenancePrint(id){
         <div class="maintenance-print-row"><span>Số phiếu</span><strong>${esc(m.ticketNo||m.id||"—")}</strong></div>
         <div class="maintenance-print-row"><span>Ngày hoàn thành</span><strong>${esc(m.completedDate||"—")}</strong></div>
         <div class="maintenance-print-row"><span>Khách hàng</span><strong>${esc(m.customerName||"—")}</strong></div>
-        <div class="maintenance-print-row"><span>Tòa nhà</span><strong>${esc(m.buildingName||"—")}</strong></div>
+        <div class="maintenance-print-row"><span>Địa chỉ</span><strong>${esc(maintenanceAddress(m))}</strong></div>
         <div class="maintenance-print-row"><span>Thang máy</span><strong>${esc(m.elevatorName||"—")}</strong></div>
         <div class="maintenance-print-row"><span>KTV thực hiện</span><strong>${esc(m.technicianName||"—")}</strong></div>
       </div>
@@ -1138,7 +1231,26 @@ $("maintenanceConfirmList").addEventListener("click",event=>{
 });
 $("maintenanceConfirmedList").addEventListener("click",event=>{
   const button=event.target.closest("[data-print-maintenance]");
-  if(button) openMaintenancePrint(button.dataset.printMaintenance);
+  if(button){
+    openMaintenancePrint(button.dataset.printMaintenance);
+    return;
+  }
+
+  if(event.target.closest("#confirmedPrevBtn")){
+    if(confirmedMaintenancePage>1){
+      confirmedMaintenancePage--;
+      renderConfirmedMaintenances();
+    }
+    return;
+  }
+
+  if(event.target.closest("#confirmedNextBtn")){
+    const totalPages=Math.max(1,Math.ceil(confirmedMaintenances().length/CONFIRMED_MAINTENANCE_PAGE_SIZE));
+    if(confirmedMaintenancePage<totalPages){
+      confirmedMaintenancePage++;
+      renderConfirmedMaintenances();
+    }
+  }
 });
 $("confirmMaintenanceBtn").addEventListener("click",confirmSelectedMaintenance);
 $("printMaintenanceBtn").addEventListener("click",printMaintenance);
