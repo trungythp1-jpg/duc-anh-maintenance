@@ -170,7 +170,6 @@ button{cursor:pointer}
 
   <div class="actions">
     <button class="btn primary" id="newExistingContract">＋ Tạo hợp đồng khách cũ</button>
-    <button class="btn secondary" id="editExistingContract">✎ Sửa hợp đồng</button>
     <button class="btn secondary" id="newExternalRequest">＋ Khách hàng mới / Gửi Admin</button>
     <button class="btn secondary" id="refresh">↻ Cập nhật</button>
   </div>
@@ -201,7 +200,6 @@ button{cursor:pointer}
       <div class="head"><strong>THAO TÁC NHANH</strong><span>CSKH</span></div>
       <div class="quick">
         <button class="btn" id="quickContract"><b>Hợp đồng khách cũ</b><small>Tạo trực tiếp từ Customer → Building → Elevator</small></button>
-        <button class="btn" id="quickEditContract"><b>Sửa hợp đồng</b><small>Chỉnh sửa hợp đồng đã có</small></button>
         <button class="btn" id="quickExternal"><b>Khách hàng mới</b><small>Tạo phiếu gửi Admin duyệt</small></button>
         <button class="btn" id="quickContracts"><b>Danh sách hợp đồng</b><small>Mở module Hợp đồng</small></button>
         <button class="btn" id="quickRequests"><b>Phiếu CSKH</b><small>Xem toàn bộ phiếu của tôi</small></button>
@@ -269,34 +267,6 @@ button{cursor:pointer}
       <div class="error" id="contractError"></div>
     </div>
     <div class="modal-foot"><button class="btn" data-close="contractModal">Hủy</button><button class="btn primary" id="saveContract">Lưu hợp đồng</button></div>
-  </div>
-</div>
-
-<!-- EDIT EXISTING CONTRACT -->
-<div class="modal" id="editContractModal">
-  <div class="modal-card">
-    <div class="modal-head"><h2>Sửa hợp đồng</h2><button class="btn" data-close="editContractModal">Đóng</button></div>
-    <div class="modal-body">
-      <div class="field" style="margin-bottom:14px">
-        <label>Chọn hợp đồng *</label>
-        <select id="editContractSelect"><option value="">Đang tải hợp đồng…</option></select>
-      </div>
-      <div class="form-grid">
-        <div class="field"><label>Mã hợp đồng *</label><input id="editContractCode"></div>
-        <div class="field"><label>Tên hợp đồng *</label><input id="editContractName"></div>
-        <div class="field"><label>Khách hàng *</label><select id="editContractCustomer"><option value="">Chọn khách hàng</option></select></div>
-        <div class="field"><label>Tòa nhà *</label><select id="editContractBuilding" disabled><option value="">Chọn khách hàng trước</option></select></div>
-        <div class="field"><label>Thang máy *</label><select id="editContractElevator" disabled><option value="">Chọn tòa nhà trước</option></select></div>
-        <div class="field"><label>Giá trị hợp đồng</label><input id="editContractValue" type="number" min="0" step="1000"></div>
-        <div class="field"><label>Ngày hiệu lực *</label><input id="editContractStart" type="date"></div>
-        <div class="field"><label>Thời hạn *</label><select id="editContractDuration"><option value="12">12 tháng</option><option value="24">24 tháng</option><option value="36">36 tháng</option></select></div>
-        <div class="field"><label>Bảo trì</label><select id="editMaintenanceEnabled"><option value="yes">Có</option><option value="no">Không</option></select></div>
-        <div class="field"><label>Chu kỳ bảo trì</label><select id="editMaintenanceCycle"><option value="monthly">Hàng tháng</option><option value="bimonthly">2 tháng/lần</option><option value="quarterly">3 tháng/lần</option></select></div>
-        <div class="field full"><label>Ghi chú</label><textarea id="editContractNote"></textarea></div>
-      </div>
-      <div class="error" id="editContractError"></div>
-    </div>
-    <div class="modal-foot"><button class="btn" data-close="editContractModal">Hủy</button><button class="btn primary" id="saveEditedContract">Lưu thay đổi</button></div>
   </div>
 </div>
 
@@ -401,7 +371,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/fi
 import { doc, getDoc, addDoc, collection, updateDoc, getDocs, query, where, serverTimestamp, Timestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
 import {
-  getCustomers,getBuildings,getElevators,createContract,getContracts,updateContract,getWorkOrders,
+  getCustomers,getBuildings,getElevators,createContract,getWorkOrders,
   getMaintenances,confirmMaintenanceByCSKH
 } from "./js/core/firestore-v1.js";
 
@@ -409,7 +379,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const statusText={DRAFT:"Nháp",SUBMITTED:"Đã gửi Admin",ADMIN_REVIEW:"Admin đang xử lý",NEED_INFO:"Cần bổ sung",APPROVED:"Đã duyệt",CREATED:"Đã tạo",DUPLICATE:"Trùng dữ liệu",REJECTED:"Từ chối",CANCELLED:"Đã hủy"};
 const profileRole=r=>String(r||"").trim().toLowerCase();
-let profile=null,customers=[],buildings=[],elevators=[],requests=[],contracts=[],workOrders=[],maintenances=[],currentMaterialQuote=null,editingRequestId="",editingContractId="";
+let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[],maintenances=[],currentMaterialQuote=null,editingRequestId="";
 
 function callable(name){return httpsCallable(getFunctions(auth.app,"asia-southeast1"),name)}
 
@@ -546,7 +516,7 @@ function openRequestDetail(id){
   const c=r.externalCustomer||{};
   const b=r.externalBuilding||{};
   const e=r.externalElevator||{};
-  const editable=["DRAFT","NEED_INFO"].includes(String(r.status||""));
+  const editable = ["DRAFT","NEED_INFO"].includes(String(r.status||"")) || (String(r.status||"")==="SUBMITTED" && !r.assignedAdminUid && !r.processedAt);
   box.innerHTML=`
     <div class="confirm-detail">
       <div class="confirm-row"><span>Mã phiếu</span><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong></div>
@@ -576,8 +546,8 @@ function openRequestDetail(id){
 function startEditRequest(id){
   const r=requests.find(x=>x.id===id);
   if(!r) return;
-  if(!["DRAFT","NEED_INFO"].includes(String(r.status||""))){
-    alert("Chỉ phiếu Nháp hoặc Cần bổ sung mới được sửa.");
+  if(!["DRAFT","NEED_INFO","SUBMITTED"].includes(String(r.status||"")) || (String(r.status||"")==="SUBMITTED" && (r.assignedAdminUid || r.processedAt))){
+    alert("Phiếu chỉ được sửa khi còn Nháp, Cần bổ sung hoặc đã gửi Admin nhưng Admin chưa tiếp nhận xử lý.");
     return;
   }
   editingRequestId=r.id;
@@ -599,8 +569,8 @@ function startEditRequest(id){
   $("extManufacturer").value=e.manufacturer||"";
   $("extDescription").value=r.description||"";
   $("extNote").value=r.note||"";
-  $("requestModalTitle").textContent=r.status==="NEED_INFO"?"Bổ sung phiếu CSKH":"Sửa phiếu CSKH";
-  $("submitRequest").textContent=r.status==="NEED_INFO"?"Lưu & gửi lại Admin":"Lưu thay đổi";
+  $("requestModalTitle").textContent = r.status==="NEED_INFO" ? "Bổ sung phiếu CSKH" : "Sửa phiếu CSKH";
+  $("submitRequest").textContent = r.status==="NEED_INFO" ? "Lưu & gửi lại Admin" : "Lưu thay đổi";
   $("requestError").style.display="none";
   closeModal("requestDetailModal");
   openModal("requestModal");
@@ -762,134 +732,6 @@ function fillElevators(){
   $("contractElevator").innerHTML='<option value="">Chọn thang máy</option>'+rows.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}${e.assetCode?" — "+esc(e.assetCode):""}</option>`).join("");
 }
 
-async function openEditContract(){
-  const modalId="editContractModal";
-  const select=$("editContractSelect");
-  $("editContractError").style.display="none";
-  select.innerHTML='<option value="">Đang tải hợp đồng…</option>';
-  openModal(modalId);
-  fillEditCustomers();
-  try{
-    contracts=await getContracts();
-    contracts.sort((a,b)=>String(a.code||"").localeCompare(String(b.code||""),"vi",{numeric:true,sensitivity:"base"}));
-    select.innerHTML='<option value="">Chọn hợp đồng</option>'+contracts.map(c=>`<option value="${esc(c.id)}">${esc(c.code||c.id)} — ${esc(c.name||"")} — ${esc(c.customerName||"")}</option>`).join("");
-  }catch(e){
-    select.innerHTML='<option value="">Không tải được hợp đồng</option>';
-    $("editContractError").textContent=e?.message||"Không thể tải danh sách hợp đồng.";
-    $("editContractError").style.display="block";
-  }
-}
-
-function fillEditContract(c){
-  if(!c) return;
-  editingContractId=String(c.id);
-  $("editContractCode").value=c.code||"";
-  $("editContractName").value=c.name||"";
-  $("editContractValue").value=Number(c.contractValue||0);
-  $("editContractStart").value=c.startDate||"";
-  $("editContractNote").value=c.note||"";
-  $("editMaintenanceEnabled").value=c.maintenanceEnabled||"yes";
-  $("editMaintenanceCycle").value=c.maintenanceCycle||"monthly";
-
-  const duration=Number(c.contractDurationMonths||0) || (()=>{
-    if(c.startDate&&c.endDate){
-      const a=new Date(c.startDate+"T00:00:00"),b=new Date(c.endDate+"T00:00:00");
-      return Math.round((b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth());
-    }
-    return 12;
-  })();
-  $("editContractDuration").value=[12,24,36].includes(duration)?String(duration):"12";
-
-  $("editContractCustomer").value=String(c.customerId||"");
-  fillEditBuildings();
-  $("editContractBuilding").value=String(c.buildingId||"");
-  fillEditElevators();
-  $("editContractElevator").value=String(c.elevatorId||"");
-}
-
-function fillEditCustomers(){
-  $("editContractCustomer").innerHTML='<option value="">Chọn khách hàng</option>'+customers.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
-}
-function fillEditBuildings(){
-  const cid=$("editContractCustomer").value;
-  const rows=buildings.filter(b=>String(b.customerId)===String(cid));
-  $("editContractBuilding").disabled=!cid;
-  $("editContractBuilding").innerHTML='<option value="">Chọn tòa nhà</option>'+rows.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join("");
-}
-function fillEditElevators(){
-  const bid=$("editContractBuilding").value;
-  const rows=elevators.filter(e=>String(e.buildingId)===String(bid));
-  $("editContractElevator").disabled=!bid;
-  $("editContractElevator").innerHTML='<option value="">Chọn thang máy</option>'+rows.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}${e.assetCode?" — "+esc(e.assetCode):""}</option>`).join("");
-}
-
-async function saveEditedContract(){
-  const btn=$("saveEditedContract");
-  btn.disabled=true;btn.textContent="Đang lưu…";$("editContractError").style.display="none";
-  try{
-    const id=$("editContractSelect").value;
-    const customerId=$("editContractCustomer").value;
-    const buildingId=$("editContractBuilding").value;
-    const elevatorId=$("editContractElevator").value;
-    if(!id) throw new Error("Vui lòng chọn hợp đồng cần sửa.");
-    if(!customerId||!buildingId||!elevatorId) throw new Error("Vui lòng chọn đủ Khách hàng → Tòa nhà → Thang máy.");
-
-    const code=$("editContractCode").value.trim();
-    const name=$("editContractName").value.trim();
-    const start=$("editContractStart").value;
-    const duration=Number($("editContractDuration").value||0);
-    if(!code||!name) throw new Error("Mã hợp đồng và tên hợp đồng là bắt buộc.");
-    if(!start||![12,24,36].includes(duration)) throw new Error("Vui lòng nhập Ngày hiệu lực và thời hạn 12/24/36 tháng.");
-
-    const customer=customers.find(x=>String(x.id)===String(customerId));
-    const building=buildings.find(x=>String(x.id)===String(buildingId));
-    const elevator=elevators.find(x=>String(x.id)===String(elevatorId));
-    const old=contracts.find(x=>String(x.id)===String(id));
-    if(!customer||!building||!elevator||!old) throw new Error("Không tìm thấy dữ liệu hợp đồng hoặc dữ liệu tham chiếu.");
-    if(String(building.customerId)!==String(customerId)) throw new Error("Tòa nhà không thuộc khách hàng đã chọn.");
-    if(String(elevator.buildingId)!==String(buildingId)) throw new Error("Thang máy không thuộc tòa nhà đã chọn.");
-
-    const end=new Date(start+"T00:00:00");end.setMonth(end.getMonth()+duration);
-    const endDate=end.toISOString().slice(0,10);
-
-    const payload={
-      ...old,
-      id:undefined,
-      code,name,
-      customerId:String(customerId),customerName:customer.name,
-      buildingId:String(buildingId),buildingName:building.name,
-      elevatorId:String(elevatorId),elevatorName:elevator.name,
-      startDate:start,endDate,contractDurationMonths:duration,
-      contractValue:Number($("editContractValue").value||0),
-      warrantyEnabled:old.warrantyEnabled||"yes",
-      warrantyPeriod:old.warrantyPeriod||"",
-      warrantyStart:start,
-      warrantyEnd:endDate,
-      warrantyNote:old.warrantyNote||"",
-      maintenanceEnabled:$("editMaintenanceEnabled").value,
-      maintenanceType:old.maintenanceType||"paid",
-      maintenanceCycle:$("editMaintenanceCycle").value,
-      maintenanceOwner:old.maintenanceOwner||"",
-      paidValue:Number(old.paidValue||0),
-      paymentDue:old.paymentDue||"",
-      note:$("editContractNote").value.trim()
-    };
-    delete payload.id;
-    delete payload.createdAt;
-    delete payload.updatedAt;
-
-    await updateContract(id,payload);
-    closeModal("editContractModal");
-    alert(`Đã cập nhật hợp đồng ${code}.`);
-    editingContractId="";
-  }catch(e){
-    $("editContractError").textContent=e?.message||"Không thể cập nhật hợp đồng.";
-    $("editContractError").style.display="block";
-  }finally{
-    btn.disabled=false;btn.textContent="Lưu thay đổi";
-  }
-}
-
 function resetContract(){
   ["contractCode","contractName","contractValue","contractNote"].forEach(id=>$(id).value="");
   $("contractCustomer").value="";fillBuildings();$("contractStart").value=new Date().toISOString().slice(0,10);$("contractDuration").value="12";$("maintenanceEnabled").value="yes";$("maintenanceCycle").value="monthly";$("contractError").style.display="none";
@@ -943,7 +785,7 @@ async function submitExternalRequest(){
       const user=auth.currentUser;
       const r=requests.find(x=>x.id===editingRequestId);
       if(!user||!r) throw new Error("Không tìm thấy phiếu cần sửa.");
-      if(!["DRAFT","NEED_INFO"].includes(String(r.status||""))) throw new Error("Chỉ phiếu Nháp hoặc Cần bổ sung mới được sửa.");
+      if(!["DRAFT","NEED_INFO","SUBMITTED"].includes(String(r.status||"")) || (String(r.status||"")==="SUBMITTED" && (r.assignedAdminUid || r.processedAt))) throw new Error("Phiếu chỉ được sửa khi còn Nháp, Cần bổ sung hoặc đã gửi Admin nhưng Admin chưa tiếp nhận xử lý.");
       const oldHistory=Array.isArray(r.history)?r.history:[];
       const now=Timestamp.now();
       const businessHistory={action:"EDITED",byUid:user.uid,byName:profile?.name||user.displayName||user.email||"CSKH",fromStatus:r.status,toStatus:r.status,note:r.status==="NEED_INFO"?"CSKH bổ sung thông tin theo yêu cầu của Admin.":"CSKH sửa phiếu.",metadata:{},createdAt:now};
@@ -1369,15 +1211,6 @@ async function confirmSelectedMaintenance(){
   }
 }
 
-$("editExistingContract").addEventListener("click",openEditContract);
-$("quickEditContract").addEventListener("click",openEditContract);
-$("editContractSelect").addEventListener("change",()=>{
-  const c=contracts.find(x=>String(x.id)===String($("editContractSelect").value));
-  if(c) fillEditContract(c);
-});
-$("editContractCustomer").addEventListener("change",fillEditBuildings);
-$("editContractBuilding").addEventListener("change",fillEditElevators);
-$("saveEditedContract").addEventListener("click",saveEditedContract);
 
 $("newExistingContract").addEventListener("click",()=>{resetContract();openModal("contractModal")});
 $("quickContract").addEventListener("click",()=>{resetContract();openModal("contractModal")});
