@@ -136,7 +136,7 @@ body.dashboard-auth-pending::before{
         ♙ <span>Khách hàng</span>
       </a>
 
-      <a class="nav-item" href="buildings.html">
+      <a class="nav-item" href="#buildings" data-app-module="buildings">
         ⌂ <span>Tòa nhà</span>
       </a>
 
@@ -288,7 +288,7 @@ body.dashboard-auth-pending::before{
         </article>
 
 
-        <article class="stat-card" data-href="buildings.html" role="button" tabindex="0">
+        <article class="stat-card" data-app-module="buildings" role="button" tabindex="0">
 
           <div class="stat-top">
             TỔNG TÒA NHÀ
@@ -535,7 +535,7 @@ body.dashboard-auth-pending::before{
           <button
             class="text-button"
             type="button"
-            data-href="buildings.html">
+            data-app-module="buildings">
             Xem tất cả →
           </button>
 
@@ -1040,7 +1040,7 @@ function renderBuildings() {
         <button
           class="text-button"
           type="button"
-          data-href="buildings.html">
+          data-app-module="buildings">
           Mở
         </button>
 
@@ -1510,6 +1510,7 @@ watchCurrentUserProfile();
 <!-- APP SHELL ROUTER -->
 <script type="module">
 import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
+import { mountBuildingModule } from "./js/modules/building-module-v1.1.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -1580,6 +1581,46 @@ async function showCustomers() {
   }
 }
 
+async function showBuildings() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "buildings";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("buildings");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Tòa nhà...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountBuildingModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL BUILDING MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Tòa nhà</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -1589,6 +1630,8 @@ async function route() {
 
     if (hash === "customers") {
       await showCustomers();
+    } else if (hash === "buildings") {
+      await showBuildings();
     } else {
       showDashboard();
     }
@@ -1602,13 +1645,13 @@ document.addEventListener("click", event => {
   if (!target) return;
 
   const moduleName = String(target.dataset.appModule || "").trim();
-  if (moduleName !== "customers") return;
+  if (!["customers", "buildings"].includes(moduleName)) return;
 
   event.preventDefault();
   event.stopPropagation();
 
-  if (location.hash !== "#customers") {
-    location.hash = "customers";
+  if (location.hash !== `#${moduleName}`) {
+    location.hash = moduleName;
   } else {
     route();
   }
