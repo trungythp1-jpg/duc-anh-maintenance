@@ -585,8 +585,8 @@ function confirmedMaintenances(){
       ["confirmed","manager_confirmed"].includes(String(m.customerConfirmationStatus||"").toLowerCase())
     )
     .sort((a,b)=>{
-      const av=a.customerConfirmedAt?.toMillis?.()||a.updatedAt?.toMillis?.()||0;
-      const bv=b.customerConfirmedAt?.toMillis?.()||b.updatedAt?.toMillis?.()||0;
+      const av=Number(String(a.ticketNo||"").replace(/\D/g,""))||0;
+      const bv=Number(String(b.ticketNo||"").replace(/\D/g,""))||0;
       return bv-av;
     });
 }
