@@ -4,13 +4,61 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b0b0b">
-  <title>Đức Anh Maintenance</title>
+  <title>Đức Anh Maintenance — ADMIN ONLY</title>
 
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/mobile.css">
+<style>
+@media (max-width: 700px) {
+  #cskhAdminKpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  #adminCSKH > div:nth-of-type(2) { grid-template-columns: 1fr !important; }
+}
+
+.da-nav-item[data-module="import-center"],
+.da-nav-item[data-module="documents"],
+.da-nav-item[data-module="settings"]{
+  opacity:.72;
+}
+.da-nav-item[data-module="import-center"]::after,
+.da-nav-item[data-module="documents"]::after,
+.da-nav-item[data-module="settings"]::after{
+  content:"ĐANG XÂY DỰNG";
+  margin-left:auto;
+  font-size:9px;
+  letter-spacing:.08em;
+  color:#8f8f8f;
+}
+@media(max-width:700px){
+  .da-nav-item[data-module="import-center"]::after,
+  .da-nav-item[data-module="documents"]::after,
+  .da-nav-item[data-module="settings"]::after{
+    display:none;
+  }
+}
+
+
+/* DASHBOARD AUTH GATE — ADMIN ONLY */
+body.dashboard-auth-pending .app-shell{
+  visibility:hidden;
+}
+body.dashboard-auth-pending::before{
+  content:"Đang xác thực quyền quản trị…";
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0b0b0b;
+  color:#f5c400;
+  font:600 14px/1.4 Arial,sans-serif;
+  letter-spacing:.04em;
+}
+
+</style>
 </head>
 
-<body>
+<body class="dashboard-auth-pending">
 
 <div class="app-shell">
 
@@ -30,10 +78,14 @@
       <div class="nav-label">TỔNG QUAN</div>
 
       <a class="nav-item active" href="dashboard.html">
-        ⌂ <span>Dashboard</span>
+        ⌂ <span>Quản trị hệ thống</span>
       </a>
 
       <div class="nav-label">VẬN HÀNH</div>
+
+      <a class="nav-item" href="#adminCSKH" id="navCSKHAdmin">
+        ◉ <span>Quản trị CSKH</span>
+      </a>
 
       <a class="nav-item" href="customers.html">
         ♙ <span>Khách hàng</span>
@@ -47,25 +99,25 @@
         ↕ <span>Thang máy</span>
       </a>
 
-      <a class="nav-item" href="#" data-module="contracts">
+      <a class="nav-item" href="contracts.html">
         ▤ <span>Hợp đồng</span>
       </a>
 
-      <a class="nav-item" href="#" data-module="maintenance">
+      <a class="nav-item" href="maintenance.html">
         ◷ <span>Bảo trì</span>
       </a>
 
-      <a class="nav-item" href="#" data-module="work-orders">
+      <a class="nav-item" href="work-orders.html">
         ✓ <span>Work Order</span>
       </a>
 
       <div class="nav-label">NHÂN SỰ</div>
 
-      <a class="nav-item" href="#" data-module="technicians">
+      <a class="nav-item" href="technicians.html">
         ♟ <span>Kỹ thuật viên</span>
       </a>
 
-      <a class="nav-item" href="#" data-module="kpi">
+      <a class="nav-item" href="kpi.html">
         ▥ <span>KPI</span>
       </a>
 
@@ -88,8 +140,8 @@
     <div class="sidebar-footer">
       <i></i>
       <div>
-        <strong>DEV V1.1</strong>
-        <small>Dashboard liên kết Firebase</small>
+        <strong>DEV V1.5</strong>
+        <small>System Admin · ADMIN ONLY</small>
       </div>
     </div>
 
@@ -113,7 +165,7 @@
       <div class="breadcrumb">
         <span>Đức Anh Maintenance</span>
         <b>/</b>
-        <span>Dashboard</span>
+        <span>Quản trị hệ thống</span>
       </div>
 
       <div class="top-actions">
@@ -150,7 +202,7 @@
           <h1>Dashboard</h1>
 
           <p class="muted">
-            Dữ liệu trực tiếp từ Firebase: Khách hàng → Tòa nhà → Thang máy.
+            Trung tâm quản trị hệ thống Đức Anh · Dữ liệu vận hành trực tiếp từ Firebase.
           </p>
 
           <div id="firebaseStatus" class="muted" style="margin-top:8px;">
@@ -231,6 +283,95 @@
           </div>
 
         </article>
+
+
+      </section>
+
+
+      <!-- ADMIN CSKH -->
+      <section class="panel" id="adminCSKH" style="margin-top:18px;">
+
+        <div class="panel-heading">
+
+          <div>
+            <p class="eyebrow">TRUNG TÂM QUẢN TRỊ CSKH</p>
+            <h2>Hàng đợi phiếu CSKH</h2>
+            <div id="cskhAdminStatus" class="muted" style="margin-top:6px;">
+              Đang kiểm tra quyền và tải dữ liệu...
+            </div>
+          </div>
+
+          <button
+            class="text-button"
+            type="button"
+            id="cskhAdminRefresh">
+            ↻ Làm mới
+          </button>
+
+        </div>
+
+        <div id="cskhAdminKpis"
+             style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px;">
+
+          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
+            <small style="color:#a7a198;">CHỜ ADMIN XỬ LÝ</small>
+            <strong id="cskhPendingCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
+          </div>
+
+          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
+            <small style="color:#a7a198;">ĐANG XỬ LÝ</small>
+            <strong id="cskhReviewCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
+          </div>
+
+          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
+            <small style="color:#a7a198;">CẦN BỔ SUNG</small>
+            <strong id="cskhNeedInfoCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
+          </div>
+
+          <div style="background:#151512;border:1px solid #343028;border-radius:10px;padding:12px;">
+            <small style="color:#a7a198;">ĐÃ HOÀN TẤT</small>
+            <strong id="cskhCreatedCount" style="display:block;font-size:26px;margin-top:4px;">0</strong>
+          </div>
+
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:10px;margin-bottom:12px;">
+          <input
+            id="cskhAdminSearch"
+            type="search"
+            placeholder="Tìm mã phiếu, khách hàng, tòa nhà, thang máy..."
+            style="width:100%;background:#171714;border:1px solid #494237;color:#eee9df;border-radius:9px;padding:10px;outline:none;">
+
+          <select
+            id="cskhAdminFilter"
+            style="width:100%;background:#171714;border:1px solid #494237;color:#eee9df;border-radius:9px;padding:10px;outline:none;">
+            <option value="">Tất cả trạng thái</option>
+            <option value="SUBMITTED">Đã gửi Admin</option>
+            <option value="ADMIN_REVIEW">Admin đang xử lý</option>
+            <option value="NEED_INFO">Cần bổ sung</option>
+            <option value="APPROVED">Đã duyệt</option>
+            <option value="CREATED">Đã tạo</option>
+            <option value="DUPLICATE">Trùng dữ liệu</option>
+            <option value="REJECTED">Từ chối</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px 0;">
+          <span class="muted" style="font-size:12px;">PHẠM VI QUẢN TRỊ:</span>
+          <span class="muted" style="font-size:12px;">Theo dõi → kiểm tra → xử lý phiếu → liên kết dữ liệu nghiệp vụ.</span>
+        </div>
+
+        <div id="cskhAdminList" class="work-list">
+          <div class="work-row">
+            <time>…</time>
+            <i></i>
+            <div>
+              <strong>Đang tải phiếu CSKH...</strong>
+              <span>Đang đọc hàng đợi yêu cầu từ collection cskhRequests</span>
+            </div>
+          </div>
+        </div>
 
       </section>
 
@@ -477,6 +618,29 @@
 </div>
 
 
+
+<!-- CSKH ADMIN DETAIL MODAL -->
+<div
+  id="cskhAdminModal"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:80;align-items:center;justify-content:center;padding:12px;">
+
+  <div
+    style="width:min(860px,100%);max-height:92dvh;overflow:hidden;display:flex;flex-direction:column;background:#10100e;border:1px solid #4b4334;border-radius:16px;">
+
+    <div style="padding:16px 18px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+      <div>
+        <p class="eyebrow" style="margin:0 0 4px;">QUẢN TRỊ CSKH</p>
+        <h2 id="cskhAdminModalTitle" style="margin:0;color:#f0ca76;font-size:20px;">Chi tiết phiếu</h2>
+      </div>
+      <button class="text-button" type="button" id="cskhAdminModalClose">Đóng</button>
+    </div>
+
+    <div id="cskhAdminModalBody" style="padding:18px;overflow:auto;"></div>
+
+  </div>
+</div>
+
+
 <!-- MOBILE OVERLAY -->
 <div class="overlay" id="overlay"></div>
 
@@ -501,8 +665,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 import {
+  collection,
   doc,
-  getDoc
+  getDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
@@ -579,6 +745,8 @@ async function loadCurrentUserProfile() {
       roleElement.textContent = roleInfo.label;
     }
 
+    applyCSKHAdminRole(profile);
+
     if (avatarElement) {
       const initials = normalizedRole === "CSKH" || normalizedRole === "CUSTOMER_SERVICE"
         ? "CS"
@@ -600,58 +768,56 @@ async function loadCurrentUserProfile() {
 }
 
 
+function redirectToAdminLogin(reason) {
+  const target = `login.html?reason=${encodeURIComponent(reason || "ADMIN_ONLY")}`;
+  window.location.replace(target);
+}
+
 function watchCurrentUserProfile() {
-  if (!auth) return;
+  if (!auth) {
+    redirectToAdminLogin("AUTH_NOT_CONFIGURED");
+    return;
+  }
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.replace("login.html");
-      return;
-    }
-
+  onAuthStateChanged(auth, async user => {
     try {
+      // Không có Firebase Auth session -> không được ở Dashboard.
+      if (!user) {
+        redirectToAdminLogin("LOGIN_REQUIRED");
+        return;
+      }
+
       const snapshot = await getDoc(doc(db, "users", user.uid));
 
       if (!snapshot.exists()) {
-        throw new Error("Không tồn tại hồ sơ users/{uid}.");
-      }
-
-      const role = String(snapshot.data()?.role || "").trim().toUpperCase();
-
-      /* Dashboard tổng chỉ dành cho ADMIN và DIRECTOR. */
-      if (role === "CSKH" || role === "CUSTOMER_SERVICE") {
-        window.location.replace("cskh.html");
+        redirectToAdminLogin("PROFILE_NOT_FOUND");
         return;
       }
 
-      if (role === "TECHNICIAN") {
-        window.location.replace("cong-viec-cua-toi.html");
+      const profile = snapshot.data() || {};
+      const role = String(profile.role || "").trim().toUpperCase();
+
+      // QUY TẮC DASHBOARD:
+      // Chỉ duy nhất ADMIN được phép truy cập.
+      if (role !== "ADMIN") {
+        console.warn("DASHBOARD ADMIN ONLY: access denied", {
+          uid: user.uid,
+          role
+        });
+        redirectToAdminLogin("ADMIN_ONLY");
         return;
       }
 
-      if (!["ADMIN", "DIRECTOR"].includes(role)) {
-        document.body.innerHTML = `
-          <main style="min-height:100vh;display:grid;place-items:center;background:#090909;color:#eee9df;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:24px">
-            <section style="max-width:520px;width:100%;background:#11110f;border:1px solid #3a3428;border-radius:16px;padding:28px;text-align:center">
-              <div style="color:#f0ca76;font-weight:800;letter-spacing:.08em">ĐỨC ANH MAINTENANCE</div>
-              <h1 style="margin:12px 0 8px">Không có quyền truy cập</h1>
-              <p style="color:#aaa49a;line-height:1.6">Màn hình Dashboard tổng chỉ dành cho Administrator và Giám đốc.</p>
-            </section>
-          </main>`;
-        return;
-      }
+      // Chỉ sau khi xác thực đúng ADMIN mới hiển thị Dashboard
+      // và mới tải dữ liệu Dashboard.
+      document.body.classList.remove("dashboard-auth-pending");
 
       await loadCurrentUserProfile();
-      loadDashboardData();
+      await loadDashboardData();
+
     } catch (error) {
-      console.error("DASHBOARD ROLE GATE ERROR:", error);
-      document.body.innerHTML = `
-        <main style="min-height:100vh;display:grid;place-items:center;background:#090909;color:#eee9df;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:24px">
-          <section style="max-width:520px;width:100%;background:#11110f;border:1px solid #3a3428;border-radius:16px;padding:28px;text-align:center">
-            <h1 style="margin:0 0 8px">Không thể xác thực tài khoản</h1>
-            <p style="color:#aaa49a;line-height:1.6">${String(error?.message || "Vui lòng đăng nhập lại.").replace(/[&<>]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</p>
-          </section>
-        </main>`;
+      console.error("DASHBOARD ADMIN AUTH ERROR:", error);
+      redirectToAdminLogin("AUTH_ERROR");
     }
   });
 }
@@ -970,6 +1136,447 @@ function renderLatestElevators() {
 }
 
 
+
+/* =========================================================
+   ADMIN CSKH — SPARK / NO-BLAZE
+========================================================= */
+
+let cskhAdminRequests = [];
+let cskhAdminAllowed = false;
+
+const cskhStatusText = {
+  DRAFT: "Nháp",
+  SUBMITTED: "Đã gửi Admin",
+  ADMIN_REVIEW: "Admin đang xử lý",
+  NEED_INFO: "Cần bổ sung",
+  APPROVED: "Đã duyệt",
+  CREATED: "Đã tạo",
+  DUPLICATE: "Trùng dữ liệu",
+  REJECTED: "Từ chối",
+  CANCELLED: "Đã hủy"
+};
+
+function cskhAdminDate(value) {
+  if (!value) return "—";
+
+  try {
+    if (typeof value?.toDate === "function") {
+      return value.toDate().toLocaleString("vi-VN");
+    }
+
+    if (typeof value?.seconds === "number") {
+      return new Date(value.seconds * 1000).toLocaleString("vi-VN");
+    }
+
+    return new Date(value).toLocaleString("vi-VN");
+  } catch {
+    return "—";
+  }
+}
+
+function cskhAdminCustomerName(r) {
+  return r.externalCustomer?.name ||
+    r.customerId ||
+    "—";
+}
+
+function cskhAdminBuildingName(r) {
+  return r.externalBuilding?.name ||
+    r.buildingId ||
+    "—";
+}
+
+function cskhAdminElevatorName(r) {
+  return r.externalElevator?.name ||
+    r.elevatorId ||
+    "—";
+}
+
+function cskhAdminStatusClass(status) {
+  if (status === "CREATED" || status === "APPROVED") return "success";
+  if (status === "NEED_INFO" || status === "ADMIN_REVIEW") return "warning";
+  if (status === "REJECTED" || status === "DUPLICATE") return "";
+  return "primary";
+}
+
+function cskhAdminSetStatus(message, error = false) {
+  const el = $("cskhAdminStatus");
+  if (!el) return;
+
+  el.textContent = message;
+  el.style.color = error ? "#d9534f" : "";
+}
+
+function cskhAdminRender() {
+  const list = $("cskhAdminList");
+  if (!list) return;
+
+  const query = String($("cskhAdminSearch")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  const statusFilter = $("cskhAdminFilter")?.value || "";
+
+  const filtered = cskhAdminRequests.filter(request => {
+    if (statusFilter && request.status !== statusFilter) {
+      return false;
+    }
+
+    if (!query) return true;
+
+    const haystack = [
+      request.id,
+      request.createdByName,
+      request.externalCustomer?.name,
+      request.externalCustomer?.phone,
+      request.externalBuilding?.name,
+      request.externalElevator?.name,
+      request.externalElevator?.existingCode,
+      request.externalContract?.code,
+      request.description,
+      request.note
+    ]
+      .map(value => String(value || "").toLowerCase())
+      .join(" ");
+
+    return haystack.includes(query);
+  });
+
+  $("cskhPendingCount").textContent =
+    cskhAdminRequests.filter(r => r.status === "SUBMITTED").length;
+
+  $("cskhReviewCount").textContent =
+    cskhAdminRequests.filter(r => r.status === "ADMIN_REVIEW").length;
+
+  $("cskhNeedInfoCount").textContent =
+    cskhAdminRequests.filter(r => r.status === "NEED_INFO").length;
+
+  $("cskhCreatedCount").textContent =
+    cskhAdminRequests.filter(r => r.status === "CREATED").length;
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div class="work-row">
+        <time>—</time>
+        <i></i>
+        <div>
+          <strong>Không có phiếu phù hợp</strong>
+          <span>Thay đổi bộ lọc hoặc chờ CSKH gửi phiếu mới.</span>
+        </div>
+        <label>0</label>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filtered.slice(0, 20).map(request => `
+    <div class="work-row" style="cursor:pointer;" data-cskh-open="${escapeHtml(request.id)}">
+      <time>CS</time>
+      <i></i>
+
+      <div style="min-width:0;">
+        <strong>
+          ${escapeHtml(request.id.slice(0, 8).toUpperCase())}
+        </strong>
+        <span>
+          ${escapeHtml(cskhAdminCustomerName(request))}
+          · ${escapeHtml(cskhAdminBuildingName(request))}
+        </span>
+      </div>
+
+      <div style="min-width:0;">
+        <strong>
+          ${escapeHtml(cskhAdminElevatorName(request))}
+        </strong>
+        <span>
+          ${escapeHtml(request.createdByName || "CSKH")}
+          · ${escapeHtml(cskhAdminDate(request.updatedAt || request.createdAt))}
+        </span>
+      </div>
+
+      <label class="${cskhAdminStatusClass(request.status)}">
+        ${escapeHtml(cskhStatusText[request.status] || request.status || "—")}
+      </label>
+
+      <button
+        type="button"
+        class="text-button"
+        data-cskh-open="${escapeHtml(request.id)}">
+        Mở phiếu →
+      </button>
+    </div>
+  `).join("");
+}
+
+function cskhAdminOpenDetail(id) {
+  const request = cskhAdminRequests.find(item => item.id === id);
+  if (!request) return;
+
+  const c = request.externalCustomer || {};
+  const b = request.externalBuilding || {};
+  const e = request.externalElevator || {};
+  const h = request.externalContract || {};
+
+  $("cskhAdminModalTitle").textContent =
+    `Phiếu ${request.id.slice(0, 8).toUpperCase()}`;
+
+  $("cskhAdminModalBody").innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">TRẠNG THÁI</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(cskhStatusText[request.status] || request.status || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">CSKH TẠO</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(request.createdByName || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">KHÁCH HÀNG</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(c.name || request.customerId || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">SỐ ĐIỆN THOẠI</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(c.phone || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">TÒA NHÀ</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(b.name || request.buildingId || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">ĐỊA CHỈ TÒA NHÀ</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(b.address?.detail || b.address || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">THANG MÁY</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(e.name || request.elevatorId || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">MÃ THANG CŨ</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(e.existingCode || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">TẢI TRỌNG</small>
+        <strong style="display:block;margin-top:4px;">
+          ${e.technical?.capacityKg ? escapeHtml(e.technical.capacityKg) + " kg" : "—"}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">HÃNG SẢN XUẤT</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(e.manufacturer || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">MÃ HỢP ĐỒNG</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(h.code || "—")}
+        </strong>
+      </div>
+
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:11px;">
+        <small style="color:#a7a198;">TÊN HỢP ĐỒNG</small>
+        <strong style="display:block;margin-top:4px;">
+          ${escapeHtml(h.name || "—")}
+        </strong>
+      </div>
+
+    </div>
+
+    <div style="margin-top:16px;">
+      <p class="eyebrow">NỘI DUNG YÊU CẦU</p>
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;white-space:pre-wrap;">
+        ${escapeHtml(request.description || "—")}
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <p class="eyebrow">GHI CHÚ CSKH</p>
+      <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;white-space:pre-wrap;">
+        ${escapeHtml(request.note || "—")}
+      </div>
+    </div>
+
+    ${request.assignedAdminName ? `
+      <div style="margin-top:16px;">
+        <p class="eyebrow">ADMIN ĐANG XỬ LÝ</p>
+        <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;">
+          ${escapeHtml(request.assignedAdminName)}
+        </div>
+      </div>
+    ` : ""}
+
+    ${request.resultNote ? `
+      <div style="margin-top:16px;">
+        <p class="eyebrow">PHẢN HỒI / KẾT QUẢ</p>
+        <div style="background:#151512;border:1px solid #353027;border-radius:10px;padding:12px;white-space:pre-wrap;">
+          ${escapeHtml(request.resultNote)}
+        </div>
+      </div>
+    ` : ""}
+
+    <div style="margin-top:16px;padding:12px;border:1px solid #3b3327;border-radius:10px;background:#121210;">
+      <p class="eyebrow" style="margin-bottom:6px;">QUY TẮC QUẢN TRỊ</p>
+      <div class="muted" style="line-height:1.55;">
+        Dashboard chỉ quản trị <strong>phiếu CSKH</strong> và trạng thái xử lý.
+        Không dùng màn hình này để sửa trực tiếp hợp đồng. Dữ liệu khách hàng, tòa nhà và thang máy chỉ được liên kết khi quy trình quản trị được xác nhận.
+      </div>
+    </div>
+  `;
+
+  $("cskhAdminModal").style.display = "flex";
+}
+
+function cskhAdminCloseDetail() {
+  $("cskhAdminModal").style.display = "none";
+}
+
+async function loadCSKHAdmin() {
+  if (!cskhAdminAllowed) return;
+
+  cskhAdminSetStatus("Đang tải danh sách phiếu CSKH...");
+
+  try {
+    const snapshot = await getDocs(collection(db, "cskhRequests"));
+
+    cskhAdminRequests = snapshot.docs
+      .map(item => ({
+        id: item.id,
+        ...item.data()
+      }))
+      .sort(
+        (a, b) =>
+          safeDate(b.updatedAt || b.createdAt) -
+          safeDate(a.updatedAt || a.createdAt)
+      );
+
+    cskhAdminRender();
+
+    cskhAdminSetStatus(
+      `Đã tải ${cskhAdminRequests.length} phiếu · đang ở chế độ quản trị hệ thống.`,
+      false
+    );
+  } catch (error) {
+    console.error("DASHBOARD CSKH ADMIN ERROR:", error);
+
+    cskhAdminSetStatus(
+      `Không thể tải phiếu CSKH: ${error?.message || "UNKNOWN_ERROR"}`,
+      true
+    );
+  }
+}
+
+function initCSKHAdminEvents() {
+  $("cskhAdminRefresh")?.addEventListener(
+    "click",
+    loadCSKHAdmin
+  );
+
+  $("cskhAdminSearch")?.addEventListener(
+    "input",
+    cskhAdminRender
+  );
+
+  $("cskhAdminFilter")?.addEventListener(
+    "change",
+    cskhAdminRender
+  );
+
+  $("cskhAdminList")?.addEventListener(
+    "click",
+    event => {
+      const target = event.target.closest("[data-cskh-open]");
+      if (!target) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      cskhAdminOpenDetail(target.dataset.cskhOpen);
+    }
+  );
+
+  $("cskhAdminModalClose")?.addEventListener(
+    "click",
+    cskhAdminCloseDetail
+  );
+
+  $("cskhAdminModal")?.addEventListener(
+    "click",
+    event => {
+      if (event.target.id === "cskhAdminModal") {
+        cskhAdminCloseDetail();
+      }
+    }
+  );
+
+  $("navCSKHAdmin")?.addEventListener(
+    "click",
+    event => {
+      if (!cskhAdminAllowed) {
+        event.preventDefault();
+        return;
+      }
+
+      setTimeout(() => {
+        document.getElementById("adminCSKH")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 0);
+    }
+  );
+}
+
+function applyCSKHAdminRole(profile) {
+  const role = String(profile?.role || "")
+    .trim()
+    .toLowerCase();
+
+  // Dashboard là màn hình quản trị hệ thống.
+  // Chỉ các role quản trị cấp hệ thống được nhìn thấy khu vực Quản trị CSKH.
+  cskhAdminAllowed = ["admin", "manager", "director"].includes(role);
+
+  const panel = $("adminCSKH");
+  const nav = $("navCSKHAdmin");
+
+  if (cskhAdminAllowed) {
+    if (panel) panel.style.display = "";
+    if (nav) nav.style.display = "";
+    initCSKHAdminEvents();
+    loadCSKHAdmin();
+  } else {
+    if (panel) panel.style.display = "none";
+    if (nav) nav.style.display = "none";
+  }
+}
+
+
 /* =========================================================
    LOAD FIREBASE
 ========================================================= */
@@ -1199,8 +1806,22 @@ $("refreshTop")
    START
 ========================================================= */
 
+// ADMIN ONLY:
+// watchCurrentUserProfile() chịu trách nhiệm xác thực Firebase Auth,
+// đọc users/{uid}, kiểm tra role === ADMIN và chỉ sau đó mới load Dashboard.
 watchCurrentUserProfile();
 
+</script>
+
+
+<script>
+document.querySelectorAll('[data-module]').forEach(el=>{
+  el.addEventListener('click',e=>{
+    e.preventDefault();
+    const label = el.querySelector('span')?.textContent?.trim() || 'Module';
+    alert(`${label} đang được xây dựng. Chưa mở màn hình nghiệp vụ để tránh liên kết sai.`);
+  });
+});
 </script>
 
 </body>
