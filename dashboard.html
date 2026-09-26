@@ -208,7 +208,7 @@ body.dashboard-auth-pending::before{
         ↕ <span>Thang máy</span>
       </a>
 
-      <a class="nav-item" href="contracts.html">
+      <a class="nav-item" href="#contracts" data-app-module="contracts">
         ▤ <span>Hợp đồng</span>
       </a>
 
@@ -1824,6 +1824,7 @@ watchCurrentUserProfile();
 import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
+import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -1974,6 +1975,46 @@ async function showElevators() {
   }
 }
 
+async function showContracts() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "contracts";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("contracts");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Hợp đồng...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountContractModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL CONTRACT MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Hợp đồng</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -1987,6 +2028,8 @@ async function route() {
       await showBuildings();
     } else if (hash === "elevators") {
       await showElevators();
+    } else if (hash === "contracts") {
+      await showContracts();
     } else {
       showDashboard();
     }
@@ -2000,7 +2043,12 @@ document.addEventListener("click", event => {
   if (!target) return;
 
   const moduleName = String(target.dataset.appModule || "").trim();
-  if (moduleName !== "customers" && moduleName !== "buildings" && moduleName !== "elevators") return;
+  if (
+    moduleName !== "customers" &&
+    moduleName !== "buildings" &&
+    moduleName !== "elevators" &&
+    moduleName !== "contracts"
+  ) return;
 
   event.preventDefault();
   event.stopPropagation();
