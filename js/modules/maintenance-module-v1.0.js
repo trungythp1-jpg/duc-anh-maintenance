@@ -1,0 +1,984 @@
+/* ĐỨC ANH MAINTENANCE — MAINTENANCE MODULE V1.0
+ * Source of truth: maintenance-v1.26-ktv-create-maintenance
+ * App Shell mount only. No standalone navigation/sidebar.
+ */
+
+const maintenanceStyle = document.createElement("style");
+maintenanceStyle.textContent = `
+#maintenance-module-root{
+  --da-bg:#090909;
+  --da-panel:#11110f;
+  --da-panel-2:#171714;
+  --da-panel-3:#1d1d19;
+  --da-gold:#d6a84f;
+  --da-gold-light:#f0ca76;
+  --da-gold-soft:#9e7a37;
+  --da-ivory:#f5f1e7;
+  --da-text:#eee9df;
+  --da-muted:#aaa49a;
+  --da-border:#3a3428;
+  --da-border-gold:#695329;
+  --da-danger:#e35b4f;
+  --da-ok:#5fca91;
+  --da-blue:#7aa7ff;
+}
+
+#maintenance-module-root *{box-sizing:border-box}
+
+
+
+
+#maintenance-module-root .page{max-width:1400px;margin:0 auto;padding:24px 18px 60px}
+#maintenance-module-root .page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+#maintenance-module-root .page-head h1{margin:0 0 6px;font-size:30px;color:var(--da-gold-light)!important}
+#maintenance-module-root .muted{color:var(--da-muted)!important}
+
+#maintenance-module-root .btn{
+  border:1px solid var(--da-border-gold)!important;
+  background:#151512!important;
+  color:var(--da-ivory)!important;
+  border-radius:10px;
+  padding:10px 14px;
+  cursor:pointer;
+  font:inherit;
+  -webkit-appearance:none;
+  appearance:none;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+#maintenance-module-root .btn.primary{
+  background:linear-gradient(180deg,#e0b65c,#bd8e34)!important;
+  color:#111!important;
+  border-color:var(--da-gold)!important;
+  font-weight:700;
+  box-shadow:0 4px 18px rgba(214,168,79,.12);
+}
+#maintenance-module-root .btn:hover{border-color:var(--da-gold)!important}
+#maintenance-module-root .btn:disabled{opacity:.55;cursor:not-allowed}
+
+#maintenance-module-root .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+#maintenance-module-root .kpi{
+  background:linear-gradient(180deg,#151512,#10100e)!important;
+  border:1px solid var(--da-border)!important;
+  border-radius:14px;
+  padding:16px;
+}
+#maintenance-module-root .kpi .label{font-size:13px;color:var(--da-gold-light)!important}
+#maintenance-module-root .kpi .value{font-size:28px;font-weight:700;margin-top:5px;color:var(--da-ivory)!important}
+
+#maintenance-module-root .toolbar{
+  background:#11110f!important;
+  border:1px solid var(--da-border)!important;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:16px;
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:10px
+}
+#maintenance-module-root .field{display:flex;flex-direction:column;gap:6px}
+#maintenance-module-root .field label{font-size:13px;font-weight:600;color:var(--da-gold-light)!important}
+#maintenance-module-root .field input, #maintenance-module-root .field select, #maintenance-module-root .field textarea{
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #4a4438!important;
+  border-radius:9px;
+  padding:10px 11px;
+  background:#171714!important;
+  color:var(--da-text)!important;
+  font:inherit;
+  outline:none;
+}
+#maintenance-module-root .field input::placeholder, #maintenance-module-root .field textarea::placeholder{color:#777268!important}
+#maintenance-module-root .field input:focus, #maintenance-module-root .field select:focus, #maintenance-module-root .field textarea:focus{
+  border-color:var(--da-gold)!important;
+  box-shadow:0 0 0 2px rgba(214,168,79,.10);
+}
+#maintenance-module-root .field input[readonly], #maintenance-module-root .field select:disabled{background:#121210!important;color:#777268!important}
+
+#maintenance-module-root .card{
+  background:#11110f!important;
+  border:1px solid var(--da-border)!important;
+  border-radius:14px;
+  overflow:hidden;
+}
+#maintenance-module-root .table-wrap{overflow:auto}
+#maintenance-module-root .data-table{width:100%;border-collapse:collapse;min-width:1050px}
+#maintenance-module-root .data-table th, #maintenance-module-root .data-table td{
+  padding:12px 13px;
+  border-bottom:1px solid #292722!important;
+  text-align:left;
+  vertical-align:top;
+  font-size:14px;
+  color:var(--da-text)!important;
+}
+#maintenance-module-root .data-table th{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  color:var(--da-gold-light)!important;
+  background:#171714!important;
+}
+#maintenance-module-root .data-table tr:hover td{background:#161613!important}
+#maintenance-module-root .data-table tr:last-child td{border-bottom:0}
+#maintenance-module-root .data-table td strong{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
+#maintenance-module-root .data-table td .muted{display:block;margin-top:4px;line-height:1.3}
+#maintenance-module-root .data-table td .cell-sub{display:block;margin-top:4px;color:var(--da-muted)!important;font-size:12px;line-height:1.3}
+#maintenance-module-root .data-table td .cell-primary{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
+#maintenance-module-root .data-table td .cell-gold{display:block;color:var(--da-gold-light)!important;font-weight:700;line-height:1.35}
+#maintenance-module-root .data-table td .date-cell{display:block;white-space:nowrap;font-weight:600;color:var(--da-text)!important}
+#maintenance-module-root .link-btn{
+  border:0;background:none;padding:0;cursor:pointer;
+  color:var(--da-text)!important;font:inherit;text-align:left
+}
+#maintenance-module-root .link-btn strong{display:block;color:var(--da-gold-light)!important}
+#maintenance-module-root .link-btn span{display:block;color:var(--da-muted)!important;font-size:12px;margin-top:2px}
+
+#maintenance-module-root .badge{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:4px 8px;
+  font-size:12px;
+  font-weight:600;
+  background:#25231e!important;
+  color:var(--da-ivory)!important;
+}
+#maintenance-module-root .badge.done{background:rgba(95,202,145,.14)!important;color:#75dda5!important}
+#maintenance-module-root .badge.progress{background:rgba(122,167,255,.14)!important;color:#8fb8ff!important}
+#maintenance-module-root .badge.assigned{background:rgba(181,145,255,.14)!important;color:#c1a0ff!important}
+#maintenance-module-root .badge.cancelled{background:rgba(227,91,79,.14)!important;color:#ff8176!important}
+#maintenance-module-root .badge.draft{background:#27261f!important;color:#c9c1b2!important}
+#maintenance-module-root .badge.issue{background:rgba(214,168,79,.15)!important;color:var(--da-gold-light)!important}
+#maintenance-module-root .badge.waiting_confirmation{background:rgba(214,168,79,.16)!important;color:var(--da-gold-light)!important}
+
+#maintenance-module-root .empty{padding:42px;text-align:center;color:var(--da-muted)!important}
+#maintenance-module-root .statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
+#maintenance-module-root .statusline.error{color:#ff8176!important}
+#maintenance-module-root .statusline.ok{color:#75dda5!important}
+
+#maintenance-module-root .permission-panel{
+  display:none;
+  margin:0 14px 14px;
+  padding:14px;
+  border:1px solid #6c302c!important;
+  background:#17100f!important;
+  border-radius:12px;
+  color:var(--da-text)!important
+}
+#maintenance-module-root .permission-panel.show{display:block}
+#maintenance-module-root .permission-panel h3{margin:0 0 8px;color:#ff9a90!important}
+#maintenance-module-root .diag-user{margin-bottom:10px;color:var(--da-muted)!important;word-break:break-word}
+#maintenance-module-root .permission-list{display:grid;gap:7px}
+#maintenance-module-root .permission-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 10px;background:#11110f!important;
+  border:1px solid #302c25!important;border-radius:8px;font-size:13px
+}
+#maintenance-module-root .permission-row .ok{color:#75dda5!important;font-weight:700}
+#maintenance-module-root .permission-row .fail{color:#ff8176!important;font-weight:700}
+#maintenance-module-root .permission-row .detail{font-size:11px;color:var(--da-muted)!important;text-align:right;max-width:60%;word-break:break-word}
+
+#maintenance-module-root .modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.76)!important;
+  backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+  padding:14px;z-index:1000
+}
+#maintenance-module-root .modal.show{display:flex}
+#maintenance-module-root .modal-box{
+  background:#0f0f0d!important;
+  color:var(--da-text)!important;
+  border:1px solid var(--da-gold-soft)!important;
+  border-radius:16px;
+  width:min(1050px,100%);
+  max-height:94vh;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  box-shadow:0 24px 80px rgba(0,0,0,.62),0 0 0 1px rgba(214,168,79,.08)
+}
+#maintenance-module-root .modal-head{
+  position:sticky;top:0;
+  background:linear-gradient(180deg,#171714,#10100e)!important;
+  border-bottom:1px solid var(--da-border-gold)!important;
+  padding:16px 18px;
+  display:flex;justify-content:space-between;align-items:center;
+  z-index:20
+}
+#maintenance-module-root .modal-head h2{margin:0;font-size:22px;color:var(--gold,var(--da-gold-light))!important}
+#maintenance-module-root .close{
+  border:0;background:none;font-size:28px;cursor:pointer;
+  color:var(--da-gold-light)!important;
+  -webkit-appearance:none;
+  appearance:none;
+  touch-action:manipulation;
+}
+#maintenance-module-root .modal-
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+#maintenance-module-root .full{grid-column:1/-1}
+#maintenance-module-root .section{
+  border-top:1px solid var(--da-border-gold)!important;
+  margin-top:18px;padding-top:18px
+}
+#maintenance-module-root .section h3{font-size:14px;margin:0 0 12px;color:var(--da-gold-light)!important}
+#maintenance-module-root .ref-box{
+  background:#151512!important;
+  border:1px solid #40382b!important;
+  color:var(--da-text)!important;
+  border-radius:12px;padding:12px;margin-bottom:14px;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:10px
+}
+#maintenance-module-root .ref-box small{display:block;color:var(--da-muted)!important;margin-bottom:3px}
+#maintenance-module-root .ref-box strong{font-size:14px;color:var(--da-ivory)!important}
+
+#maintenance-module-root .checklist{display:grid;gap:8px}
+#maintenance-module-root .check-row{
+  display:grid;
+  grid-template-columns:1.4fr repeat(4,auto);
+  gap:8px;align-items:center;
+  border:1px solid #373229!important;
+  background:#141412!important;
+  border-radius:9px;padding:9px
+}
+#maintenance-module-root .check-row label{font-size:13px;color:var(--da-text)!important}
+#maintenance-module-root .check-row input{accent-color:var(--da-gold)}
+#maintenance-module-root .actions{
+  display:flex;justify-content:flex-end;gap:8px;
+  padding:14px 18px;
+  border-top:1px solid var(--da-border-gold)!important;
+  position:sticky;bottom:0;
+  background:#10100e!important;
+  z-index:20;
+  isolation:isolate;
+}
+#maintenance-module-root .actions .btn{
+  position:relative;
+  z-index:21;
+  pointer-events:auto;
+  min-height:48px;
+}
+#maintenance-module-root .audit-history{display:grid;gap:8px}
+#maintenance-module-root .audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
+#maintenance-module-root .audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+#maintenance-module-root .audit-action{color:var(--da-gold-light)!important;font-weight:700;font-size:13px}#maintenance-module-root .audit-time{color:var(--da-muted)!important;font-size:11px}
+#maintenance-module-root .audit-meta{margin-top:5px;font-size:12px;color:var(--da-text)!important;line-height:1.55}#maintenance-module-root .audit-meta span{color:var(--da-muted)!important}
+#maintenance-module-root .audit-empty{color:var(--da-muted)!important;font-size:12px;padding:8px 0}
+#maintenance-module-root .form-error{color:#ff8176!important;font-size:13px;margin-top:8px;display:none}
+#maintenance-module-root .form-error.show{display:block}
+
+
+
+
+
+
+#maintenance-module-root /* Gold accents for native date/select controls where supported */
+select, #maintenance-module-root input, #maintenance-module-root textarea{color-scheme:dark}
+#maintenance-module-root input[type="date"]::-webkit-calendar-picker-indicator{filter:sepia(1) saturate(3) hue-rotate(355deg)}
+#maintenance-module-root input[type="checkbox"], #maintenance-module-root input[type="radio"]{accent-color:var(--da-gold)}
+
+#maintenance-module-root .pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid #302b23;background:#11110f}#maintenance-module-root .pagination-info{font-size:13px;color:var(--da-muted)}#maintenance-module-root .pagination-actions{display:flex;gap:8px}#maintenance-module-root .pagination .btn{min-width:86px}
+@media(max-width:520px){#maintenance-module-root .pagination{flex-direction:column;align-items:stretch}#maintenance-module-root .pagination-actions{width:100%}#maintenance-module-root .pagination-actions .btn{flex:1}}
+@media(max-width:850px){
+  #maintenance-module-root .kpis{grid-template-columns:repeat(2,1fr)}
+  #maintenance-module-root .toolbar{grid-template-columns:1fr 1fr}
+  #maintenance-module-root .grid{grid-template-columns:1fr}
+  #maintenance-module-root .full{grid-column:auto}
+  #maintenance-module-root .ref-box{grid-template-columns:1fr 1fr}
+  #maintenance-module-root .page-head{flex-direction:column}
+  #maintenance-module-root .check-row{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
+  #maintenance-module-root .check-row label{grid-column:1/-1}
+}
+@media(max-width:520px){
+  #maintenance-module-root .toolbar{grid-template-columns:1fr}
+  #maintenance-module-root .kpis{grid-template-columns:1fr 1fr}
+  #maintenance-module-root .ref-box{grid-template-columns:1fr}
+  #maintenance-module-root .page{padding:16px 12px 40px}
+  #maintenance-module-root .modal{
+    align-items:flex-end;
+    padding:0;
+  }
+  #maintenance-module-root .modal-box{
+    width:100%;
+    max-height:100dvh;
+    height:100dvh;
+    border-radius:16px 16px 0 0;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  #maintenance-module-root .modal-
+  .actions{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    min-height:76px;
+    z-index:100;
+    background:#10100e!important;
+  }
+  #maintenance-module-root .actions .btn{
+    flex:1;
+    min-width:0;
+    min-height:54px;
+    font-size:16px;
+  }
+  #maintenance-module-root .actions .primary{
+    min-width:0;
+  }
+}
+`;
+
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { auth, db } from "../core/firebase.js";
+import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "../core/firestore-v1.js?v=5";
+import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
+
+export async function mountMaintenanceModule(root) {
+  if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
+  if (root.__maintenanceCleanup) { root.__maintenanceCleanup(); root.__maintenanceCleanup = null; }
+  if (!document.getElementById("maintenance-module-style")) { maintenanceStyle.id = "maintenance-module-style"; document.head.appendChild(maintenanceStyle); }
+  root.innerHTML = `<div id="maintenance-module-root" class="maintenance-module">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Phiếu bảo trì</h1><div class="muted">Ghi nhận công việc bảo trì thực tế từ Hợp đồng → Lịch bảo trì. KTV có thể chủ động tạo phiếu và phiếu mới sẽ tự phân công cho chính KTV.</div></div>
+    <button class="btn primary" id="addBtn" type="button">＋ Tạo phiếu bảo trì</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Tổng phiếu</div><div class="value" id="kpiTotal">0</div></div>
+    <div class="kpi"><div class="label">Đang xử lý</div><div class="value" id="kpiProgress">0</div></div>
+    <div class="kpi"><div class="label">Đã hoàn thành</div><div class="value" id="kpiDone">0</div></div>
+    <div class="kpi"><div class="label">Có vấn đề</div><div class="value" id="kpiIssue">0</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="field"><label for="search">Tìm kiếm</label><input id="search" placeholder="PBM, khách hàng, tòa nhà, thang, hợp đồng…"></div>
+    <div class="field"><label for="statusFilter">Trạng thái</label><select id="statusFilter"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="waiting_confirmation">Chờ CSKH xác nhận</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+    <div class="field"><label for="yearFilter">Năm</label><select id="yearFilter"><option value="">Tất cả năm</option></select></div>
+    <div class="field"><label for="issueFilter">Kết quả</label><select id="issueFilter"><option value="">Tất cả</option><option value="yes">Có vấn đề</option><option value="no">Không vấn đề</option></select></div>
+  </div>
+
+  <div class="card">
+    <div class="statusline" id="pageStatus">Đang tải… · Danh sách sắp xếp theo số phiếu PBM mới nhất</div>
+    <div class="permission-panel" id="permissionPanel">
+      <h3>Kiểm tra đăng nhập & quyền Firestore</h3>
+      <div class="diag-user" id="diagUser">Đang kiểm tra…</div>
+      <div class="permission-list" id="permissionList"></div>
+    </div>
+    <div class="table-wrap" style="border-top:1px solid #302b23"><table class="data-table"><thead><tr><th>Phiếu / KTV</th><th>Khách hàng / Tòa nhà</th><th>Thang máy / Mã thang</th><th>Hợp đồng / Kỳ</th><th>Ngày dự kiến</th><th>Trạng thái</th><th>Kết quả</th><th>Work Order</th><th>Thao tác</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="pagination" id="pagination" style="display:none"><div class="pagination-info" id="paginationInfo">—</div><div class="pagination-actions"><button class="btn" id="prevPage" type="button">‹ Trước</button><button class="btn" id="nextPage" type="button">Sau ›</button></div></div>
+    <div class="empty" id="empty">Chưa có phiếu bảo trì.</div>
+  </div>
+</main>
+<div class="modal" id="modal">
+  <section class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><h2 id="modalTitle">Tạo phiếu bảo trì</h2><button class="close" id="closeBtn" type="button">×</button></div>
+    <form id="form">
+      <div class="modal-body">
+        <div class="ref-box">
+          <div><small>Số phiếu</small><strong id="ticketPreview">Tự động cấp khi lưu</strong></div>
+          <div><small>Khách hàng</small><strong id="refCustomer">—</strong></div>
+          <div><small>Tòa nhà</small><strong id="refBuilding">—</strong></div>
+          <div><small>Thang máy</small><strong id="refElevator">—</strong></div>
+          <div><small>Work Order</small><strong id="refWorkOrder">Chưa có</strong></div>
+        </div>
+
+        <div class="grid">
+          <div class="field"><label for="customerId">Khách hàng *</label><select id="customerId" required><option value="">Chọn khách hàng</option></select></div>
+          <div class="field"><label for="buildingId">Tòa nhà *</label><select id="buildingId" required disabled><option value="">Chọn tòa nhà</option></select></div>
+          <div class="field"><label for="elevatorId">Thang máy *</label><select id="elevatorId" required disabled><option value="">Chọn thang máy</option></select></div>
+          <div class="field"><label for="contractId">Hợp đồng bảo trì *</label><select id="contractId" required disabled><option value="">Chọn hợp đồng</option></select></div>
+          <div class="field"><label for="periodNumber">Kỳ bảo trì</label><select id="periodNumber" disabled><option value="">Chọn kỳ từ lịch</option></select></div>
+          <div class="field"><label for="scheduledDate">Ngày dự kiến *</label><input id="scheduledDate" type="date" required></div>
+          <div class="field"><label for="completedDate">Ngày hoàn thành</label><input id="completedDate" type="date"></div>
+          <div class="field"><label for="status">Trạng thái *</label><select id="status"><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang thực hiện</option><option value="waiting_confirmation" disabled>Chờ CSKH xác nhận</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+          <div class="field"><label for="technicianId">Kỹ thuật viên</label><select id="technicianId"><option value="">Chưa phân công</option></select></div>
+          <div class="field"><label for="assignmentReason">Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
+          <div class="field"><label for="condition">Tình trạng thang</label><select id="condition"><option value="">Chọn</option><option value="normal">Bình thường</option><option value="warning">Có dấu hiệu cần theo dõi</option><option value="issue">Có lỗi / cần xử lý</option></select></div>
+          <div class="field full"><label for="result">Kết quả bảo trì</label><textarea id="result" placeholder="Nội dung kiểm tra, vệ sinh, điều chỉnh, thay thế…"></textarea></div>
+        </div>
+
+        <div class="section"><h3>CHECKLIST BẢO TRÌ</h3><div class="checklist" id="checklist"></div></div>
+        <div class="section"><div class="field"><label><input id="issueFound" type="checkbox"> Có vấn đề cần xử lý tiếp</label></div><div class="field" style="margin-top:10px"><label for="note">Ghi chú</label><textarea id="note" placeholder="Ghi chú thêm…"></textarea></div></div>
+        <div class="section"><h3>LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
+        <div class="form-error" id="formError"></div>
+      </div>
+      <div class="actions"><button class="btn" id="cancelBtn" type="button">Hủy</button><button class="btn" id="reportCompletionBtn" type="button" style="display:none">Báo hoàn thành</button><button class="btn primary" id="confirmCompletionBtn" type="button" style="display:none">Xác nhận hoàn thành</button><button class="btn primary" id="managerConfirmCompletionBtn" type="button" style="display:none">Quản lý xác nhận hoàn thành</button><button class="btn primary" id="saveBtn" type="submit">Lưu phiếu</button></div>
+    </form>
+  </section>
+</div>
+</div>`;
+  const cleanup = [];
+
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+const cycleMonths={monthly:1,bi_monthly:2,quarterly:3};
+const statusText={draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang thực hiện",waiting_confirmation:"Chờ CSKH xác nhận",completed:"Hoàn thành",cancelled:"Đã hủy"};
+const checklistItems=[
+  ["machine_room","Phòng máy / tủ điều khiển"],["machine","Máy kéo / máy kéo không hộp số"],["controller","Tủ điện / điều khiển"],["brake","Phanh / bộ cứu hộ"],
+  ["cabin","Cabin / nút bấm / hiển thị"],["landing","Cửa tầng / khóa cửa"],["shaft","Giếng thang / ray dẫn hướng"],["pit","Hố pit / thiết bị an toàn"],["safety","Thiết bị an toàn / cảnh báo"],["cleaning","Vệ sinh / bôi trơn / điều chỉnh"]
+];
+let customers=[],buildings=[],elevators=[],contracts=[],maintenances=[],technicians=[];
+let editingId=null,authUser=null,currentProfile=null;
+let maintenancePage=1;
+const MAINTENANCE_PAGE_SIZE=10;
+
+function parseDate(v){if(!v)return null;const d=new Date(`${v}T00:00:00`);return Number.isNaN(d.getTime())?null:d}
+function localTodayIso(){const d=new Date();const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`}
+function addMonths(date,months){const d=new Date(date),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+months);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return d}
+function isoDate(d){return d?d.toISOString().slice(0,10):""}
+function fmtDate(v){const d=parseDate(v);return d?d.toLocaleDateString("vi-VN"):"—"}
+function contractEnabled(c){return c?.maintenanceEnabled==="yes"||c?.maintenanceEnabled===true||c?.maintenanceEnabled==="true"}
+function nameOf(list,id){return list.find(x=>String(x.id)===String(id))?.name||"—"}
+function elevatorLabel(e){return e?`${e.name||e.id}${e.assetCode?` · ${e.assetCode}`:""}`:"—"}
+function setError(msg){$("formError").textContent=msg||"";$("formError").classList.toggle("show",Boolean(msg))}
+function setStatus(msg,type=""){const el=$("pageStatus");el.textContent=msg;el.className=`statusline ${type}`}
+
+function renderChecklist(values=[]){
+  const map=new Map((Array.isArray(values)?values:[]).map(x=>[x.key,x.status]));
+  $("checklist").innerHTML=checklistItems.map(([key,label])=>{
+    const val=map.get(key)||"";
+    return `<div class="check-row"><label>${esc(label)}</label>${["pass","fail","action","na"].map(s=>`<label><input type="radio" name="check_${esc(key)}" value="${s}" ${val===s?"checked":""}> ${s==="pass"?"Đạt":s==="fail"?"Không đạt":s==="action"?"Cần xử lý":"N/A"}</label>`).join("")}</div>`;
+  }).join("");
+}
+function readChecklist(){return checklistItems.map(([key])=>{const checked=root.querySelector(`input[name="check_${key}"]:checked`);return {key,status:checked?.value||""};}).filter(x=>x.status)}
+
+function resetRefs(){
+  $("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>';$("buildingId").disabled=true;
+  $("elevatorId").innerHTML='<option value="">Chọn thang máy</option>';$("elevatorId").disabled=true;
+  $("contractId").innerHTML='<option value="">Chọn hợp đồng</option>';$("contractId").disabled=true;
+  $("periodNumber").innerHTML='<option value="">Chọn kỳ từ lịch</option>';$("periodNumber").disabled=true;
+}
+function renderCustomers(selected=""){$("customerId").innerHTML='<option value="">Chọn khách hàng</option>'+customers.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","vi")).map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join("");$("customerId").value=selected}
+function renderBuildings(selected=""){
+  const cid=$("customerId").value;const list=buildings.filter(x=>String(x.customerId)===String(cid));
+  $("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>'+list.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join("");$("buildingId").disabled=!cid;$("buildingId").value=selected;
+}
+function renderElevators(selected=""){
+  const bid=$("buildingId").value;const list=elevators.filter(x=>String(x.buildingId)===String(bid));
+  $("elevatorId").innerHTML='<option value="">Chọn thang máy</option>'+list.map(x=>`<option value="${esc(x.id)}">${esc(elevatorLabel(x))}</option>`).join("");$("elevatorId").disabled=!bid;$("elevatorId").value=selected;
+}
+function renderContracts(selected=""){
+  const eid=$("elevatorId").value;const list=contracts.filter(c=>String(c.elevatorId)===String(eid)&&contractEnabled(c));
+  $("contractId").innerHTML='<option value="">Chọn hợp đồng</option>'+list.map(c=>`<option value="${esc(c.id)}">${esc(c.code||c.id)} — ${esc(c.name||"")} · ${esc(c.maintenanceCycle||"")}</option>`).join("");$("contractId").disabled=!eid;$("contractId").value=selected;
+}
+function currentRole(){
+  return String(currentProfile?.role||"").trim().toUpperCase();
+}
+function canManageTechnicianAssignment(){
+  return ["ADMIN","MANAGER"].includes(currentRole());
+}
+function currentActorName(){
+  return String(currentProfile?.name||authUser?.displayName||authUser?.email||authUser?.uid||"").trim();
+}
+function applyAssignmentPermission(){
+  const el=$("technicianId");
+  if(!el)return;
+  const allowed=canManageTechnicianAssignment();
+  el.disabled=!allowed;
+  $("assignmentReason").disabled=!allowed;
+  if(!allowed){
+    $("assignmentReason").value="";
+    if(currentRole()==="TECHNICIAN" && !editingId){
+      const technicianId=String(currentProfile?.technicianId||"").trim();
+      if(technicianId){
+        $("technicianId").value=technicianId;
+      }
+    }
+  }
+}
+function isConfirmationExpired(maintenance){
+  if(!maintenance?.customerConfirmationDeadline)return false;
+  try{
+    const deadline=maintenance.customerConfirmationDeadline?.toDate
+      ? maintenance.customerConfirmationDeadline.toDate()
+      : new Date(maintenance.customerConfirmationDeadline);
+    return !Number.isNaN(deadline.getTime()) && Date.now() > deadline.getTime();
+  }catch(e){
+    return false;
+  }
+}
+function applyTechnicianScopeUI(){
+  const isTech=currentRole()==="TECHNICIAN";
+  ["customerId","buildingId","elevatorId","contractId","periodNumber","scheduledDate"].forEach(id=>{
+    const el=$(id);
+    if(el) el.disabled=isTech && Boolean(editingId);
+  });
+  const addBtn=$("addBtn");
+  if(addBtn) addBtn.disabled=false;
+
+  const statusEl=$("status");
+  if(statusEl){
+    if(isTech && editingId){
+      statusEl.disabled=true;
+    }else{
+      statusEl.disabled=false;
+    }
+  }
+
+  const currentMaintenance=editingId
+    ? maintenances.find(x=>String(x.id)===String(editingId))
+    : null;
+
+  const reportBtn=$("reportCompletionBtn");
+  if(reportBtn){
+    const reportable=isTech && Boolean(editingId) &&
+      currentMaintenance &&
+      !["completed","cancelled","waiting_confirmation"].includes(String(currentMaintenance.status||""));
+    reportBtn.style.display=reportable?"inline-flex":"none";
+    reportBtn.disabled=false;
+  }
+
+  const isCSKH=currentRole()==="CSKH";
+  const isManagement=["ADMIN","MANAGER"].includes(currentRole());
+  const isWaiting=currentMaintenance &&
+    String(currentMaintenance.status||"")==="waiting_confirmation" &&
+    String(currentMaintenance.customerConfirmationStatus||"")==="pending";
+
+  const confirmBtn=$("confirmCompletionBtn");
+  const canConfirm=isCSKH && Boolean(editingId) && isWaiting && !isConfirmationExpired(currentMaintenance);
+  if(confirmBtn){
+    confirmBtn.style.display=canConfirm?"inline-flex":"none";
+    confirmBtn.disabled=false;
+  }
+
+  const managerConfirmBtn=$("managerConfirmCompletionBtn");
+  const canManagerConfirm=isManagement && Boolean(editingId) && isWaiting && isConfirmationExpired(currentMaintenance);
+  if(managerConfirmBtn){
+    managerConfirmBtn.style.display=canManagerConfirm?"inline-flex":"none";
+    managerConfirmBtn.disabled=false;
+  }
+
+  const saveBtn=$("saveBtn");
+  if(saveBtn){
+    saveBtn.style.display=(canConfirm || canManagerConfirm)?"none":"inline-flex";
+  }
+
+  if(canConfirm || canManagerConfirm){
+    ["customerId","buildingId","elevatorId","contractId","periodNumber",
+     "scheduledDate","completedDate","status","technicianId",
+     "assignmentReason","condition","result","issueFound","note"]
+      .forEach(id=>{const el=$(id);if(el)el.disabled=true;});
+  }
+}
+async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
+  await addDoc(collection(db,"auditLogs"),{
+    action:fromTechnicianId?"TECHNICIAN_REASSIGNED":"TECHNICIAN_ASSIGNED",
+    entityType,
+    entityId,
+    fromTechnicianId:fromTechnicianId||"",
+    fromTechnicianName:fromTechnicianName||"",
+    toTechnicianId:toTechnicianId||"",
+    toTechnicianName:toTechnicianName||"",
+    reason:String(reason||"").trim()||"Phân công ban đầu",
+    performedByUid:authUser?.uid||"",
+    performedByName:currentActorName(),
+    createdAt:serverTimestamp()
+  });
+}
+
+function formatAuditTime(value){
+  if(!value)return "—";
+  try{const d=value?.toDate?value.toDate():new Date(value);return Number.isNaN(d.getTime())?"—":d.toLocaleString("vi-VN");}catch(e){return "—"}
+}
+async function loadAssignmentHistory(entityId){
+  const box=$("assignmentHistory");
+  if(!box)return;
+  if(currentRole()==="TECHNICIAN"){
+    box.innerHTML='<div class="audit-empty">Lịch sử phân công chỉ dành cho quản lý.</div>';
+    return;
+  }
+  if(!entityId){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
+  box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
+  try{
+    const snap=await getDocs(collection(db,"auditLogs"));
+    const items=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(x=>String(x.entityType||"")==="maintenance"&&String(x.entityId||"")===String(entityId))
+      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa})
+      .slice(0,3);
+    if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
+    box.innerHTML=items.map(x=>{
+      const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
+      const from=x.fromTechnicianName||"Chưa phân công";
+      const to=x.toTechnicianName||"Chưa phân công";
+      return `<div class="audit-item"><div class="audit-top"><div class="audit-action">${esc(action)}</div><div class="audit-time">${esc(formatAuditTime(x.createdAt))}</div></div><div class="audit-meta"><span>Từ:</span> ${esc(from)}<br><span>Sang:</span> ${esc(to)}<br><span>Người thực hiện:</span> ${esc(x.performedByName||x.performedByUid||"—")}<br><span>Lý do:</span> ${esc(x.reason||"—")}</div></div>`;
+    }).join("");
+  }catch(err){console.error(err);box.innerHTML='<div class="audit-empty">Không thể tải lịch sử phân công.</div>'}
+}
+
+function technicianOptionLabel(t){
+  return `${t.technicianId||t.id||""} — ${t.name||"Chưa có tên"}`;
+}
+function renderTechnicians(selectedId=""){
+  const selected=String(selectedId||"");
+  const current=selected
+    ? technicians.find(t=>String(t.technicianId||t.id)===selected)
+    : null;
+  const active=technicians.filter(t=>String(t.status||"active")==="active");
+  const options=[...active];
+  if(current && String(current.status||"active")!=="active"){
+    options.unshift(current);
+  }
+  options.sort((a,b)=>{
+    const aa=String(a.name||a.technicianId||a.id||"");
+    const bb=String(b.name||b.technicianId||b.id||"");
+    return aa.localeCompare(bb,"vi");
+  });
+  $("technicianId").innerHTML=
+    '<option value="">Chưa phân công</option>'+
+    options.map(t=>{
+      const id=String(t.technicianId||t.id||"");
+      const status=String(t.status||"active");
+      const suffix=status==="leave"?" · Đang nghỉ":status==="inactive"?" · Đã nghỉ việc":"";
+      const disabled=status!=="active" && id!==selected ? " disabled" : "";
+      return `<option value="${esc(id)}"${disabled}>${esc(technicianOptionLabel(t)+suffix)}</option>`;
+    }).join("");
+  $("technicianId").value=selected;
+  applyAssignmentPermission();
+  applyTechnicianScopeUI();
+}
+function selectedTechnician(){
+  const id=String($("technicianId").value||"");
+  return technicians.find(t=>String(t.technicianId||t.id)===id)||null;
+}
+
+function buildPeriods(c){
+  const months=cycleMonths[c?.maintenanceCycle],start=parseDate(c?.startDate),end=parseDate(c?.endDate);if(!months||!start||!end)return [];
+  const result=[];let date=new Date(start),period=1;
+  while(date<=end){const existing=maintenances.find(m=>String(m.contractId)===String(c.id)&&Number(m.periodNumber||0)===period);result.push({period,date:isoDate(date),maintenance:existing||null});date=addMonths(date,months);period++}
+  return result;
+}
+function renderPeriods(selected=""){
+  const cid=$("contractId").value,c=contracts.find(x=>String(x.id)===String(cid));const periods=buildPeriods(c);
+  $("periodNumber").innerHTML='<option value="">Chọn kỳ từ lịch</option>'+periods.map(p=>`<option value="${p.period}" data-date="${p.date}">Kỳ ${p.period} — ${fmtDate(p.date)}${p.maintenance?.status==="completed"?" · đã hoàn thành":""}</option>`).join("");$("periodNumber").disabled=!cid||!periods.length;$("periodNumber").value=selected||"";
+}
+function syncRefBox(){const c=customers.find(x=>String(x.id)===String($("customerId").value));const b=buildings.find(x=>String(x.id)===String($("buildingId").value));const e=elevators.find(x=>String(x.id)===String($("elevatorId").value));const m=editingId?maintenances.find(x=>String(x.id)===String(editingId)):null;$("refCustomer").textContent=c?.name||"—";$("refBuilding").textContent=b?.name||"—";$("refElevator").textContent=elevatorLabel(e);$("refWorkOrder").textContent=m?.latestWorkOrderNo?`${m.latestWorkOrderNo} · ${statusText[m.latestWorkOrderStatus]||m.latestWorkOrderStatus||"—"}`:"Chưa có"}
+function setScheduledFromPeriod(){const opt=$("periodNumber").selectedOptions[0];if(opt?.dataset.date)$("scheduledDate").value=opt.dataset.date}
+
+function ticketSequence(ticketNo){const m=String(ticketNo||"").match(/(\d+)\s*$/);return m?Number(m[1]):null}
+function filtered(){const q=$("search").value.trim().toLowerCase(),sf=$("statusFilter").value,yf=$("yearFilter").value,ifv=$("issueFilter").value;return maintenances.filter(m=>{const hay=[m.ticketNo,m.customerName,m.buildingName,m.elevatorName,m.elevatorAssetCode,m.contractCode,m.note].join(" ").toLowerCase();if(q&&!hay.includes(q))return false;if(sf&&m.status!==sf)return false;if(yf&&String((m.scheduledDate||"").slice(0,4))!==yf)return false;if(ifv==="yes"&&!m.issueFound)return false;if(ifv==="no"&&m.issueFound)return false;return true}).sort((a,b)=>{const an=ticketSequence(a.ticketNo),bn=ticketSequence(b.ticketNo);if(an!==null&&bn!==null)return bn-an;if(an!==null)return -1;if(bn!==null)return 1;return String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||""))})}
+function badge(status){return `<span class="badge ${esc(status)}">${esc(statusText[status]||status||"—")}</span>`}
+function render(){const list=filtered();const total=list.length;const totalPages=Math.max(1,Math.ceil(total/MAINTENANCE_PAGE_SIZE));if(maintenancePage>totalPages)maintenancePage=totalPages;const start=(maintenancePage-1)*MAINTENANCE_PAGE_SIZE;const pageItems=list.slice(start,start+MAINTENANCE_PAGE_SIZE);$("rows").innerHTML=pageItems.map(m=>{const woNo=m.latestWorkOrderNo||"";const woStatus=m.latestWorkOrderStatus||"";const woHtml=woNo?`<div><strong class="cell-gold">${esc(woNo)}</strong><span class="cell-sub">${esc(statusText[woStatus]||woStatus||"—")}</span></div>`:'<span class="muted">Chưa có</span>';return `<tr><td><button class="link-btn" data-edit="${esc(m.id)}"><strong>${esc(m.ticketNo||"—")}</strong><span>${esc(m.technicianName||"Chưa phân công")}</span></button></td><td><strong>${esc(m.customerName||nameOf(customers,m.customerId))}</strong><span class="cell-sub">${esc(m.buildingName||nameOf(buildings,m.buildingId))}</span></td><td><strong>${esc(m.elevatorName||nameOf(elevators,m.elevatorId))}</strong><span class="cell-sub">${esc(m.elevatorAssetCode||"Chưa có mã thang")}</span></td><td><strong class="cell-gold">${esc(m.contractCode||"—")}</strong><span class="cell-sub">Kỳ ${esc(m.periodNumber||"—")}</span></td><td><span class="date-cell">${esc(fmtDate(m.scheduledDate))}</span></td><td>${badge(m.status)}</td><td>${m.issueFound?'<span class="badge issue">Cần xử lý</span>':'<span class="badge done">Bình thường</span>'}</td><td>${woHtml}</td><td><button class="btn" data-edit="${esc(m.id)}" type="button">Mở</button></td></tr>`}).join("");$("empty").style.display=total?"none":"block";const pager=$("pagination");pager.style.display=total>MAINTENANCE_PAGE_SIZE?"flex":"none";$("paginationInfo").textContent=total?`Hiển thị ${start+1}–${Math.min(start+MAINTENANCE_PAGE_SIZE,total)} / ${total} phiếu`:"0 phiếu";$("prevPage").disabled=maintenancePage<=1;$("nextPage").disabled=maintenancePage>=totalPages;$("kpiTotal").textContent=maintenances.length;$("kpiProgress").textContent=maintenances.filter(x=>["assigned","in_progress"].includes(x.status)).length;$("kpiDone").textContent=maintenances.filter(x=>x.status==="completed").length;$("kpiIssue").textContent=maintenances.filter(x=>x.issueFound).length;renderYears()}
+
+function renderYears(){const current=$("yearFilter").value;const years=[...new Set(maintenances.map(x=>String(x.scheduledDate||"").slice(0,4)).filter(Boolean))].sort().reverse();$("yearFilter").innerHTML='<option value="">Tất cả năm</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join("");$("yearFilter").value=current}
+
+async function reportCompletion(){
+  setError("");
+  if(currentRole()!=="TECHNICIAN"){
+    setError("Chỉ kỹ thuật viên được báo hoàn thành phiếu được phân công.");
+    return;
+  }
+  if(!editingId){
+    setError("Không xác định được phiếu bảo trì.");
+    return;
+  }
+
+  const m=maintenances.find(x=>String(x.id)===String(editingId));
+  if(!m){
+    setError("Không tìm thấy phiếu bảo trì.");
+    return;
+  }
+
+  if(["completed","cancelled","waiting_confirmation"].includes(String(m.status||""))){
+    setError("Phiếu này không thể báo hoàn thành ở trạng thái hiện tại.");
+    return;
+  }
+
+  const btn=$("reportCompletionBtn");
+  btn.disabled=true;
+  btn.textContent="Đang báo…";
+
+  try{
+    await reportMaintenanceCompletion(editingId,{
+      completedDate:$("completedDate").value||localTodayIso(),
+      completedByTechnicianId:String(currentProfile?.technicianId||"").trim(),
+      completedByTechnicianName:currentActorName()
+    });
+
+    await loadData();
+    closeModal();
+    setStatus("Đã báo hoàn thành. Phiếu đang chờ CSKH xác nhận trong 18 giờ.","ok");
+  }catch(err){
+    console.error(err);
+    setError(err?.message||"Không thể báo hoàn thành phiếu bảo trì.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Báo hoàn thành";
+  }
+}
+
+async function confirmCompletion(){
+  setError("");
+  if(currentRole()!=="CSKH"){
+    setError("Chỉ CSKH được xác nhận hoàn thành phiếu bảo trì.");
+    return;
+  }
+  if(!editingId){
+    setError("Không xác định được phiếu bảo trì.");
+    return;
+  }
+
+  const m=maintenances.find(x=>String(x.id)===String(editingId));
+  if(!m){
+    setError("Không tìm thấy phiếu bảo trì.");
+    return;
+  }
+  if(String(m.status||"")!=="waiting_confirmation" || String(m.customerConfirmationStatus||"")!=="pending"){
+    setError("Phiếu này không còn ở trạng thái chờ CSKH xác nhận.");
+    return;
+  }
+
+  const btn=$("confirmCompletionBtn");
+  btn.disabled=true;
+  btn.textContent="Đang xác nhận…";
+  try{
+    await confirmMaintenanceByCSKH(editingId,{
+      confirmedBy:currentActorName(),
+      note:""
+    });
+    await loadData();
+    closeModal();
+    setStatus("Đã xác nhận hoàn thành phiếu bảo trì.","ok");
+  }catch(err){
+    console.error(err);
+    setError(err?.message||"Không thể xác nhận hoàn thành phiếu bảo trì.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Xác nhận hoàn thành";
+  }
+}
+
+
+async function managerConfirmCompletion(){
+  setError("");
+  if(!["ADMIN","MANAGER"].includes(currentRole())){
+    setError("Chỉ ADMIN hoặc MANAGER được xác nhận phiếu quá 18 giờ.");
+    return;
+  }
+  if(!editingId){
+    setError("Không xác định được phiếu bảo trì.");
+    return;
+  }
+  const m=maintenances.find(x=>String(x.id)===String(editingId));
+  if(!m){
+    setError("Không tìm thấy phiếu bảo trì.");
+    return;
+  }
+  if(String(m.status||"")!=="waiting_confirmation" || String(m.customerConfirmationStatus||"")!=="pending"){
+    setError("Phiếu này không còn ở trạng thái chờ xác nhận.");
+    return;
+  }
+  if(!isConfirmationExpired(m)){
+    setError("Phiếu chưa quá 18 giờ. CSKH vẫn còn thời gian xác nhận.");
+    return;
+  }
+
+  const btn=$("managerConfirmCompletionBtn");
+  btn.disabled=true;
+  btn.textContent="Đang xác nhận…";
+  try{
+    await confirmMaintenanceAfterExpiry(editingId,{
+      confirmedBy:currentActorName(),
+      note:"Cấp quản lý xác nhận sau khi quá thời hạn CSKH."
+    });
+    await loadData();
+    closeModal();
+    setStatus("Quản lý đã xác nhận hoàn thành phiếu bảo trì.","ok");
+  }catch(err){
+    console.error(err);
+    setError(err?.message||"Không thể xác nhận hoàn thành phiếu bảo trì quá hạn.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Quản lý xác nhận hoàn thành";
+  }
+}
+
+function resetForm(){
+  $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
+  $("assignmentReason").value="";editingId=null;$("form").reset();$("modalTitle").textContent="Tạo phiếu bảo trì";$("ticketPreview").textContent="Tự động cấp khi lưu";$("status").value="draft";$("scheduledDate").min="";$("scheduledDate").value=localTodayIso();renderCustomers();resetRefs();renderTechnicians();syncRefBox();$("refWorkOrder").textContent="Chưa có";renderChecklist();setError("");applyTechnicianScopeUI()
+}
+function openModal(){ $("modal").classList.add("show");document.body.style.overflow="hidden" }
+function closeModal(){ $("modal").classList.remove("show");document.body.style.overflow="";resetForm() }
+async function openEdit(id){const m=maintenances.find(x=>x.id===id);if(!m)return;editingId=id;$("modalTitle").textContent=`Sửa ${m.ticketNo||"phiếu bảo trì"}`;$("ticketPreview").textContent=m.ticketNo||"—";renderCustomers(m.customerId);renderBuildings(m.buildingId);renderElevators(m.elevatorId);renderContracts(m.contractId);renderPeriods(m.periodNumber||"");$("scheduledDate").min="";$("scheduledDate").value=m.scheduledDate||"";$("completedDate").value=m.completedDate||"";$("status").value=m.status||"draft";renderTechnicians(m.technicianId||"");$("assignmentReason").value="";$("condition").value=m.condition||"";$("result").value=m.result||"";$("issueFound").checked=Boolean(m.issueFound);$("note").value=m.note||"";renderChecklist(m.checklist||[]);syncRefBox();setError("");openModal();applyTechnicianScopeUI();await loadAssignmentHistory(editingId)}
+
+$("customerId").addEventListener("change",()=>{renderBuildings();renderElevators();renderContracts();renderPeriods();syncRefBox()});
+$("buildingId").addEventListener("change",()=>{renderElevators();renderContracts();renderPeriods();syncRefBox()});
+$("elevatorId").addEventListener("change",()=>{renderContracts();renderPeriods();syncRefBox()});
+$("contractId").addEventListener("change",()=>{renderPeriods()});
+$("periodNumber").addEventListener("change",setScheduledFromPeriod);
+["search","statusFilter","yearFilter","issueFilter"].forEach(id=>$(id).addEventListener("input",()=>{maintenancePage=1;render()}));
+$("prevPage").addEventListener("click",()=>{if(maintenancePage>1){maintenancePage--;render()}});
+$("nextPage").addEventListener("click",()=>{const totalPages=Math.max(1,Math.ceil(filtered().length/MAINTENANCE_PAGE_SIZE));if(maintenancePage<totalPages){maintenancePage++;render()}});
+$("rows").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit)});
+$("reportCompletionBtn").addEventListener("click",reportCompletion);
+$("confirmCompletionBtn").addEventListener("click",confirmCompletion);
+$("managerConfirmCompletionBtn").addEventListener("click",managerConfirmCompletion);
+$("addBtn").addEventListener("click",()=>{resetForm();openModal()});$("closeBtn").addEventListener("click",closeModal);$("cancelBtn").addEventListener("click",closeModal);$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal()});
+
+$("form").addEventListener("submit",async e=>{e.preventDefault();setError("");const cid=$("customerId").value,bid=$("buildingId").value,eid=$("elevatorId").value,ctid=$("contractId").value;const contract=contracts.find(x=>String(x.id)===String(ctid));if(!cid||!bid||!eid||!ctid||!contract){setError("Vui lòng chọn đầy đủ Customer → Building → Elevator → Hợp đồng.");return}if(!$("scheduledDate").value){setError("Ngày dự kiến là bắt buộc.");return}
+if(!editingId && $("scheduledDate").value < localTodayIso()){setError(`Không thể tạo phiếu bảo trì có ngày dự kiến trước hôm nay (${fmtDate(localTodayIso())}). Phiếu lịch sử phải được ghi nhận theo dữ liệu lịch sử đã có.`);return}
+if($("status").value==="completed"&&!$("completedDate").value){setError("Phiếu hoàn thành phải có ngày hoàn thành.");return}const period=Number($("periodNumber").value||0)||null;
+const selectedTech=selectedTechnician();
+const newTechnicianId=selectedTech?.technicianId||selectedTech?.id||"";
+const newTechnicianName=selectedTech?.name||"";
+const existingMaintenance=editingId?maintenances.find(x=>x.id===editingId):null;
+const oldTechnicianId=existingMaintenance?.technicianId||"";
+const oldTechnicianName=existingMaintenance?.technicianName||"";
+if(!canManageTechnicianAssignment() && editingId && newTechnicianId!==oldTechnicianId){
+  setError("Bạn không có quyền phân công hoặc thay đổi kỹ thuật viên.");
+  return;
+}
+const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
+ if(currentRole()==="TECHNICIAN") {
+   if(editingId){
+     if(newTechnicianId!==String(oldTechnicianId||"")){
+       setError("Kỹ thuật viên không được thay đổi người được phân công.");
+       return;
+     }
+   }else{
+     const selfTechnicianId=String(currentProfile?.technicianId||"").trim();
+     if(!selfTechnicianId){
+       setError("Tài khoản TECHNICIAN chưa có technicianId.");
+       return;
+     }
+     if(newTechnicianId!==selfTechnicianId){
+       setError("Phiếu mới của KTV phải được phân công cho chính KTV đang đăng nhập.");
+       return;
+     }
+   }
+ }
+ const assignmentReason=$("assignmentReason").value.trim();
+if(assignmentChanged && editingId && !assignmentReason){
+  setError("Khi thay đổi kỹ thuật viên phải nhập lý do.");
+  return;
+}
+const isTechnicianCreating=currentRole()==="TECHNICIAN"&&!editingId;
+const payload={customerId:cid,buildingId:bid,elevatorId:eid,contractId:ctid,contractCode:contract.code||"",periodNumber:period,scheduledDate:$("scheduledDate").value,completedDate:$("completedDate").value,status:isTechnicianCreating?"assigned":$("status").value,technicianId:isTechnicianCreating?String(currentProfile?.technicianId||"").trim():newTechnicianId,technicianName:isTechnicianCreating?currentActorName():newTechnicianName,checklist:readChecklist(),condition:$("condition").value,result:$("result").value.trim(),issueFound:$("issueFound").checked,note:$("note").value.trim(),source:"maintenance_module"};const btn=$("saveBtn");btn.disabled=true;btn.textContent="Đang lưu…";try{let savedMaintenanceId=editingId;
+if(editingId){
+  if(currentRole()==="TECHNICIAN"){
+    const technicianPayload={
+      scheduledDate:payload.scheduledDate,
+      completedDate:payload.completedDate,
+      status:payload.status,
+      checklist:payload.checklist,
+      condition:payload.condition,
+      result:payload.result,
+      issueFound:payload.issueFound,
+      note:payload.note,
+      updatedAt:serverTimestamp()
+    };
+    await updateDoc(doc(db,"maintenance",editingId),technicianPayload);
+  }else{
+    await updateMaintenance(editingId,payload);
+  }
+}else{
+  const created=await createMaintenance(payload);
+  savedMaintenanceId=created?.id||"";
+}
+if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenanceId){
+  await writeTechnicianAssignmentAudit({
+    entityType:"maintenance",
+    entityId:savedMaintenanceId,
+    fromTechnicianId:oldTechnicianId,
+    fromTechnicianName:oldTechnicianName,
+    toTechnicianId:newTechnicianId,
+    toTechnicianName:newTechnicianName,
+    reason:assignmentReason
+  });
+}
+const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
+
+async function runPermissionDiagnostics(user){
+  const panel=$("permissionPanel"), list=$("permissionList"), userEl=$("diagUser");
+  panel.classList.remove("show");
+  list.innerHTML="";
+  userEl.textContent=user?`Auth: ĐÃ ĐĂNG NHẬP · UID: ${user.uid}`:"Auth: CHƯA ĐĂNG NHẬP";
+  if(!user){panel.classList.add("show");return false}
+
+  const checks=[];
+  async function check(name,fn){
+    try{const value=await fn();checks.push({name,ok:true,detail:Array.isArray(value)?`OK · ${value.length} bản ghi`:"OK"});return value}
+    catch(err){const code=err?.code||"unknown";const msg=err?.message||String(err);checks.push({name,ok:false,detail:`${code}: ${msg}`});return null}
+  }
+
+  const profile=await check("users/{uid} · role",async()=>{const snap=await getDoc(doc(db,"users",user.uid));if(!snap.exists())throw new Error("Không tồn tại users/{uid}");const role=snap.data()?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;currentProfile=snap.data();return currentProfile});
+  const c=await check("customers",getCustomers);
+  const b=await check("buildings",getBuildings);
+  const e=await check("elevators",getElevators);
+  const ct=await check("contracts",getContracts);
+  const m=await check("maintenance",async()=>{
+    if(currentRole()==="TECHNICIAN") {
+      const technicianId=String(currentProfile?.technicianId||"").trim();
+      if(!technicianId) throw new Error("Tài khoản TECHNICIAN chưa có technicianId.");
+      return getMaintenances({ technicianId });
+    }
+    return getMaintenances();
+  });
+
+  list.innerHTML=checks.map(x=>`<div class="permission-row"><span>${esc(x.name)}</span><span class="${x.ok?"ok":"fail"}">${x.ok?"✓ OK":"✕ LỖI"}</span><span class="detail">${esc(x.detail)}</span></div>`).join("");
+  const failed=checks.some(x=>!x.ok);
+  if(failed)panel.classList.add("show");
+  return {profile,customers:c,buildings:b,elevators:e,contracts:ct,maintenances:m,failed};
+}
+
+async function loadData(){
+  setStatus("Đang tải dữ liệu…");
+  const profileSnap=await getDoc(doc(db,"users",authUser.uid));
+  if(!profileSnap.exists()) throw new Error("Không tồn tại users/{uid}.");
+  currentProfile=profileSnap.data()||{};
+
+  const role=currentRole();
+  const technicianId=String(currentProfile?.technicianId||"").trim();
+  if(role==="TECHNICIAN"&&!technicianId){
+    throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+  }
+
+  const [c,b,e,ct,m,techData]=await Promise.all([
+    getCustomers(),
+    getBuildings(),
+    getElevators(),
+    getContracts(),
+    role==="TECHNICIAN" ? getMaintenances({technicianId}) : getMaintenances(),
+    role==="TECHNICIAN" ? getTechnician(technicianId) : getTechnicians()
+  ]);
+
+  customers=c||[];
+  buildings=b||[];
+  elevators=e||[];
+  contracts=ct||[];
+  maintenances=m||[];
+
+  if(role==="TECHNICIAN") {
+    if(!techData) throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
+    technicians=[techData];
+  } else {
+    technicians=techData||[];
+  }
+
+  renderCustomers();
+  renderTechnicians();
+  maintenancePage=1;
+  render();
+  setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
+}
+
+  const unsubscribe = onAuthStateChanged(auth,async user=>{
+    authUser=user||null;
+    if(!user){setStatus("Chưa đăng nhập Firebase","error");return}
+    try{
+      await loadData();
+    }catch(err){
+      console.error(err);
+      setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
+    }
+  });
+  cleanup.push(unsubscribe);
+  renderChecklist();
+  root.__maintenanceCleanup = () => {
+    cleanup.forEach(fn => { try { if (typeof fn === "function") fn(); } catch {} });
+    if (document.body) document.body.style.overflow="";
+  };
+}
