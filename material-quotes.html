@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>Đức Anh Maintenance — Báo giá vật tư</title>
+<style>
+:root{
+  --bg:#080808;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;--gold2:#f0ca76;
+  --text:#eee9df;--muted:#a7a198;--border:#343028;--ok:#6ed59a;--danger:#f06d60;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.page{max-width:1280px;margin:auto;padding:24px 20px 70px}
+.top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:22px}
+.brand{font-weight:800;letter-spacing:.08em}.brand small{display:block;color:var(--gold);font-size:10px;letter-spacing:.25em;margin-top:4px}
+.user{display:flex;align-items:center;gap:10px}.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#111;font-weight:900}.user strong{display:block}.user small{color:var(--gold);font-weight:800}
+.title{margin-bottom:18px}.eyebrow{color:var(--gold2);font-size:12px;font-weight:900;letter-spacing:.18em}.title h1{font-size:34px;margin:6px 0}.title p{margin:0;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn{border:1px solid #65522e;background:#151512;color:var(--text);border-radius:10px;padding:11px 15px}.btn:hover{border-color:var(--gold)}
+.btn.primary{background:linear-gradient(180deg,#e2b85d,#bd8d34);color:#111;border-color:var(--gold);font-weight:800}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:15px;overflow:hidden}
+.head{padding:16px 18px;border-bottom:1px solid #2d2922;display:flex;justify-content:space-between;align-items:center;gap:10px}.head strong{color:var(--gold2)}
+.toolbar{display:flex;gap:10px;padding:14px 18px;border-bottom:1px solid #2d2922;flex-wrap:wrap}.toolbar input,.toolbar select{background:var(--panel2);border:1px solid #494237;color:var(--text);border-radius:9px;padding:10px;outline:none}
+.quote-list{padding:0 18px}
+.quote-row{display:grid;grid-template-columns:180px 1.2fr 1fr 130px 110px;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid #292722}
+.quote-row:last-child{border-bottom:0}.quote-row strong{display:block}.quote-row small{display:block;color:var(--muted);margin-top:4px}
+.tag{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;background:#29261f;color:#cfc6b7}.tag.blue{background:rgba(127,170,255,.14);color:#9bbdff}.tag.green{background:rgba(110,213,154,.14);color:#78e1a4}.tag.gold{background:rgba(214,168,79,.14);color:var(--gold2)}
+.empty{padding:35px 18px;color:var(--muted);text-align:center}
+.pager{display:flex;justify-content:center;align-items:center;gap:12px;padding:16px 0}
+.status{padding:12px 18px;color:var(--muted);font-size:12px}.status.ok{color:var(--ok)}.status.err{color:#ff8578}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.76);display:none;align-items:center;justify-content:center;padding:10px;z-index:50}.modal.show{display:flex}
+.modal-card{width:min(900px,100%);height:min(92dvh,900px);display:flex;flex-direction:column;overflow:hidden;background:#10100e;border:1px solid #4b4334;border-radius:16px}
+.modal-head{padding:16px 18px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;align-items:center}.modal-head h2{margin:0;color:var(--gold2)}
+.modal-body{padding:18px;overflow:auto;flex:1}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}
+.field label{display:block;color:var(--gold2);font-size:12px;font-weight:800;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;background:var(--panel2);border:1px solid #494237;color:var(--text);border-radius:9px;padding:10px;outline:none}.field textarea{min-height:82px}
+.modal-foot{padding:12px 18px;border-top:1px solid #302b23;display:flex;justify-content:flex-end;gap:10px;background:#10100e}
+.quote-ref{padding:12px;border:1px solid #3a342a;border-radius:10px;background:#151512;color:var(--muted);margin-bottom:12px}
+.quote-items{display:grid;gap:10px}.quote-item{display:grid;grid-template-columns:1.8fr .7fr .8fr .9fr 44px;gap:8px;align-items:end;padding:10px;border:1px solid #3a342a;border-radius:10px;background:#151512}
+.quote-summary{display:grid;grid-template-columns:1fr 260px;gap:18px;margin-top:14px}.quote-total{border:1px solid #4a4030;border-radius:10px;padding:12px;background:#151512}
+.quote-total-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0}.quote-total-row.total{border-top:1px solid #4a4030;margin-top:5px;padding-top:10px;font-size:18px;font-weight:900;color:var(--gold2)}
+.error{color:#ff8176;background:rgba(227,91,79,.08);border:1px solid rgba(227,91,79,.3);padding:10px;border-radius:9px;margin-top:12px;display:none}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 22px}.detail-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #292722}.detail-row span{color:var(--muted)}.detail-row strong{text-align:right}
+@media(max-width:800px){.quote-row{grid-template-columns:1fr 1fr}.quote-summary{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.quote-item{grid-template-columns:1fr 1fr}.quote-item .item-name{grid-column:1/-1}.detail-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.page{padding:16px 12px 50px}.title h1{font-size:28px}.modal{align-items:flex-end;padding:0}.modal-card{width:100%;height:94dvh;border-radius:16px 16px 0 0}.modal-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="top">
+    <div class="brand">ĐỨC ANH <small>MAINTENANCE</small></div>
+    <div class="user"><div class="avatar" id="avatar">CS</div><div><strong id="userName">CSKH</strong><small>BÁO GIÁ VẬT TƯ</small></div></div>
+  </div>
+
+  <section class="title">
+    <div class="eyebrow">CHỨNG TỪ VẬT TƯ</div>
+    <h1>Báo giá vật tư</h1>
+    <p>Quản lý, lưu trữ, mở lại và in / xuất PDF các báo giá vật tư phát sinh từ Work Order.</p>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="newQuote">＋ Lập báo giá vật tư</button>
+    <button class="btn" id="backCSKH">← Quay lại CSKH</button>
+    <button class="btn" id="refresh">↻ Cập nhật</button>
+  </div>
+
+  <section class="card">
+    <div class="head"><strong>📄 BÁO GIÁ VẬT TƯ ĐÃ LƯU</strong><span id="quoteCount">0</span></div>
+    <div class="toolbar">
+      <input id="searchQuote" placeholder="Tìm mã báo giá / khách hàng / Work Order" style="flex:1;min-width:220px">
+      <select id="statusFilter">
+        <option value="">Tất cả trạng thái</option>
+        <option value="DRAFT">Nháp</option>
+        <option value="PRINTED">Đã in</option>
+        <option value="SENT">Đã gửi khách</option>
+        <option value="CANCELLED">Đã hủy</option>
+      </select>
+    </div>
+    <div class="quote-list" id="quoteList"></div>
+    <div class="pager" id="pager"></div>
+    <div class="status" id="status">Đang tải…</div>
+  </section>
+</main>
+
+<!-- QUOTE MODAL -->
+<div class="modal" id="quoteModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Báo giá vật tư</h2><button class="btn" data-close="quoteModal">Đóng</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full"><label>Work Order *</label><select id="quoteWorkOrder"><option value="">Chọn Work Order</option></select></div>
+      </div>
+      <div class="quote-ref" id="quoteWorkOrderInfo">Chọn Work Order để lấy thông tin khách hàng và thang máy.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0">
+        <strong style="color:var(--gold2)">DANH SÁCH VẬT TƯ</strong>
+        <button class="btn" id="addQuoteItem">＋ Thêm vật tư</button>
+      </div>
+      <div class="quote-items" id="quoteItems"></div>
+      <div class="quote-summary">
+        <div class="field"><label>Ghi chú / Điều kiện báo giá</label><textarea id="quoteNote"></textarea><label style="margin-top:10px">Thời hạn báo giá (ngày)</label><input id="quoteValidityDays" type="number" min="1" value="15"></div>
+        <div class="quote-total">
+          <div class="quote-total-row"><span>Tạm tính</span><strong id="quoteSubtotal">0 ₫</strong></div>
+          <div class="quote-total-row"><span>Chiết khấu</span><input id="quoteDiscount" type="number" min="0" value="0" style="width:120px;background:var(--panel2);border:1px solid #494237;color:var(--text);border-radius:7px;padding:7px;text-align:right"></div>
+          <div class="quote-total-row"><span>VAT (%)</span><input id="quoteVatRate" type="number" min="0" max="100" value="0" style="width:120px;background:var(--panel2);border:1px solid #494237;color:var(--text);border-radius:7px;padding:7px;text-align:right"></div>
+          <div class="quote-total-row"><span>Tiền VAT</span><strong id="quoteVatAmount">0 ₫</strong></div>
+          <div class="quote-total-row total"><span>TỔNG CỘNG</span><strong id="quoteTotal">0 ₫</strong></div>
+        </div>
+      </div>
+      <div class="error" id="quoteError"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="quoteModal">Hủy</button>
+      <button class="btn" id="saveQuote">Lưu báo giá</button>
+      <button class="btn primary" id="printQuote">In / Xuất PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal" id="detailModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Chi tiết báo giá</h2><button class="btn" data-close="detailModal">Đóng</button></div>
+    <div class="modal-body"><div id="detailContent"></div></div>
+    <div class="modal-foot">
+      <button class="btn" data-close="detailModal">Đóng</button>
+      <button class="btn primary" id="detailPrint">🖨 In / PDF</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from "./js/core/firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { doc, getDoc, addDoc, collection, getDocs, query, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { getWorkOrders } from "./js/core/firestore-v1.js";
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const money=v=>Number(v||0).toLocaleString("vi-VN",{style:"currency",currency:"VND",maximumFractionDigits:0});
+
+let profile=null,workOrders=[],quotes=[],currentQuote=null,page=1;
+const PAGE_SIZE=10;
+
+function openModal(id){$(id)?.classList.add("show")}
+function closeModal(id){$(id)?.classList.remove("show")}
+
+function resetQuote(){
+  currentQuote=null;
+  $("quoteWorkOrder").value="";
+  $("quoteWorkOrderInfo").textContent="Chọn Work Order để lấy thông tin khách hàng và thang máy.";
+  $("quoteNote").value="";
+  $("quoteValidityDays").value="15";
+  $("quoteDiscount").value="0";
+  $("quoteVatRate").value="0";
+  $("quoteItems").innerHTML="";
+  $("quoteError").style.display="none";
+  addQuoteItem();
+  calculateTotals();
+}
+
+function fillWorkOrders(){
+  const rows=workOrders.filter(w=>String(w.status||"").toLowerCase()!=="cancelled");
+  $("quoteWorkOrder").innerHTML='<option value="">Chọn Work Order</option>'+
+    rows.map(w=>`<option value="${esc(w.id)}">${esc(w.workOrderNo||w.id)} — ${esc(w.customerName||"")} — ${esc(w.elevatorName||"")}</option>`).join("");
+}
+
+function renderWOInfo(){
+  const w=workOrders.find(x=>String(x.id)===$("quoteWorkOrder").value);
+  $("quoteWorkOrderInfo").innerHTML=!w
+    ?"Chọn Work Order để lấy thông tin khách hàng và thang máy."
+    :`<div><strong>${esc(w.workOrderNo||w.id)}</strong> · ${esc(w.status||"")}</div>
+      <div style="margin-top:6px">Khách hàng: <strong>${esc(w.customerName||"—")}</strong></div>
+      <div>Tòa nhà: <strong>${esc(w.buildingName||"—")}</strong></div>
+      <div>Thang máy: <strong>${esc(w.elevatorName||"—")}</strong> · Mã thang: <strong>${esc(w.elevatorAssetCode||"—")}</strong></div>
+      <div>Nội dung: ${esc(w.issueTitle||w.problemDescription||"—")}</div>`;
+}
+
+function addQuoteItem(item={}){
+  const row=document.createElement("div");
+  row.className="quote-item";
+  row.innerHTML=`<div class="field item-name"><label>Vật tư *</label><input data-q="name" value="${esc(item.name||"")}" placeholder="Tên vật tư"></div>
+  <div class="field"><label>ĐVT</label><input data-q="unit" value="${esc(item.unit||"cái")}"></div>
+  <div class="field"><label>Số lượng *</label><input data-q="quantity" type="number" min="0" step="0.01" value="${item.quantity??1}"></div>
+  <div class="field"><label>Đơn giá *</label><input data-q="unitPrice" type="number" min="0" step="1000" value="${item.unitPrice??0}"></div>
+  <button type="button" class="btn remove-item" title="Xóa">×</button>`;
+  row.querySelectorAll("input").forEach(i=>i.addEventListener("input",calculateTotals));
+  row.querySelector(".remove-item").addEventListener("click",()=>{row.remove();calculateTotals()});
+  $("quoteItems").appendChild(row);
+}
+
+function getItems(){
+  return [...$("quoteItems").querySelectorAll(".quote-item")].map(row=>{
+    const name=row.querySelector('[data-q="name"]').value.trim();
+    const unit=row.querySelector('[data-q="unit"]').value.trim()||"cái";
+    const quantity=Number(row.querySelector('[data-q="quantity"]').value||0);
+    const unitPrice=Number(row.querySelector('[data-q="unitPrice"]').value||0);
+    return {name,unit,quantity,unitPrice,amount:quantity*unitPrice};
+  });
+}
+
+function calculateTotals(){
+  const items=getItems(),subtotal=items.reduce((s,x)=>s+x.amount,0);
+  const discount=Math.max(0,Number($("quoteDiscount").value||0));
+  const taxable=Math.max(0,subtotal-discount),vatRate=Math.max(0,Number($("quoteVatRate").value||0));
+  const vatAmount=taxable*vatRate/100,total=taxable+vatAmount;
+  $("quoteSubtotal").textContent=money(subtotal);$("quoteVatAmount").textContent=money(vatAmount);$("quoteTotal").textContent=money(total);
+  return {items,subtotal,discount,vatRate,vatAmount,total};
+}
+
+async function loadQuotes(){
+  const snap=await getDocs(collection(db,"materialQuotes"));
+  quotes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+    const av=Number(String(a.quoteNo||"").replace(/\D/g,""))||0;
+    const bv=Number(String(b.quoteNo||"").replace(/\D/g,""))||0;
+    return bv-av;
+  });
+  renderQuotes();
+}
+
+function statusText(s){return ({DRAFT:"Nháp",PRINTED:"Đã in",SENT:"Đã gửi khách",CANCELLED:"Đã hủy"})[String(s||"").toUpperCase()]||s||"—"}
+function statusClass(s){return String(s||"").toUpperCase()==="SENT"?"green":String(s||"").toUpperCase()==="CANCELLED"?"gold":"blue"}
+
+function filteredQuotes(){
+  const term=$("searchQuote").value.trim().toLowerCase(),status=$("statusFilter").value;
+  return quotes.filter(q=>{
+    const hay=[q.quoteNo,q.customerName,q.workOrderNo,q.buildingName,q.elevatorName].join(" ").toLowerCase();
+    return (!term||hay.includes(term))&&(!status||String(q.status||"").toUpperCase()===status);
+  });
+}
+
+function renderQuotes(){
+  const rows=filteredQuotes(),totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
+  if(page>totalPages)page=totalPages;
+  $("quoteCount").textContent=quotes.length;
+  const pageRows=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
+  $("quoteList").innerHTML=pageRows.length?pageRows.map(q=>`
+    <div class="quote-row">
+      <div><strong>${esc(q.quoteNo||q.id.slice(0,8).toUpperCase())}</strong><small>${esc(q.workOrderNo||"—")}</small></div>
+      <div><strong>${esc(q.customerName||"—")}</strong><small>${esc(q.buildingName||"—")}</small></div>
+      <div><strong>${esc(q.elevatorName||"—")}</strong><small>${money(q.total)}</small></div>
+      <div><span class="tag ${statusClass(q.status)}">${esc(statusText(q.status))}</span></div>
+      <div><button class="btn" data-open-quote="${esc(q.id)}">Mở phiếu</button></div>
+    </div>`).join(""):`<div class="empty">Chưa có báo giá vật tư.</div>`;
+  $("pager").innerHTML=rows.length>PAGE_SIZE?`<button class="btn" id="prevPage" ${page<=1?"disabled":""}>‹ Trước</button><span>Trang ${page} / ${totalPages}</span><button class="btn" id="nextPage" ${page>=totalPages?"disabled":""}>Sau ›</button>`:"";
+}
+
+function showQuoteDetail(q){
+  currentQuote=q;
+  const items=(q.items||[]).map((x,i)=>`<div class="detail-row"><span>${i+1}. ${esc(x.name)} (${esc(x.unit)}) × ${x.quantity}</span><strong>${money(x.amount)}</strong></div>`).join("");
+  $("detailContent").innerHTML=`<div class="detail-grid">
+    <div class="detail-row"><span>Số báo giá</span><strong>${esc(q.quoteNo||"—")}</strong></div>
+    <div class="detail-row"><span>Trạng thái</span><strong>${esc(statusText(q.status))}</strong></div>
+    <div class="detail-row"><span>Khách hàng</span><strong>${esc(q.customerName||"—")}</strong></div>
+    <div class="detail-row"><span>Work Order</span><strong>${esc(q.workOrderNo||"—")}</strong></div>
+    <div class="detail-row"><span>Tòa nhà</span><strong>${esc(q.buildingName||"—")}</strong></div>
+    <div class="detail-row"><span>Thang máy</span><strong>${esc(q.elevatorName||"—")}</strong></div>
+    <div class="detail-row"><span>Mã thang</span><strong>${esc(q.elevatorAssetCode||"—")}</strong></div>
+    <div class="detail-row"><span>Tổng cộng</span><strong>${money(q.total)}</strong></div>
+  </div>
+  <div style="margin-top:18px"><strong style="color:var(--gold2)">VẬT TƯ</strong>${items||'<div class="empty">Không có vật tư.</div>'}</div>
+  ${q.note?`<div class="quote-ref" style="margin-top:18px"><b>Ghi chú:</b><br>${esc(q.note)}</div>`:""}`;
+  openModal("detailModal");
+}
+
+function buildPrintHtml(q){
+  const today=new Date().toLocaleDateString("vi-VN");
+  const rows=(q.items||[]).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.unit)}</td><td class="num">${x.quantity}</td><td class="num">${money(x.unitPrice)}</td><td class="num">${money(x.amount)}</td></tr>`).join("");
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${esc(q.quoteNo)}</title><style>
+  @page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#111;font-size:13px}h1{text-align:center;font-size:22px;margin:18px 0 5px}.company{font-weight:700;font-size:15px}.muted{color:#555}.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 25px;margin:18px 0}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{border:1px solid #555;padding:7px}th{background:#eee}.num{text-align:right}.total{width:48%;margin-left:auto;margin-top:14px}.total div{display:flex;justify-content:space-between;padding:5px 0}.grand{font-weight:700;font-size:16px;border-top:1px solid #222;padding-top:8px}.note{margin-top:18px;white-space:pre-wrap}.sign{display:grid;grid-template-columns:1fr 1fr;margin-top:55px;text-align:center}.sign div{min-height:80px}</style></head><body>
+  <div class="company">CÔNG TY CỔ PHẦN THANG MÁY ĐỨC ANH</div><div class="muted">PHIẾU BÁO GIÁ VẬT TƯ</div><h1>BÁO GIÁ VẬT TƯ</h1>
+  <div class="meta"><div><b>Số báo giá:</b> ${esc(q.quoteNo)}</div><div><b>Ngày:</b> ${today}</div><div><b>Khách hàng:</b> ${esc(q.customerName||"—")}</div><div><b>Work Order:</b> ${esc(q.workOrderNo||"—")}</div><div><b>Tòa nhà:</b> ${esc(q.buildingName||"—")}</div><div><b>Thang máy:</b> ${esc(q.elevatorName||"—")}</div><div><b>Mã thang:</b> ${esc(q.elevatorAssetCode||"—")}</div></div>
+  <table><thead><tr><th>STT</th><th>Vật tư</th><th>ĐVT</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="total"><div><span>Tạm tính</span><b>${money(q.subtotal)}</b></div><div><span>Chiết khấu</span><b>${money(q.discount)}</b></div><div><span>VAT ${q.vatRate}%</span><b>${money(q.vatAmount)}</b></div><div class="grand"><span>TỔNG CỘNG</span><b>${money(q.total)}</b></div></div>
+  <div class="note"><b>Thời hạn báo giá:</b> ${q.validityDays} ngày<br>${esc(q.note||"")}</div><div class="sign"><div><b>ĐẠI DIỆN KHÁCH HÀNG</b></div><div><b>THANG MÁY ĐỨC ANH</b></div></div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`;
+}
+
+async function printQuote(q=currentQuote){
+  if(!q) return;
+  const w=window.open("","_blank","width=900,height=1000");
+  if(!w){alert("Trình duyệt đang chặn cửa sổ in.");return}
+  w.document.open();w.document.write(buildPrintHtml(q));w.document.close();
+}
+
+async function saveQuote(){
+  const user=auth.currentUser;if(!user)throw new Error("Chưa đăng nhập Firebase.");
+  const wo=workOrders.find(x=>String(x.id)===$("quoteWorkOrder").value);if(!wo)throw new Error("Vui lòng chọn Work Order.");
+  const totals=calculateTotals();if(!totals.items.length)throw new Error("Phiếu phải có ít nhất 1 vật tư.");
+  if(totals.items.some(x=>!x.name||x.quantity<=0||x.unitPrice<0))throw new Error("Vui lòng nhập đủ tên, số lượng và đơn giá.");
+
+  const year=new Date().getFullYear(),quoteRef=doc(collection(db,"materialQuotes")),counterRef=doc(db,"settings","materialQuoteCounter");
+  let quoteNo="";
+  await runTransaction(db,async tx=>{
+    const snap=await tx.get(counterRef);
+    const cy=Number(snap.exists()?snap.data().year||0:0),cn=Number(snap.exists()?snap.data().lastNumber||0:0);
+    const next=cy===year?cn+1:1;quoteNo=`BGVT-${year}-${String(next).padStart(6,"0")}`;
+    tx.set(counterRef,{year,lastNumber:next,prefix:"BGVT-",updatedAt:serverTimestamp()},{merge:true});
+    tx.set(quoteRef,{quoteNo,year,workOrderId:wo.id,workOrderNo:wo.workOrderNo||"",maintenanceId:wo.maintenanceId||"",customerId:wo.customerId||"",customerName:wo.customerName||"",buildingId:wo.buildingId||"",buildingName:wo.buildingName||"",elevatorId:wo.elevatorId||"",elevatorName:wo.elevatorName||"",elevatorAssetCode:wo.elevatorAssetCode||"",items:totals.items,subtotal:totals.subtotal,discount:totals.discount,vatRate:totals.vatRate,vatAmount:totals.vatAmount,total:totals.total,validityDays:Math.max(1,Number($("quoteValidityDays").value||15)),note:$("quoteNote").value.trim(),status:"DRAFT",createdByUid:user.uid,createdByName:profile?.name||user.displayName||user.email||"CSKH",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  });
+  await loadQuotes();
+  currentQuote=quotes.find(q=>q.id===quoteRef.id)||{id:quoteRef.id,quoteNo,...totals,workOrderNo:wo.workOrderNo||"",customerName:wo.customerName,buildingName:wo.buildingName,elevatorName:wo.elevatorName,elevatorAssetCode:wo.elevatorAssetCode,validityDays:Number($("quoteValidityDays").value||15),note:$("quoteNote").value.trim(),status:"DRAFT"};
+  closeModal("quoteModal");alert(`Đã lưu báo giá ${quoteNo}.`);
+}
+
+async function markPrinted(q){
+  // Keep this client-side and Spark-compatible. The Rules already allow CSKH to update status.
+  if(String(q.status||"").toUpperCase()==="DRAFT"){
+    // We intentionally do not force a status transition before the user prints.
+    // The stored quote remains the official source.
+  }
+}
+
+function openNewQuote(){
+  fillWorkOrders();resetQuote();openModal("quoteModal");
+}
+
+$("newQuote").addEventListener("click",openNewQuote);
+$("backCSKH").addEventListener("click",()=>location.href="cskh.html");
+$("refresh").addEventListener("click",loadQuotes);
+$("quoteWorkOrder").addEventListener("change",renderWOInfo);
+$("addQuoteItem").addEventListener("click",()=>{addQuoteItem();calculateTotals()});
+$("quoteDiscount").addEventListener("input",calculateTotals);
+$("quoteVatRate").addEventListener("input",calculateTotals);
+$("saveQuote").addEventListener("click",async()=>{
+  try{$("quoteError").style.display="none";await saveQuote()}catch(e){$("quoteError").textContent=e?.message||"Không thể lưu báo giá.";$("quoteError").style.display="block"}
+});
+$("printQuote").addEventListener("click",()=>printQuote(currentQuote));
+$("detailPrint").addEventListener("click",()=>printQuote(currentQuote));
+$("quoteList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-open-quote]");if(b){const q=quotes.find(x=>x.id===b.dataset.openQuote);if(q)showQuoteDetail(q)}
+});
+$("pager").addEventListener("click",e=>{
+  if(e.target.closest("#prevPage")&&page>1){page--;renderQuotes()}
+  if(e.target.closest("#nextPage")&&page<Math.ceil(filteredQuotes().length/PAGE_SIZE)){page++;renderQuotes()}
+});
+$("searchQuote").addEventListener("input",()=>{page=1;renderQuotes()});
+$("statusFilter").addEventListener("change",()=>{page=1;renderQuotes()});
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){$("status").textContent="Chưa đăng nhập Firebase.";$("status").className="status err";return}
+  try{
+    const snap=await getDoc(doc(db,"users",user.uid));profile=snap.exists()?snap.data():null;
+    if(!profile)throw new Error("Không tồn tại users/{uid}.");
+    const role=String(profile.role||"").toLowerCase();
+    if(!["cskh","customer_service","admin","manager","director"].includes(role))throw new Error("Tài khoản không có quyền truy cập báo giá vật tư.");
+    const name=String(profile.name||user.displayName||user.email||"CSKH").trim();
+    $("userName").textContent=name;$("avatar").textContent=name.slice(0,2).toUpperCase();
+    workOrders=await getWorkOrders();await loadQuotes();
+    $("status").textContent=`Đã tải · ${quotes.length} báo giá đã lưu · ${workOrders.length} Work Order.`;
+    $("status").className="status ok";
+  }catch(e){$("status").textContent=e?.message||"Không thể tải báo giá.";$("status").className="status err"}
+});
+</script>
+</body>
+</html>
