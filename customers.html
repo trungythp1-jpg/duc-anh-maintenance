@@ -66,108 +66,44 @@
     .detail-section-title{margin:0 0 10px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
     .detail-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:18px}.detail-tab{flex:0 0 auto;border:1px solid var(--da-border);border-radius:8px;padding:9px 11px;background:#151515;color:#aaa;font-size:11px}.detail-tab.active{border-color:var(--da-yellow);background:rgba(245,196,0,.09);color:var(--da-yellow)}
     .detail-list{display:grid;gap:8px}.detail-row{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid var(--da-border);border-radius:8px;background:#0d0d0d;font-size:12px}.detail-row span{color:#999}
-    .modal-backdrop{
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    }
+    .modal-backdrop{align-items:center;justify-content:center;padding:20px}
     .modal-backdrop.show{display:flex}
-
-    .customer-modal{
-      width:min(720px,100%);
-      height:min(800px,calc(100dvh - 40px));
-      max-height:calc(100dvh - 40px);
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-      border:1px solid var(--da-border);
-      border-radius:14px;
-      background:#111;
-      box-shadow:0 25px 80px rgba(0,0,0,.55);
-    }
-
-    .modal-head{
-      position:sticky;
-      top:0;
-      z-index:5;
-      flex:0 0 auto;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:17px 20px;
-      border-bottom:1px solid var(--da-border);
-      background:#111;
-    }
+    .customer-modal{width:min(720px,100%);height:min(800px,calc(100dvh - 40px));max-height:calc(100dvh - 40px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--da-border);border-radius:14px;background:#111;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+    .modal-head{position:sticky;top:0;z-index:5;flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:17px 20px;border-bottom:1px solid var(--da-border);background:#111}
     .modal-head h2{margin:0;font-size:18px}
-    .close-button{
-      width:38px;
-      height:38px;
-      border:1px solid var(--da-border);
-      border-radius:9px;
-      background:#171717;
-      color:#aaa;
-      font-size:22px;
-      line-height:1;
-    }
-
-    .modal-body{
-      flex:1 1 auto;
-      min-height:0;
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      overscroll-behavior:contain;
-      padding:20px;
-    }
-
+    .close-button{width:38px;height:38px;border:1px solid var(--da-border);border-radius:9px;background:#171717;color:#aaa;font-size:22px;line-height:1}
+    .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:20px}
     .form-section-title{margin:0 0 13px;color:var(--da-yellow);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}
     .form-field.full{grid-column:1/-1}
     .form-field label{display:block;margin-bottom:6px;color:#aaa;font-size:11px}
-
-    .form-field input,
-    .form-field select,
-    .form-field textarea{
-      width:100%;
-      min-height:46px;
-      border:1px solid var(--da-border);
-      border-radius:9px;
-      outline:none;
-      background:#0b0b0b;
-      color:#eee;
-      padding:11px 12px;
-      font-size:16px;
-    }
+    .form-field input,.form-field select,.form-field textarea{width:100%;min-height:46px;border:1px solid var(--da-border);border-radius:9px;outline:none;background:#0b0b0b;color:#eee;padding:11px 12px;font-size:16px}
     .form-field textarea{min-height:95px;resize:vertical}
-    .form-field input:focus,
-    .form-field select:focus,
-    .form-field textarea:focus{border-color:var(--da-yellow)}
-
-    .modal-foot{
-      flex:0 0 auto;
-      display:flex;
-      justify-content:flex-end;
-      gap:9px;
-      padding:13px 20px calc(13px + env(safe-area-inset-bottom));
-      border-top:1px solid var(--da-border);
-      background:#111;
-    }
+    .form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--da-yellow)}
+    .modal-foot{flex:0 0 auto;display:flex;justify-content:flex-end;gap:9px;padding:13px 20px calc(13px + env(safe-area-inset-bottom));border-top:1px solid var(--da-border);background:#111}
     .secondary-button{border:1px solid var(--da-border);border-radius:8px;padding:11px 15px;background:#171717;color:#ccc}
     .firebase-message{margin-bottom:14px;padding:11px 13px;border:1px solid var(--da-border);border-radius:9px;background:#101010;color:#aaa;font-size:12px;display:none}
     .firebase-message.show{display:block}.firebase-message.error{border-color:rgba(239,98,98,.4);color:#ef8989}.firebase-message.success{border-color:rgba(56,199,147,.4);color:#72d8b1}
-    @media(max-width:900px){.customer-page{padding:20px 16px}.customer-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-header{align-items:stretch}}
+
+    @media(max-width:900px){
+      .customer-page{padding:20px 16px}
+      .customer-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .customer-header{align-items:stretch}
+    }
     @media(max-width:640px){
-      .customer-page{padding:16px 12px}.customer-header{flex-direction:column}.primary-button{width:100%}.customer-kpis{gap:9px}.kpi-card{min-height:95px;padding:13px}.kpi-value{font-size:24px}
-      .customer-toolbar{flex-direction:column;align-items:stretch}.filter-select{width:100%}.table-scroll{display:none}.mobile-customer-list{display:block}.table-footer{flex-direction:column;align-items:flex-start;gap:5px}
+      .customer-page{padding:16px 12px}
+      .customer-header{flex-direction:column}
+      .primary-button{width:100%}
+      .customer-kpis{gap:9px}
+      .kpi-card{min-height:95px;padding:13px}
+      .kpi-value{font-size:24px}
+      .customer-toolbar{flex-direction:column;align-items:stretch}
+      .filter-select{width:100%}
+      .table-scroll{display:none}
+      .mobile-customer-list{display:block}
+      .table-footer{flex-direction:column;align-items:flex-start;gap:5px}
       .detail-drawer{width:100%;border-left:0}
       .detail-grid{grid-template-columns:1fr 1fr}
-
-      /*
-       * iPhone FIX:
-       * Do not make .modal-body a nested scroll container.
-       * Safari can trap the scroll inside the body and leave the
-       * bottom action bar unreachable. The entire modal backdrop
-       * becomes the single scroll surface instead.
-       */
       .modal-backdrop{
         align-items:flex-start;
         justify-content:center;
@@ -176,7 +112,6 @@
         -webkit-overflow-scrolling:touch;
         overscroll-behavior:contain;
       }
-
       .customer-modal{
         width:100%;
         min-height:100dvh;
@@ -187,70 +122,31 @@
         border-radius:0;
         border:0;
       }
-
       .modal-head{
         position:sticky;
         top:0;
         z-index:10;
-        padding:
-          calc(14px + env(safe-area-inset-top))
-          16px
-          14px;
+        padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
         background:#111;
       }
-
-      .modal-body{
-        min-height:auto;
-        overflow:visible;
-        padding:18px 16px 30px;
-      }
-
-      .form-grid{
-        grid-template-columns:1fr;
-        gap:15px;
-      }
-
+      .modal-body{min-height:auto;overflow:visible;padding:18px 16px 30px}
+      .form-grid{grid-template-columns:1fr;gap:15px}
       .form-field.full{grid-column:auto}
-
-      .form-field label{
-        margin-bottom:7px;
-        font-size:13px;
-      }
-
-      .form-field input,
-      .form-field select,
-      .form-field textarea{
-        min-height:50px;
-        padding:13px 14px;
-        font-size:16px;
-      }
-
+      .form-field label{margin-bottom:7px;font-size:13px}
+      .form-field input,.form-field select,.form-field textarea{min-height:50px;padding:13px 14px;font-size:16px}
       .modal-foot{
         position:relative;
         display:flex;
-        padding:
-          12px
-          16px
-          calc(12px + env(safe-area-inset-bottom));
+        padding:12px 16px calc(12px + env(safe-area-inset-bottom));
         background:#111;
         border-top:1px solid var(--da-border);
       }
-
-      .modal-foot .primary-button,
-      .modal-foot .secondary-button{
-        min-height:48px;
-      }
-
-      .modal-foot .primary-button{
-        flex:1;
-      }
-
-      .modal-foot .secondary-button{
-        min-width:84px;
-      }
+      .modal-foot .primary-button,.modal-foot .secondary-button{min-height:48px}
+      .modal-foot .primary-button{flex:1}
+      .modal-foot .secondary-button{min-width:84px}
     }
 
-    /* Shared Navigation V1.11 — embedded to avoid navigation.css load/path/cache issues */
+    /* Shared Navigation V1.15 — aligned with Dashboard */
     .da-shared-sidebar{
       position:fixed;
       inset:0 auto 0 0;
@@ -263,7 +159,6 @@
       border-right:1px solid #242424;
       color:#aaa;
     }
-
     .da-brand{
       flex:0 0 auto;
       min-height:96px;
@@ -273,485 +168,109 @@
       padding:18px 20px;
       border-bottom:1px solid #242424;
     }
-
     .da-brand-mark{
-      width:48px;
-      height:48px;
-      flex:0 0 48px;
-      display:grid;
-      place-items:center;
-      border-radius:12px;
-      background:#f5c400;
-      color:#080808;
-      font-weight:900;
-      font-size:17px;
+      width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;
+      border-radius:12px;background:#f5c400;color:#080808;font-weight:900;font-size:17px;
     }
-
-    .da-brand-name{
-      color:#f4f4f4;
-      font-size:15px;
-      font-weight:800;
-      letter-spacing:.08em;
-    }
-
-    .da-brand-sub{
-      margin-top:4px;
-      color:#777;
-      font-size:10px;
-      letter-spacing:.18em;
-    }
-
-    .da-nav-scroll{
-      flex:1 1 auto;
-      min-height:0;
-      overflow-y:auto;
-      padding:20px 12px;
-      -webkit-overflow-scrolling:touch;
-    }
-
+    .da-brand-name{color:#f4f4f4;font-size:15px;font-weight:800;letter-spacing:.08em}
+    .da-brand-sub{margin-top:4px;color:#777;font-size:10px;letter-spacing:.18em}
+    .da-nav-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 12px;-webkit-overflow-scrolling:touch}
     .da-nav-section{margin-bottom:18px}
-
-    .da-nav-label{
-      padding:0 14px 9px;
-      color:#666;
-      font-size:10px;
-      font-weight:700;
-      letter-spacing:.18em;
-    }
-
+    .da-nav-label{padding:0 14px 9px;color:#666;font-size:10px;font-weight:700;letter-spacing:.18em}
     .da-nav-item{
-      min-height:46px;
-      display:flex;
-      align-items:center;
-      gap:13px;
-      padding:0 14px;
-      margin:3px 0;
-      border:1px solid transparent;
-      border-radius:10px;
-      color:#aaa;
-      text-decoration:none;
-      font-size:14px;
-      font-weight:600;
+      min-height:46px;display:flex;align-items:center;gap:13px;padding:0 14px;margin:3px 0;
+      border:1px solid transparent;border-radius:10px;color:#aaa;text-decoration:none;font-size:14px;font-weight:600;
     }
-
-    .da-nav-item:hover{
-      color:#fff;
-      background:#151515;
-    }
-
-    .da-nav-item.active{
-      color:#f5c400;
-      background:rgba(245,196,0,.09);
-      border-color:rgba(245,196,0,.35);
-    }
-
-    .da-nav-icon{
-      width:22px;
-      flex:0 0 22px;
-      text-align:center;
-      font-size:16px;
-      line-height:1;
-    }
-
-    .da-nav-footer{
-      flex:0 0 auto;
-      padding:16px 20px calc(20px + env(safe-area-inset-bottom));
-      border-top:1px solid #242424;
-      color:#aaa;
-      background:#0b0b0b;
-    }
-
-    .da-nav-footer strong{
-      display:block;
-      color:#aaa;
-      font-size:10px;
-      letter-spacing:.06em;
-    }
-
-    .da-nav-footer span{
-      display:block;
-      margin-top:4px;
-      color:#666;
-      font-size:10px;
-    }
-
-    /* Desktop */
-    body.da-nav-page{
-      padding-left:236px !important;
-    }
-
-    .da-mobile-menu{
-      position:fixed;
-      top:18px;
-      left:18px;
-      z-index:950;
-      display:none;
-      width:54px;
-      height:54px;
-      padding:0;
-      border:1px solid #303030;
-      border-radius:14px;
-      background:#151515;
-      color:#f4f4f4;
-      font-size:24px;
-      line-height:1;
-      box-shadow:none;
-      -webkit-tap-highlight-color:transparent;
-    }
-
-    .da-mobile-menu.open{
-      background:#151515;
-      color:#f4f4f4;
-    }
-
-    .da-nav-overlay{
-      position:fixed;
-      inset:0;
-      z-index:850;
-      display:none;
-      background:rgba(0,0,0,.72);
-      backdrop-filter:blur(3px);
-    }
-
+    .da-nav-item:hover{color:#fff;background:#151515}
+    .da-nav-item.active{color:#f5c400;background:rgba(245,196,0,.09);border-color:rgba(245,196,0,.35)}
+    .da-nav-icon{width:22px;flex:0 0 22px;text-align:center;font-size:16px;line-height:1}
+    .da-nav-footer{flex:0 0 auto;padding:16px 20px calc(20px + env(safe-area-inset-bottom));border-top:1px solid #242424;color:#aaa;background:#0b0b0b}
+    .da-nav-footer strong{display:block;color:#aaa;font-size:10px;letter-spacing:.06em}
+    .da-nav-footer span{display:block;margin-top:4px;color:#666;font-size:10px}
+    body.da-nav-page{padding-left:236px !important}
+    .da-mobile-menu{display:none !important}
+    .da-nav-overlay{position:fixed;inset:0;z-index:850;display:none;background:rgba(0,0,0,.72);backdrop-filter:blur(3px)}
     .da-nav-overlay.show{display:block}
+    html.da-sidebar-open,html.da-sidebar-open body{overflow:hidden}
+    .modal-backdrop,.backdrop,.detail-backdrop{z-index:3000 !important}
+    .modal,.drawer{position:relative;z-index:3001}
 
-    html.da-sidebar-open,
-    html.da-sidebar-open body{
-      overflow:hidden;
-    }
-
-    /* Dialogs always above navigation */
-    .modal-backdrop,
-    .backdrop,
-    .detail-backdrop{
-      z-index:3000 !important;
-    }
-
-    .modal,
-    .drawer{
-      position:relative;
-      z-index:3001;
-    }
-
-    /* iPad / iPhone */
     @media(max-width:820px){
-
-      body.da-nav-page{
-        padding-left:0 !important;
-        overflow-x:hidden;
-      }
-
+      body.da-nav-page{padding-left:0 !important;overflow-x:hidden}
       .da-shared-sidebar{
         width:min(315px,88vw);
         transform:translateX(-105%);
         transition:transform .22s ease;
         box-shadow:18px 0 60px rgba(0,0,0,.55);
       }
-
-      .da-shared-sidebar.open{
-        transform:translateX(0);
-      }
-
-      .da-mobile-menu{
-        display:grid;
-        place-items:center;
-      }
-
-      /*
-       * IMPORTANT:
-       * The Dashboard has a header zone above its content.
-       * Customer / Building / Elevator now reserve the same zone,
-       * so the menu never sits on top of the page title.
-       */
-      body.da-nav-page > main{
-        max-width:100%;
-      }
+      .da-shared-sidebar.open{transform:translateX(0)}
+      body.da-nav-page > main{max-width:100%}
     }
-
-    /* iPhone portrait */
     @media(max-width:640px){
-
-      .da-mobile-menu{
-        top:16px;
-        left:16px;
-        width:54px;
-        height:54px;
-        border-radius:14px;
-      }
-
-      .da-brand{
-        min-height:86px;
-        padding:15px 18px;
-      }
-
-      .da-brand-mark{
-        width:46px;
-        height:46px;
-        flex-basis:46px;
-      }
-
-      .da-nav-scroll{
-        padding:18px 10px;
-      }
-
-      .da-nav-item{
-        min-height:48px;
-        padding:0 14px;
-      }
-
-      .da-nav-footer{
-        padding:13px 18px calc(15px + env(safe-area-inset-bottom));
-      }
+      .da-brand{min-height:86px;padding:15px 18px}
+      .da-brand-mark{width:46px;height:46px;flex-basis:46px}
+      .da-nav-scroll{padding:18px 10px}
+      .da-nav-item{min-height:48px;padding:0 14px}
+      .da-nav-footer{padding:13px 18px calc(15px + env(safe-area-inset-bottom))}
     }
 
-    html,
-    body{
-      max-width:100%;
-      overflow-x:hidden;
+    html,body{max-width:100%;overflow-x:hidden}
+
+    /* Dashboard Topbar V1.15 */
+    .da-page-topbar{
+      position:sticky;top:0;z-index:950;height:68px;display:flex;align-items:center;gap:14px;
+      padding:0 18px;margin:0;background:#0b0b0b;border-bottom:1px solid #242424;
     }
-
-
-    /* V1.11 CUSTOMER HARD FIX — self-contained navigation */
-    @media(max-width:820px){    }
-    @media(max-width:640px){    }
-  
-/* =========================================================
-   DASHBOARD TOPBAR — V1.12
-   Customer / Building / Elevator use the same header system.
-   ========================================================= */
-
-.da-page-topbar{
-  position:sticky;
-  top:0;
-  z-index:950;
-  height:68px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:0 18px;
-  margin:0;
-  background:#0b0b0b;
-  border-bottom:1px solid #242424;
-}
-
-.da-top-menu{
-  width:42px;
-  height:42px;
-  flex:0 0 42px;
-  display:grid;
-  place-items:center;
-  padding:0;
-  border:1px solid #303030;
-  border-radius:10px;
-  background:#151515;
-  color:#f4f4f4;
-  font-size:21px;
-  line-height:1;
-  -webkit-tap-highlight-color:transparent;
-}
-
-.da-top-menu:hover{
-  border-color:#555;
-  color:#f5c400;
-}
-
-.da-breadcrumb{
-  min-width:0;
-  display:flex;
-  align-items:center;
-  gap:9px;
-  color:#777;
-  font-size:12px;
-  white-space:nowrap;
-  overflow:hidden;
-}
-
-.da-breadcrumb b{
-  color:#444;
-  font-weight:500;
-}
-
-.da-breadcrumb span:last-child{
-  color:#ddd;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.da-top-actions{
-  margin-left:auto;
-  display:flex;
-  align-items:center;
-  gap:9px;
-}
-
-.da-top-icon{
-  width:42px;
-  height:42px;
-  display:grid;
-  place-items:center;
-  border:1px solid #303030;
-  border-radius:10px;
-  background:#151515;
-  color:#ddd;
-  font-size:18px;
-}
-
-.da-user-chip{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  min-width:0;
-}
-
-.da-avatar{
-  width:42px;
-  height:42px;
-  flex:0 0 42px;
-  display:grid;
-  place-items:center;
-  border-radius:50%;
-  background:#f5c400;
-  color:#080808;
-  font-size:13px;
-  font-weight:900;
-}
-
-.da-user-text{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  min-width:0;
-}
-
-.da-user-text strong{
-  color:#eee;
-  font-size:11px;
-  white-space:nowrap;
-}
-
-.da-user-text small{
-  color:#777;
-  font-size:9px;
-  letter-spacing:.08em;
-  white-space:nowrap;
-}
-
-.da-mobile-menu{
-  display:none !important;
-}
-
-@media(max-width:820px){
-  .da-page-topbar{
-    height:68px;
-    padding:0 16px;
-  }
-
-  .da-top-menu{
-    width:54px;
-    height:54px;
-    flex-basis:54px;
-    border-radius:14px;
-    font-size:24px;
-  }
-
-  .da-breadcrumb{
-    flex:1;
-    justify-content:center;
-    font-size:11px;
-  }
-
-  .da-breadcrumb span:first-child,
-  .da-breadcrumb b{
-    display:none;
-  }
-
-  .da-top-actions{
-    margin-left:0;
-    gap:7px;
-  }
-
-  .da-top-icon{
-    width:54px;
-    height:54px;
-    border-radius:14px;
-  }
-
-  .da-avatar{
-    width:54px;
-    height:54px;
-    flex-basis:54px;
-    font-size:15px;
-  }
-
-  .da-user-text{
-    display:none;
-  }
-
-  body.da-nav-page{
-    padding-left:0 !important;
-  }
-
-  .customer-page{
-    padding-top:22px !important;
-  }
-}
-
-@media(max-width:640px){
-  .da-page-topbar{
-    padding:0 16px;
-  }
-
-  .da-top-menu{
-    width:54px;
-    height:54px;
-  }
-
-  .da-top-icon{
-    width:54px;
-    height:54px;
-  }
-
-  .da-avatar{
-    width:54px;
-    height:54px;
-    flex-basis:54px;
-  }
-
-  .customer-page{
-    padding:16px 12px 30px !important;
-  }
-}
-
+    .da-top-menu{
+      width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;padding:0;
+      border:1px solid #303030;border-radius:10px;background:#151515;color:#f4f4f4;font-size:21px;
+      line-height:1;-webkit-tap-highlight-color:transparent;
+    }
+    .da-top-menu:hover{border-color:#555;color:#f5c400}
+    .da-breadcrumb{min-width:0;display:flex;align-items:center;gap:9px;color:#777;font-size:12px;white-space:nowrap;overflow:hidden}
+    .da-breadcrumb b{color:#444;font-weight:500}
+    .da-breadcrumb span:last-child{color:#ddd;overflow:hidden;text-overflow:ellipsis}
+    .da-top-actions{margin-left:auto;display:flex;align-items:center;gap:9px}
+    .da-top-icon{
+      width:42px;height:42px;display:grid;place-items:center;border:1px solid #303030;border-radius:10px;
+      background:#151515;color:#ddd;font-size:18px;
+    }
+    .da-user-chip{display:flex;align-items:center;gap:9px;min-width:0}
+    .da-avatar{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:50%;background:#f5c400;color:#080808;font-size:13px;font-weight:900}
+    .da-user-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .da-user-text strong{color:#eee;font-size:11px;white-space:nowrap}
+    .da-user-text small{color:#777;font-size:9px;letter-spacing:.08em;white-space:nowrap}
+    @media(max-width:820px){
+      .da-page-topbar{height:68px;padding:0 16px}
+      .da-top-menu{width:54px;height:54px;flex-basis:54px;border-radius:14px;font-size:24px}
+      .da-breadcrumb{flex:1;justify-content:center;font-size:11px}
+      .da-breadcrumb span:first-child,.da-breadcrumb b{display:none}
+      .da-top-actions{margin-left:0;gap:7px}
+      .da-top-icon{width:54px;height:54px;border-radius:14px}
+      .da-avatar{width:54px;height:54px;flex-basis:54px;font-size:15px}
+      .da-user-text{display:none}
+      body.da-nav-page{padding-left:0 !important}
+      .customer-page{padding-top:22px !important}
+    }
+    @media(max-width:640px){
+      .da-page-topbar{padding:0 16px}
+      .da-top-menu{width:54px;height:54px}
+      .da-top-icon{width:54px;height:54px}
+      .da-avatar{width:54px;height:54px;flex-basis:54px}
+      .customer-page{padding:16px 12px 30px !important}
+    }
   </style>
 </head>
 
 <body>
 
-<!-- SHARED DASHBOARD TOPBAR V1.12 -->
 <header class="da-page-topbar">
-  <button
-    class="da-top-menu"
-    id="daMenuButton"
-    type="button"
-    aria-label="Mở menu"
-    aria-expanded="false">
-    ☰
-  </button>
-
+  <button class="da-top-menu" id="daMenuButton" type="button" aria-label="Mở menu" aria-expanded="false">☰</button>
   <div class="da-breadcrumb">
-    <span>Đức Anh Maintenance</span>
-    <b>/</b>
-    <span>Khách hàng</span>
+    <span>Đức Anh Maintenance</span><b>/</b><span>Khách hàng</span>
   </div>
-
   <div class="da-top-actions">
-    <button
-      class="da-top-icon"
-      type="button"
-      aria-label="Thông báo">
-      ♢
-    </button>
-
+    <button class="da-top-icon" type="button" aria-label="Thông báo">♢</button>
     <div class="da-user-chip" id="currentUserChip">
       <div class="da-avatar" id="currentUserAvatar">DA</div>
       <div class="da-user-text">
@@ -783,26 +302,21 @@
     <section class="customer-toolbar">
       <div class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Tìm tên, số điện thoại, email..." autocomplete="off"></div>
       <select class="filter-select" id="statusFilter">
-        <option value="all">Tất cả trạng thái</option>
-        <option value="active">Đang hoạt động</option>
-        <option value="care">Cần chăm sóc</option>
-        <option value="inactive">Ngừng hoạt động</option>
+        <option value="all">Tất cả trạng thái</option><option value="active">Đang hoạt động</option><option value="care">Cần chăm sóc</option><option value="inactive">Ngừng hoạt động</option>
       </select>
     </section>
 
     <section class="customer-table-card">
       <div class="table-header"><div class="table-title">Danh sách khách hàng</div><div class="table-count" id="tableCount">Đang tải...</div></div>
       <div id="firebaseMessage" class="firebase-message"></div>
-
       <div class="table-scroll">
         <table>
           <thead><tr><th>Khách hàng</th><th>Liên hệ</th><th>Tòa nhà</th><th>Thang máy</th><th>Phụ trách</th><th>Trạng thái</th><th></th></tr></thead>
           <tbody id="customerTableBody"></tbody>
         </table>
       </div>
-
       <div class="mobile-customer-list" id="mobileCustomerList"></div>
-      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.14</span></div>
+      <div class="table-footer"><span>Dữ liệu Firebase DEV — Firestore.</span><span>DEV V1.15</span></div>
     </section>
   </div>
 </main>
@@ -822,7 +336,6 @@
         <div class="detail-item"><span>Người phụ trách</span><b id="detailManager">—</b></div>
         <div class="detail-item"><span>Loại khách hàng</span><b id="detailType">—</b></div>
       </div>
-
       <p class="detail-section-title">Quan hệ dịch vụ</p>
       <div class="detail-grid">
         <div class="detail-item"><span>Tòa nhà</span><b id="detailBuildings">0</b></div>
@@ -830,7 +343,6 @@
         <div class="detail-item"><span>Hợp đồng</span><b id="detailContracts">—</b></div>
         <div class="detail-item"><span>Work Order</span><b id="detailWorkOrders">—</b></div>
       </div>
-
       <div class="detail-tabs">
         <button class="detail-tab active" type="button" data-tab="buildings">Tòa nhà</button>
         <button class="detail-tab" type="button" data-tab="elevators">Thang máy</button>
@@ -857,7 +369,6 @@
           <div class="form-field"><label for="taxCode">Mã số thuế</label><input id="taxCode" placeholder="Nếu có"></div>
           <div class="form-field full"><label for="customerAddress">Địa chỉ</label><input id="customerAddress" placeholder="Địa chỉ khách hàng"></div>
         </div>
-
         <p class="form-section-title">Người liên hệ</p>
         <div class="form-grid">
           <div class="form-field"><label for="contactName">Họ tên</label><input id="contactName" placeholder="Người liên hệ"></div>
@@ -870,25 +381,16 @@
   </section>
 </div>
 
-
-
 <script type="module">
-import {
-  createCustomer,
-  getCustomers,
-  getBuildings,
-  getElevators
-} from "./js/core/firestore-v1.js";
+import { createCustomer, getCustomers, getBuildings, getElevators } from "./js/core/firestore-v1.js";
 
 const $ = id => document.getElementById(id);
-
 const tableBody = $("customerTableBody");
 const mobileList = $("mobileCustomerList");
 const searchInput = $("searchInput");
 const statusFilter = $("statusFilter");
 const tableCount = $("tableCount");
 const firebaseMessage = $("firebaseMessage");
-
 const modal = $("customerModal");
 const detailBackdrop = $("detailBackdrop");
 const form = $("customerForm");
@@ -899,610 +401,255 @@ let elevators = [];
 let selectedCustomer = null;
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
-
-function showFirebaseMessage(message, type = "") {
-  firebaseMessage.textContent = message || "";
-  firebaseMessage.className = "firebase-message";
-  if (message) {
-    firebaseMessage.classList.add("show");
-    if (type) firebaseMessage.classList.add(type);
-  }
+function showFirebaseMessage(message,type=""){
+  firebaseMessage.textContent=message||"";
+  firebaseMessage.className="firebase-message";
+  if(message){firebaseMessage.classList.add("show");if(type)firebaseMessage.classList.add(type);}
 }
-
-function statusLabel(status) {
-  const map = {
-    active: ["Đang hoạt động", "active"],
-    care: ["Cần chăm sóc", "care"],
-    inactive: ["Ngừng hoạt động", "inactive"]
-  };
-
-  const [label, cls] = map[status] || ["Chưa xác định", "inactive"];
+function statusLabel(status){
+  const map={active:["Đang hoạt động","active"],care:["Cần chăm sóc","care"],inactive:["Ngừng hoạt động","inactive"]};
+  const [label,cls]=map[status]||["Chưa xác định","inactive"];
   return `<span class="status ${cls}">${label}</span>`;
 }
-
-function typeLabel(type) {
-  const map = {
-    individual: "Cá nhân",
-    business: "Doanh nghiệp",
-    building_management: "Ban quản lý tòa nhà",
-    investor: "Chủ đầu tư"
-  };
-  return map[type] || type || "—";
+function typeLabel(type){
+  const map={individual:"Cá nhân",business:"Doanh nghiệp",building_management:"Ban quản lý tòa nhà",investor:"Chủ đầu tư"};
+  return map[type]||type||"—";
 }
-
-function normalizeCustomer(customer) {
-  const customerBuildings = buildings.filter(
-    building => building.customerId === customer.id
-  );
-
-  const customerElevators = elevators.filter(
-    elevator => elevator.customerId === customer.id
-  );
-
-  const contactPerson = customer.contactPerson || {};
-
-  return {
-    ...customer,
-    phone: customer.phone || "",
-    email: customer.email || "",
-    manager: contactPerson.name || "Chưa phân công",
-    buildings: customerBuildings.length,
-    elevators: customerElevators.length,
-    type: typeLabel(customer.type)
-  };
+function normalizeCustomer(customer){
+  const customerBuildings=buildings.filter(building=>building.customerId===customer.id);
+  const customerElevators=elevators.filter(elevator=>elevator.customerId===customer.id);
+  const contactPerson=customer.contactPerson||{};
+  return {...customer,phone:customer.phone||"",email:customer.email||"",manager:contactPerson.name||"Chưa phân công",buildings:customerBuildings.length,elevators:customerElevators.length,type:typeLabel(customer.type)};
 }
-
-async function loadCustomers() {
-  tableCount.textContent = "Đang tải...";
-  showFirebaseMessage("Đang tải dữ liệu từ Firebase...", "info");
-
-  tableBody.innerHTML = `
-    <tr>
-      <td colspan="7" style="text-align:center;padding:35px;color:#888">
-        Đang tải dữ liệu từ Firebase...
-      </td>
-    </tr>
-  `;
-
-  try {
-    const [customerData, buildingData, elevatorData] = await Promise.all([
-      getCustomers(),
-      getBuildings(),
-      getElevators()
-    ]);
-
-    customers = customerData;
-    buildings = buildingData;
-    elevators = elevatorData;
-
-    renderCustomers();
-    updateKpis();
-
-    showFirebaseMessage(
-      `Đã kết nối Firestore. ${customers.length} khách hàng.`,
-      "success"
-    );
-
-    console.log("CUSTOMERS:", customers);
-    console.log("BUILDINGS:", buildings);
-    console.log("ELEVATORS:", elevators);
-  } catch (error) {
-    console.error("LOAD CUSTOMER ERROR:", error);
-
-    tableCount.textContent = "Lỗi";
-
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align:center;padding:35px;color:#ef6262">
-          Không thể tải dữ liệu từ Firebase.
-          <br>
-          <small>${escapeHtml(error.message)}</small>
-        </td>
-      </tr>
-    `;
-
-    mobileList.innerHTML = `
-      <div style="padding:25px;text-align:center;color:#ef6262">
-        Không thể tải dữ liệu từ Firebase.
-        <br>
-        <small>${escapeHtml(error.message)}</small>
-      </div>
-    `;
-
-    showFirebaseMessage(`Lỗi Firebase: ${error.message}`, "error");
+async function loadCustomers(){
+  tableCount.textContent="Đang tải...";
+  showFirebaseMessage("Đang tải dữ liệu từ Firebase...","info");
+  tableBody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:35px;color:#888">Đang tải dữ liệu từ Firebase...</td></tr>`;
+  try{
+    const [customerData,buildingData,elevatorData]=await Promise.all([getCustomers(),getBuildings(),getElevators()]);
+    customers=customerData;buildings=buildingData;elevators=elevatorData;
+    renderCustomers();updateKpis();
+    showFirebaseMessage(`Đã kết nối Firestore. ${customers.length} khách hàng.`,"success");
+    console.log("CUSTOMERS:",customers);console.log("BUILDINGS:",buildings);console.log("ELEVATORS:",elevators);
+  }catch(error){
+    console.error("LOAD CUSTOMER ERROR:",error);tableCount.textContent="Lỗi";
+    tableBody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:35px;color:#ef6262">Không thể tải dữ liệu từ Firebase.<br><small>${escapeHtml(error.message)}</small></td></tr>`;
+    mobileList.innerHTML=`<div style="padding:25px;text-align:center;color:#ef6262">Không thể tải dữ liệu từ Firebase.<br><small>${escapeHtml(error.message)}</small></div>`;
+    showFirebaseMessage(`Lỗi Firebase: ${error.message}`,"error");
   }
 }
-
-function updateKpis() {
-  const total = customers.length;
-  const active = customers.filter(customer => customer.status === "active").length;
-  const care = customers.filter(customer => customer.status === "care").length;
-
-  document.querySelector(".kpi-card:nth-child(1) .kpi-value").textContent = total;
-  document.querySelector(".kpi-card:nth-child(2) .kpi-value").textContent = active;
-  document.querySelector(".kpi-card:nth-child(3) .kpi-value").textContent = "—";
-  document.querySelector(".kpi-card:nth-child(4) .kpi-value").textContent = care;
+function updateKpis(){
+  const total=customers.length,active=customers.filter(customer=>customer.status==="active").length,care=customers.filter(customer=>customer.status==="care").length;
+  document.querySelector(".kpi-card:nth-child(1) .kpi-value").textContent=total;
+  document.querySelector(".kpi-card:nth-child(2) .kpi-value").textContent=active;
+  document.querySelector(".kpi-card:nth-child(3) .kpi-value").textContent="—";
+  document.querySelector(".kpi-card:nth-child(4) .kpi-value").textContent=care;
 }
-
-function filteredCustomers() {
-  const q = searchInput.value.trim().toLowerCase();
-  const status = statusFilter.value;
-
-  return customers
-    .map(normalizeCustomer)
-    .filter(customer => {
-      const text = [
-        customer.name,
-        customer.phone,
-        customer.email,
-        customer.manager
-      ].join(" ").toLowerCase();
-
-      return (!q || text.includes(q)) &&
-             (status === "all" || customer.status === status);
-    });
-}
-
-function renderCustomers() {
-  const list = filteredCustomers();
-  tableCount.textContent = `${list.length} khách hàng`;
-
-  if (!list.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align:center;padding:45px;color:#777">
-          Chưa có khách hàng
-        </td>
-      </tr>
-    `;
-
-    mobileList.innerHTML = `
-      <div style="padding:35px;text-align:center;color:#777">
-        Chưa có khách hàng
-      </div>
-    `;
-    return;
-  }
-
-  tableBody.innerHTML = list.map(customer => `
-    <tr>
-      <td>
-        <div class="customer-name">${escapeHtml(customer.name)}</div>
-        <div class="customer-id">${escapeHtml(customer.id)}</div>
-      </td>
-      <td>
-        <div>${escapeHtml(customer.phone || "—")}</div>
-        <div class="muted">${escapeHtml(customer.email || "—")}</div>
-      </td>
-      <td>${customer.buildings}</td>
-      <td>${customer.elevators}</td>
-      <td>${escapeHtml(customer.manager)}</td>
-      <td>${statusLabel(customer.status)}</td>
-      <td>
-        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">Xem</button>
-      </td>
-    </tr>
-  `).join("");
-
-  mobileList.innerHTML = list.map(customer => `
-    <article class="customer-card">
-      <div class="customer-card-top">
-        <div>
-          <div class="customer-name">${escapeHtml(customer.name)}</div>
-          <div class="customer-id">${escapeHtml(customer.id)}</div>
-        </div>
-        ${statusLabel(customer.status)}
-      </div>
-
-      <div class="customer-card-contact">
-        ${escapeHtml(customer.phone || "—")}<br>
-        ${escapeHtml(customer.email || "—")}<br>
-        Phụ trách: ${escapeHtml(customer.manager)}
-      </div>
-
-      <div class="customer-card-stats">
-        <div class="mini-stat"><b>${customer.buildings}</b><span>TÒA NHÀ</span></div>
-        <div class="mini-stat"><b>${customer.elevators}</b><span>THANG MÁY</span></div>
-        <div class="mini-stat"><b>—</b><span>HỢP ĐỒNG</span></div>
-      </div>
-
-      <div class="customer-card-bottom">
-        <span class="muted">${escapeHtml(customer.type)}</span>
-        <button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">Xem hồ sơ</button>
-      </div>
-    </article>
-  `).join("");
-}
-
-function openDetail(id) {
-  const rawCustomer = customers.find(customer => customer.id === id);
-  if (!rawCustomer) return;
-
-  selectedCustomer = normalizeCustomer(rawCustomer);
-
-  $("detailName").textContent = selectedCustomer.name || "—";
-  $("detailId").textContent = selectedCustomer.id || "—";
-  $("detailStatus").innerHTML = statusLabel(selectedCustomer.status);
-  $("detailPhone").textContent = selectedCustomer.phone || "—";
-  $("detailEmail").textContent = selectedCustomer.email || "—";
-  $("detailManager").textContent = selectedCustomer.manager || "—";
-  $("detailType").textContent = selectedCustomer.type || "—";
-  $("detailBuildings").textContent = selectedCustomer.buildings;
-  $("detailElevators").textContent = selectedCustomer.elevators;
-  $("detailContracts").textContent = "—";
-  $("detailWorkOrders").textContent = "—";
-
-  setDetailTab("buildings");
-
-  detailBackdrop.classList.add("show");
-  document.body.style.overflow = "hidden";
-}
-
-function closeDetail() {
-  detailBackdrop.classList.remove("show");
-  document.body.style.overflow = "";
-  selectedCustomer = null;
-}
-
-function setDetailTab(tab) {
-  document.querySelectorAll(".detail-tab").forEach(button => {
-    button.classList.toggle("active", button.dataset.tab === tab);
+function filteredCustomers(){
+  const q=searchInput.value.trim().toLowerCase(),status=statusFilter.value;
+  return customers.map(normalizeCustomer).filter(customer=>{
+    const text=[customer.name,customer.phone,customer.email,customer.manager].join(" ").toLowerCase();
+    return (!q||text.includes(q))&&(status==="all"||customer.status===status);
   });
-
-  if (!selectedCustomer) return;
-
-  const customerId = selectedCustomer.id;
-  const customerBuildings = buildings.filter(building => building.customerId === customerId);
-  const customerElevators = elevators.filter(elevator => elevator.customerId === customerId);
-
-  let rows = [];
-
-  if (tab === "buildings") {
-    rows = customerBuildings.map(building => [
-      building.name || "Tòa nhà",
-      building.status === "active" ? "Đang quản lý" : building.status || "—"
-    ]);
-  } else if (tab === "elevators") {
-    rows = customerElevators.map(elevator => [
-      elevator.name || "Thang máy",
-      elevator.status === "active" ? "Đang hoạt động" : elevator.status || "—"
-    ]);
-  } else if (tab === "contracts") {
-    rows = [["Chưa có dữ liệu hợp đồng", "—"]];
-  } else if (tab === "maintenance") {
-    rows = [["Chưa có dữ liệu bảo trì", "—"]];
-  } else if (tab === "workorders") {
-    rows = [["Chưa có Work Order", "—"]];
-  }
-
-  if (!rows.length) {
-    $("detailList").innerHTML = `
-      <div class="detail-row"><b>Chưa có dữ liệu</b><span>—</span></div>
-    `;
-    return;
-  }
-
-  $("detailList").innerHTML = rows.map(row => `
-    <div class="detail-row">
-      <b>${escapeHtml(row[0])}</b>
-      <span>${escapeHtml(row[1])}</span>
-    </div>
-  `).join("");
 }
-
-$("addCustomerButton").onclick = () => {
-  $("modalTitle").textContent = "Thêm khách hàng";
-  modal.classList.add("show");
-  document.body.style.overflow = "hidden";
-
-  const modalBody = modal.querySelector(".modal-body");
-  if (modalBody) modalBody.scrollTop = 0;
-
-  if (window.innerWidth > 820) {
-    setTimeout(() => $("customerName").focus(), 50);
+function renderCustomers(){
+  const list=filteredCustomers();tableCount.textContent=`${list.length} khách hàng`;
+  if(!list.length){
+    tableBody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:45px;color:#777">Chưa có khách hàng</td></tr>`;
+    mobileList.innerHTML=`<div style="padding:35px;text-align:center;color:#777">Chưa có khách hàng</div>`;return;
   }
-};
-
-function closeModal() {
-  modal.classList.remove("show");
-  document.body.style.overflow = "";
-  form.reset();
+  tableBody.innerHTML=list.map(customer=>`
+    <tr>
+      <td><div class="customer-name">${escapeHtml(customer.name)}</div><div class="customer-id">${escapeHtml(customer.id)}</div></td>
+      <td><div>${escapeHtml(customer.phone||"—")}</div><div class="muted">${escapeHtml(customer.email||"—")}</div></td>
+      <td>${customer.buildings}</td><td>${customer.elevators}</td><td>${escapeHtml(customer.manager)}</td><td>${statusLabel(customer.status)}</td>
+      <td><button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">Xem</button></td>
+    </tr>`).join("");
+  mobileList.innerHTML=list.map(customer=>`
+    <article class="customer-card">
+      <div class="customer-card-top"><div><div class="customer-name">${escapeHtml(customer.name)}</div><div class="customer-id">${escapeHtml(customer.id)}</div></div>${statusLabel(customer.status)}</div>
+      <div class="customer-card-contact">${escapeHtml(customer.phone||"—")}<br>${escapeHtml(customer.email||"—")}<br>Phụ trách: ${escapeHtml(customer.manager)}</div>
+      <div class="customer-card-stats"><div class="mini-stat"><b>${customer.buildings}</b><span>TÒA NHÀ</span></div><div class="mini-stat"><b>${customer.elevators}</b><span>THANG MÁY</span></div><div class="mini-stat"><b>—</b><span>HỢP ĐỒNG</span></div></div>
+      <div class="customer-card-bottom"><span class="muted">${escapeHtml(customer.type)}</span><button class="action-button" data-view="${escapeHtml(customer.id)}" type="button">Xem hồ sơ</button></div>
+    </article>`).join("");
 }
-
-$("closeModalButton").onclick = closeModal;
-$("cancelModalButton").onclick = closeModal;
-
-modal.onclick = event => {
-  if (event.target === modal) closeModal();
+function openDetail(id){
+  const rawCustomer=customers.find(customer=>customer.id===id);if(!rawCustomer)return;
+  selectedCustomer=normalizeCustomer(rawCustomer);
+  $("detailName").textContent=selectedCustomer.name||"—";$("detailId").textContent=selectedCustomer.id||"—";
+  $("detailStatus").innerHTML=statusLabel(selectedCustomer.status);$("detailPhone").textContent=selectedCustomer.phone||"—";
+  $("detailEmail").textContent=selectedCustomer.email||"—";$("detailManager").textContent=selectedCustomer.manager||"—";
+  $("detailType").textContent=selectedCustomer.type||"—";$("detailBuildings").textContent=selectedCustomer.buildings;
+  $("detailElevators").textContent=selectedCustomer.elevators;$("detailContracts").textContent="—";$("detailWorkOrders").textContent="—";
+  setDetailTab("buildings");detailBackdrop.classList.add("show");document.body.style.overflow="hidden";
+}
+function closeDetail(){detailBackdrop.classList.remove("show");document.body.style.overflow="";selectedCustomer=null;}
+function setDetailTab(tab){
+  document.querySelectorAll(".detail-tab").forEach(button=>button.classList.toggle("active",button.dataset.tab===tab));
+  if(!selectedCustomer)return;
+  const customerId=selectedCustomer.id,customerBuildings=buildings.filter(building=>building.customerId===customerId),customerElevators=elevators.filter(elevator=>elevator.customerId===customerId);
+  let rows=[];
+  if(tab==="buildings")rows=customerBuildings.map(building=>[building.name||"Tòa nhà",building.status==="active"?"Đang quản lý":building.status||"—"]);
+  else if(tab==="elevators")rows=customerElevators.map(elevator=>[elevator.name||"Thang máy",elevator.status==="active"?"Đang hoạt động":elevator.status||"—"]);
+  else if(tab==="contracts")rows=[["Chưa có dữ liệu hợp đồng","—"]];
+  else if(tab==="maintenance")rows=[["Chưa có dữ liệu bảo trì","—"]];
+  else if(tab==="workorders")rows=[["Chưa có Work Order","—"]];
+  if(!rows.length){$("detailList").innerHTML=`<div class="detail-row"><b>Chưa có dữ liệu</b><span>—</span></div>`;return;}
+  $("detailList").innerHTML=rows.map(row=>`<div class="detail-row"><b>${escapeHtml(row[0])}</b><span>${escapeHtml(row[1])}</span></div>`).join("");
+}
+$("addCustomerButton").onclick=()=>{
+  $("modalTitle").textContent="Thêm khách hàng";modal.classList.add("show");document.body.style.overflow="hidden";
+  const modalBody=modal.querySelector(".modal-body");if(modalBody)modalBody.scrollTop=0;
+  if(window.innerWidth>820)setTimeout(()=>$("customerName").focus(),50);
 };
-
-detailBackdrop.onclick = event => {
-  if (event.target === detailBackdrop) closeDetail();
-};
-
-$("closeDetailButton").onclick = closeDetail;
-
-document.addEventListener("click", event => {
-  const button = event.target.closest("[data-view]");
-  if (!button) return;
-  openDetail(button.dataset.view);
-});
-
-document.querySelectorAll(".detail-tab").forEach(button => {
-  button.onclick = () => setDetailTab(button.dataset.tab);
-});
-
-searchInput.oninput = renderCustomers;
-statusFilter.onchange = renderCustomers;
-
-form.onsubmit = async event => {
+function closeModal(){modal.classList.remove("show");document.body.style.overflow="";form.reset();}
+$("closeModalButton").onclick=closeModal;$("cancelModalButton").onclick=closeModal;
+modal.onclick=event=>{if(event.target===modal)closeModal();};detailBackdrop.onclick=event=>{if(event.target===detailBackdrop)closeDetail();};
+$("closeDetailButton").onclick=closeDetail;
+document.addEventListener("click",event=>{const button=event.target.closest("[data-view]");if(!button)return;openDetail(button.dataset.view);});
+document.querySelectorAll(".detail-tab").forEach(button=>{button.onclick=()=>setDetailTab(button.dataset.tab);});
+searchInput.oninput=renderCustomers;statusFilter.onchange=renderCustomers;
+form.onsubmit=async event=>{
   event.preventDefault();
-
-  const submitButton = form.querySelector("button[type='submit']");
-  const originalText = submitButton.textContent;
-
-  submitButton.disabled = true;
-  submitButton.textContent = "Đang lưu...";
-
-  const typeMap = {
-    "Cá nhân": "individual",
-    "Doanh nghiệp": "business",
-    "Ban quản lý tòa nhà": "building_management",
-    "Chủ đầu tư": "investor"
+  const submitButton=form.querySelector("button[type='submit']"),originalText=submitButton.textContent;
+  submitButton.disabled=true;submitButton.textContent="Đang lưu...";
+  const typeMap={"Cá nhân":"individual","Doanh nghiệp":"business","Ban quản lý tòa nhà":"building_management","Chủ đầu tư":"investor"};
+  const data={
+    name:$("customerName").value.trim(),type:typeMap[$("customerType").value]||"business",phone:$("customerPhone").value.trim(),
+    email:$("customerEmail").value.trim(),taxCode:$("taxCode").value.trim(),address:$("customerAddress").value.trim(),
+    contactPerson:{name:$("contactName").value.trim(),phone:$("contactPhone").value.trim()},status:"active"
   };
-
-  const data = {
-    name: $("customerName").value.trim(),
-    type: typeMap[$("customerType").value] || "business",
-    phone: $("customerPhone").value.trim(),
-    email: $("customerEmail").value.trim(),
-    taxCode: $("taxCode").value.trim(),
-    address: $("customerAddress").value.trim(),
-    contactPerson: {
-      name: $("contactName").value.trim(),
-      phone: $("contactPhone").value.trim()
-    },
-    status: "active"
-  };
-
-  try {
-    const created = await createCustomer(data);
-    console.log("CUSTOMER CREATED:", created);
-
-    closeModal();
-    await loadCustomers();
-    openDetail(created.id);
-  } catch (error) {
-    console.error("CREATE CUSTOMER ERROR:", error);
-    alert("Không thể lưu khách hàng.\n\n" + error.message);
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = originalText;
-  }
+  try{
+    const created=await createCustomer(data);console.log("CUSTOMER CREATED:",created);
+    closeModal();await loadCustomers();openDetail(created.id);
+  }catch(error){console.error("CREATE CUSTOMER ERROR:",error);alert("Không thể lưu khách hàng.\n\n"+error.message);}
+  finally{submitButton.disabled=false;submitButton.textContent=originalText;}
 };
-
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeDetail();
-    closeModal();
-  }
-});
-
+document.addEventListener("keydown",event=>{if(event.key==="Escape"){closeDetail();closeModal();}});
 loadCustomers();
 </script>
 
 <script type="module">
-/* USER PROFILE / ROLE BRIDGE — Đức Anh Maintenance
-   V1: dùng Firebase Auth + users/{uid}; không thay đổi nghiệp vụ module. */
 import { auth, db } from "./js/core/firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-const ROLE_LABELS = {
-  admin: ["Administrator", "ADMIN"],
-  manager: ["Quản lý", "MANAGER"],
-  technician: ["Kỹ thuật viên", "TECHNICIAN"],
-  customer_service: ["CSKH", "CSKH"],
-  cskh: ["CSKH", "CSKH"],
-  warehouse: ["Kho", "WAREHOUSE"],
-  director: ["Giám đốc", "DIRECTOR"]
+const ROLE_LABELS={
+  admin:["Administrator","ADMIN"],manager:["Quản lý","MANAGER"],technician:["Kỹ thuật viên","TECHNICIAN"],
+  customer_service:["CSKH","CSKH"],cskh:["CSKH","CSKH"],warehouse:["Kho","WAREHOUSE"],director:["Giám đốc","DIRECTOR"]
 };
-
-function setUserProfile(profile, user) {
-  const roleKey = String(profile?.role || "").trim().toLowerCase();
-  const labels = ROLE_LABELS[roleKey] || [roleKey ? roleKey.toUpperCase() : "USER", roleKey ? roleKey.toUpperCase() : "USER"];
-  const name = String(
-    profile?.name ||
-    user?.displayName ||
-    user?.email?.split("@")[0] ||
-    "Người dùng"
-  ).trim();
-
-  const avatar = document.querySelector(".da-avatar");
-  const nameEl = document.querySelector(".da-user-text strong");
-  const roleEl = document.querySelector(".da-user-text small");
-
-  if (nameEl) nameEl.textContent = name;
-  if (roleEl) roleEl.textContent = labels[1];
-  if (avatar) avatar.textContent = name.slice(0, 2).toUpperCase();
+function setUserProfile(profile,user){
+  const roleKey=String(profile?.role||"").trim().toLowerCase();
+  const labels=ROLE_LABELS[roleKey]||[roleKey?roleKey.toUpperCase():"USER",roleKey?roleKey.toUpperCase():"USER"];
+  const name=String(profile?.name||user?.displayName||user?.email?.split("@")[0]||"Người dùng").trim();
+  const avatar=document.querySelector(".da-avatar"),nameEl=document.querySelector(".da-user-text strong"),roleEl=document.querySelector(".da-user-text small");
+  if(nameEl)nameEl.textContent=name;if(roleEl)roleEl.textContent=labels[1];if(avatar)avatar.textContent=name.slice(0,2).toUpperCase();
 }
-
-async function syncCurrentUserProfile(user) {
-  if (!user) return;
-  try {
-    const snap = await getDoc(doc(db, "users", user.uid));
-    setUserProfile(snap.exists() ? snap.data() : null, user);
-  } catch (error) {
-    console.error("USER PROFILE ERROR:", error);
-    setUserProfile(null, user);
-  }
+async function syncCurrentUserProfile(user){
+  if(!user)return;
+  try{const snap=await getDoc(doc(db,"users",user.uid));setUserProfile(snap.exists()?snap.data():null,user);}
+  catch(error){console.error("USER PROFILE ERROR:",error);setUserProfile(null,user);}
 }
-
-onAuthStateChanged(auth, syncCurrentUserProfile);
+onAuthStateChanged(auth,syncCurrentUserProfile);
 </script>
 
 <script>
-/* Shared Navigation V1.12 — same topbar behavior as Dashboard */
+/* Shared Navigation V1.15 — Customer follows the same navigation contract as Dashboard */
 (() => {
-  const NAV_ITEMS = [
-    { section:"TỔNG QUAN", items:[
+  const NAV_ITEMS=[
+    {section:"TỔNG QUAN",items:[
       {label:"Dashboard",href:"dashboard.html",icon:"⌂"}
     ]},
-    { section:"VẬN HÀNH", items:[
+    {section:"VẬN HÀNH",items:[
       {label:"Khách hàng",href:"customers.html",icon:"♙"},
       {label:"Tòa nhà",href:"buildings.html",icon:"▦"},
       {label:"Thang máy",href:"elevators.html",icon:"↕"},
-      {label:"Hợp đồng",module:"contracts",icon:"▤"},
-      {label:"Bảo trì",module:"maintenance",icon:"⚙"},
-      {label:"Work Order",module:"work-orders",icon:"✓"}
+      {label:"Hợp đồng",href:"contracts.html",icon:"▤"},
+      {label:"Bảo trì",href:"maintenance.html",icon:"⚙"},
+      {label:"Work Order",href:"work-orders.html",icon:"✓"}
     ]},
-    { section:"NHÂN SỰ", items:[
-      {label:"Kỹ thuật viên",module:"technicians",icon:"♟"},
-      {label:"KPI",module:"kpi",icon:"▥"}
+    {section:"NHÂN SỰ",items:[
+      {label:"Kỹ thuật viên",href:"technicians.html",icon:"♟"},
+      {label:"KPI",href:"kpi.html",icon:"▥"}
     ]},
-    { section:"HỆ THỐNG", items:[
+    {section:"HỆ THỐNG",items:[
       {label:"Import Center",module:"import-center",icon:"⇧"},
       {label:"Documents",module:"documents",icon:"▱"},
       {label:"Cài đặt",module:"settings",icon:"⚙"}
     ]}
   ];
 
-  function currentPage(){
-    return window.location.pathname.split("/").pop() || "index.html";
-  }
+  function currentPage(){return window.location.pathname.split("/").pop()||"index.html";}
 
   function buildSidebar(){
-    const aside = document.createElement("aside");
-    aside.className = "da-shared-sidebar";
-    aside.id = "daSidebar";
-
-    aside.innerHTML = `
+    const aside=document.createElement("aside");
+    aside.className="da-shared-sidebar";aside.id="daSidebar";
+    aside.innerHTML=`
       <div class="da-brand">
         <div class="da-brand-mark">DA</div>
-        <div>
-          <div class="da-brand-name">ĐỨC ANH</div>
-          <div class="da-brand-sub">MAINTENANCE</div>
-        </div>
+        <div><div class="da-brand-name">ĐỨC ANH</div><div class="da-brand-sub">MAINTENANCE</div></div>
       </div>
-
       <nav class="da-nav-scroll" aria-label="Điều hướng chính">
-        ${NAV_ITEMS.map(section => `
+        ${NAV_ITEMS.map(section=>`
           <div class="da-nav-section">
             <div class="da-nav-label">${section.section}</div>
-            ${section.items.map(item => {
-              const href = item.href || "#";
-              const module = item.module
-                ? ` data-module="${item.module}"`
-                : "";
-
-              return `
-                <a
-                  class="da-nav-item"
-                  href="${href}"${module}>
-                  <span class="da-nav-icon">${item.icon}</span>
-                  <span>${item.label}</span>
-                </a>
-              `;
+            ${section.items.map(item=>{
+              const href=item.href||"#";
+              const module=item.module?` data-module="${item.module}"`:"";
+              return `<a class="da-nav-item" href="${href}"${module}><span class="da-nav-icon">${item.icon}</span><span>${item.label}</span></a>`;
             }).join("")}
-          </div>
-        `).join("")}
+          </div>`).join("")}
       </nav>
-
       <div class="da-nav-footer">
         <strong>ĐỨC ANH MAINTENANCE</strong>
-        <span>DEV V1.14</span>
-      </div>
-    `;
-
+        <span>DEV V1.15</span>
+      </div>`;
     return aside;
   }
 
   function init(){
-    if(document.querySelector(".da-shared-sidebar")) return;
-
+    if(document.querySelector(".da-shared-sidebar"))return;
     document.body.classList.add("da-nav-page");
+    const sidebar=buildSidebar(),button=document.getElementById("daMenuButton");
+    const overlay=document.createElement("div");
+    overlay.className="da-nav-overlay";overlay.id="daNavOverlay";
+    document.body.prepend(overlay);document.body.prepend(sidebar);
+    if(!button)return;
 
-    const sidebar = buildSidebar();
-    const button = document.getElementById("daMenuButton");
-
-    const overlay = document.createElement("div");
-    overlay.className = "da-nav-overlay";
-    overlay.id = "daNavOverlay";
-
-    document.body.prepend(overlay);
-    document.body.prepend(sidebar);
-
-    if(!button) return;
-
-    const page = currentPage();
-
-    sidebar.querySelectorAll(".da-nav-item").forEach(link => {
-      if(link.getAttribute("href") === page){
-        link.classList.add("active");
-        link.setAttribute("aria-current","page");
-      }
+    const page=currentPage();
+    sidebar.querySelectorAll(".da-nav-item").forEach(link=>{
+      if(link.getAttribute("href")===page){link.classList.add("active");link.setAttribute("aria-current","page");}
     });
 
-    const close = () => {
-      sidebar.classList.remove("open");
-      overlay.classList.remove("show");
-      button.classList.remove("open");
-      button.setAttribute("aria-expanded","false");
-      document.documentElement.classList.remove("da-sidebar-open");
+    const close=()=>{
+      sidebar.classList.remove("open");overlay.classList.remove("show");button.classList.remove("open");
+      button.setAttribute("aria-expanded","false");document.documentElement.classList.remove("da-sidebar-open");
+    };
+    const open=()=>{
+      sidebar.classList.add("open");overlay.classList.add("show");button.classList.add("open");
+      button.setAttribute("aria-expanded","true");document.documentElement.classList.add("da-sidebar-open");
     };
 
-    const open = () => {
-      sidebar.classList.add("open");
-      overlay.classList.add("show");
-      button.classList.add("open");
-      button.setAttribute("aria-expanded","true");
-      document.documentElement.classList.add("da-sidebar-open");
-    };
+    button.addEventListener("click",()=>sidebar.classList.contains("open")?close():open());
+    overlay.addEventListener("click",close);
 
-    button.addEventListener("click", () => {
-      sidebar.classList.contains("open") ? close() : open();
-    });
-
-    overlay.addEventListener("click", close);
-
-    sidebar.addEventListener("click", event => {
-      const link = event.target.closest(".da-nav-item");
-      if(!link) return;
-
+    sidebar.addEventListener("click",event=>{
+      const link=event.target.closest(".da-nav-item");if(!link)return;
       if(link.dataset.module){
-        event.preventDefault();
-        close();
-        alert(
-          "Module này đang trong quá trình xây dựng.\n\n" +
-          "Đức Anh Maintenance DEV V1.14"
-        );
+        event.preventDefault();close();
+        alert("Module này đang trong quá trình xây dựng.\n\nĐức Anh Maintenance DEV V1.15");
         return;
       }
-
-      if(window.innerWidth <= 820) close();
+      if(window.innerWidth<=820)close();
     });
 
-    document.addEventListener("keydown", event => {
-      if(event.key === "Escape") close();
-    });
-
-    window.addEventListener("resize", () => {
-      if(window.innerWidth > 820) close();
-    });
+    document.addEventListener("keydown",event=>{if(event.key==="Escape")close();});
+    window.addEventListener("resize",()=>{if(window.innerWidth>820)close();});
   }
 
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", init);
-  }else{
-    init();
-  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
 </script>
 
