@@ -1,5 +1,3 @@
-// BUILDING APP SHELL MODULE V1.1
-// Based directly on the currently working Building App Shell module. No Firebase/business logic changed.
 export async function mountBuildingModule(container){
   if(!container) throw new Error("BUILDING_CONTAINER_REQUIRED");
 
