@@ -56,6 +56,35 @@ button{cursor:pointer}
 
 @media(max-width:900px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.list-row{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.page{padding:16px 12px 50px}.top{align-items:flex-start}.title h1{font-size:28px}.kpis{grid-template-columns:1fr 1fr}.quick{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.list-row{grid-template-columns:1fr}.actions .btn{flex:1}.modal{align-items:flex-end;padding:0 max(0px,env(safe-area-inset-right)) max(0px,env(safe-area-inset-bottom)) max(0px,env(safe-area-inset-left))}.modal-card{width:100%;height:min(94dvh,900px);max-height:94dvh;border-radius:16px 16px 0 0}.modal-head{padding:14px 16px}.modal-body{padding:16px}.modal-foot{padding:10px 16px calc(10px + env(safe-area-inset-bottom));justify-content:stretch}.modal-foot .btn{flex:1;min-height:48px}.modal-foot .btn.primary{min-width:0}}
+
+/* ===== MAINTENANCE PRINT / PDF ===== */
+@media print{
+  body{background:#fff!important;color:#111!important}
+  body *{visibility:hidden!important}
+  #maintenancePrintModal,#maintenancePrintModal *{visibility:visible!important}
+  #maintenancePrintModal{position:static!important;display:block!important;background:#fff!important;padding:0!important}
+  #maintenancePrintModal .modal-card{width:100%!important;height:auto!important;max-height:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important}
+  #maintenancePrintModal .modal-head,
+  #maintenancePrintModal .modal-foot{display:none!important}
+  #maintenancePrintModal .modal-body{overflow:visible!important;padding:0!important}
+  .maintenance-print-sheet{display:block!important;width:100%!important;max-width:none!important;padding:8mm 10mm!important;background:#fff!important;color:#111!important;font-family:Arial,sans-serif!important}
+  .maintenance-print-header{display:flex!important;justify-content:space-between!important;align-items:flex-start!important;border-bottom:2px solid #111!important;padding-bottom:10px!important;margin-bottom:18px!important}
+  .maintenance-print-brand{font-size:18px!important;font-weight:800!important;letter-spacing:.08em!important}
+  .maintenance-print-brand small{display:block!important;font-size:9px!important;letter-spacing:.22em!important;margin-top:4px!important}
+  .maintenance-print-title{text-align:right!important}
+  .maintenance-print-title h1{font-size:22px!important;margin:0!important}
+  .maintenance-print-title p{font-size:11px!important;margin:5px 0 0!important}
+  .maintenance-print-info{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px 28px!important;margin-bottom:16px!important}
+  .maintenance-print-row{display:flex!important;justify-content:space-between!important;gap:12px!important;border-bottom:1px solid #ddd!important;padding:7px 0!important;font-size:12px!important}
+  .maintenance-print-row span{color:#555!important}
+  .maintenance-print-row strong{text-align:right!important;color:#111!important}
+  .maintenance-print-section{font-weight:800!important;font-size:13px!important;margin:18px 0 8px!important;padding-bottom:5px!important;border-bottom:1px solid #222!important}
+  .maintenance-print-note{border:1px solid #bbb!important;padding:10px!important;min-height:60px!important;font-size:12px!important;line-height:1.5!important}
+  .maintenance-print-sign{display:grid!important;grid-template-columns:1fr 1fr!important;gap:40px!important;margin-top:42px!important;text-align:center!important;font-size:12px!important}
+  .maintenance-print-sign .line{height:58px!important}
+  .maintenance-print-footer{text-align:center!important;font-size:9px!important;color:#666!important;margin-top:24px!important}
+}
+
 </style>
 </head>
 <body>
@@ -91,6 +120,9 @@ button{cursor:pointer}
       <div class="head"><strong>🔔 XÁC NHẬN PHIẾU BẢO TRÌ</strong><span id="maintenanceConfirmCount">0</span></div>
       <div class="maintenance-list" id="maintenanceConfirmList"></div>
 
+      <div class="head"><strong>🖨 PHIẾU BẢO TRÌ ĐÃ XÁC NHẬN</strong><span id="maintenanceConfirmedCount">0</span></div>
+      <div class="maintenance-list" id="maintenanceConfirmedList"></div>
+
       <div class="head"><strong>📋 TẤT CẢ CÔNG VIỆC</strong><span id="allCount">0</span></div>
       <div class="list" id="allTasks"></div>
       <div class="status" id="status">Đang tải dữ liệu…</div>
@@ -125,6 +157,23 @@ button{cursor:pointer}
     <div class="modal-foot">
       <button class="btn" data-close="maintenanceConfirmModal">Hủy</button>
       <button class="btn primary" id="confirmMaintenanceBtn">Xác nhận hoàn thành</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAINTENANCE PRINT / PDF -->
+<div class="modal" id="maintenancePrintModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Phiếu bảo trì</h2>
+      <button class="btn" data-close="maintenancePrintModal">Đóng</button>
+    </div>
+    <div class="modal-body">
+      <div id="maintenancePrintContent"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="maintenancePrintModal">Đóng</button>
+      <button class="btn primary" id="printMaintenanceBtn">🖨 In / Xuất PDF</button>
     </div>
   </div>
 </div>
@@ -457,6 +506,44 @@ function startEditRequest(id){
   openModal("requestModal");
 }
 
+
+function confirmedMaintenances(){
+  return maintenances
+    .filter(m=>
+      String(m.status||"").toLowerCase()==="completed" &&
+      ["confirmed","manager_confirmed"].includes(String(m.customerConfirmationStatus||"").toLowerCase())
+    )
+    .sort((a,b)=>{
+      const av=a.customerConfirmedAt?.toMillis?.()||a.updatedAt?.toMillis?.()||0;
+      const bv=b.customerConfirmedAt?.toMillis?.()||b.updatedAt?.toMillis?.()||0;
+      return bv-av;
+    });
+}
+
+function renderConfirmedMaintenances(){
+  const rows=confirmedMaintenances();
+  $("maintenanceConfirmedCount").textContent=rows.length;
+
+  $("maintenanceConfirmedList").innerHTML=rows.length
+    ? rows.slice(0,12).map(m=>`
+      <div class="maintenance-task">
+        <div class="task-top">
+          <div>
+            <strong>${esc(m.ticketNo||m.id.slice(0,8).toUpperCase())}</strong>
+          </div>
+          <span class="tag green">Đã xác nhận</span>
+        </div>
+        <div class="task-meta">
+          ${esc(m.customerName||"—")} • ${esc(m.buildingName||"—")} • ${esc(m.elevatorName||"—")}
+        </div>
+        <div class="task-foot">
+          <span class="muted">${esc(m.completedDate||"—")} • ${esc(m.technicianName||"—")}</span>
+          <button class="btn primary" data-print-maintenance="${esc(m.id)}">🖨 In / PDF</button>
+        </div>
+      </div>`).join("")
+    : `<div class="empty" style="padding:20px;color:var(--muted)">Chưa có phiếu bảo trì đã xác nhận.</div>`;
+}
+
 function renderMaintenanceConfirmations(){
   const rows=pendingConfirmations();
   $("maintenanceConfirmCount").textContent=rows.length;
@@ -499,6 +586,7 @@ function render(){
   $("kCreated").textContent=created;
   $("kWO").textContent=workOrders.length;
   renderMaintenanceConfirmations();
+  renderConfirmedMaintenances();
 
   const urgent=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(r.status)).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,3);
   $("urgentCount").textContent=urgent.length;
@@ -918,6 +1006,73 @@ function openMaintenanceConfirmation(id){
   openModal("maintenanceConfirmModal");
 }
 
+
+function openMaintenancePrint(id){
+  const m=maintenances.find(x=>String(x.id)===String(id));
+  if(!m) return;
+
+  const confirmed=String(m.status||"").toLowerCase()==="completed" &&
+    ["confirmed","manager_confirmed"].includes(String(m.customerConfirmationStatus||"").toLowerCase());
+
+  if(!confirmed){
+    alert("Chỉ phiếu bảo trì đã được xác nhận mới được in hoặc xuất PDF.");
+    return;
+  }
+
+  const confirmedAt=m.customerConfirmedAt||m.confirmedAt||m.updatedAt||"";
+  const statusLabel=m.customerConfirmationStatus==="confirmed"?"ĐÃ XÁC NHẬN":"PHIẾU BẢO TRÌ";
+
+  $("maintenancePrintContent").innerHTML=`
+    <div class="maintenance-print-sheet">
+      <div class="maintenance-print-header">
+        <div class="maintenance-print-brand">
+          ĐỨC ANH
+          <small>MAINTENANCE</small>
+        </div>
+        <div class="maintenance-print-title">
+          <h1>PHIẾU BẢO TRÌ THANG MÁY</h1>
+          <p>${esc(statusLabel)}</p>
+        </div>
+      </div>
+
+      <div class="maintenance-print-info">
+        <div class="maintenance-print-row"><span>Số phiếu</span><strong>${esc(m.ticketNo||m.id||"—")}</strong></div>
+        <div class="maintenance-print-row"><span>Ngày hoàn thành</span><strong>${esc(m.completedDate||"—")}</strong></div>
+        <div class="maintenance-print-row"><span>Khách hàng</span><strong>${esc(m.customerName||"—")}</strong></div>
+        <div class="maintenance-print-row"><span>Tòa nhà</span><strong>${esc(m.buildingName||"—")}</strong></div>
+        <div class="maintenance-print-row"><span>Thang máy</span><strong>${esc(m.elevatorName||"—")}</strong></div>
+        <div class="maintenance-print-row"><span>KTV thực hiện</span><strong>${esc(m.technicianName||"—")}</strong></div>
+      </div>
+
+      <div class="maintenance-print-section">KẾT QUẢ BẢO TRÌ</div>
+      <div class="maintenance-print-note">${esc(m.result||"Không có ghi nhận.")}</div>
+
+      ${m.note?`<div class="maintenance-print-section">GHI CHÚ</div><div class="maintenance-print-note">${esc(m.note)}</div>`:""}
+
+      <div class="maintenance-print-section">XÁC NHẬN CỦA KHÁCH HÀNG</div>
+      <div class="maintenance-print-note">
+        Phiếu bảo trì đã được CSKH ghi nhận hoàn thành.
+        ${confirmedAt?` Thời điểm xác nhận: ${esc(formatDate(confirmedAt))}.`:""}
+      </div>
+
+      <div class="maintenance-print-sign">
+        <div><b>KỸ THUẬT VIÊN</b><div class="line"></div><span>${esc(m.technicianName||"")}</span></div>
+        <div><b>ĐẠI DIỆN KHÁCH HÀNG</b><div class="line"></div><span>${esc(m.customerName||"")}</span></div>
+      </div>
+
+      <div class="maintenance-print-footer">
+        Đức Anh Maintenance · Phiếu được xuất từ hệ thống quản lý bảo trì
+      </div>
+    </div>
+  `;
+
+  openModal("maintenancePrintModal");
+}
+
+function printMaintenance(){
+  window.print();
+}
+
 async function confirmSelectedMaintenance(){
   const btn=$("confirmMaintenanceBtn");
   if(!selectedMaintenanceId || btn.disabled) return;
@@ -933,9 +1088,11 @@ async function confirmSelectedMaintenance(){
     });
 
     closeModal("maintenanceConfirmModal");
+    const confirmedId=selectedMaintenanceId;
     selectedMaintenanceId="";
     await loadAll();
     alert("Đã xác nhận hoàn thành phiếu bảo trì.");
+    openMaintenancePrint(confirmedId);
   }catch(error){
     console.error(error);
     $("maintenanceConfirmError").textContent=error?.message||"Không thể xác nhận phiếu bảo trì.";
@@ -979,7 +1136,12 @@ $("maintenanceConfirmList").addEventListener("click",event=>{
   const button=event.target.closest("[data-maintenance]");
   if(button && !button.disabled) openMaintenanceConfirmation(button.dataset.maintenance);
 });
+$("maintenanceConfirmedList").addEventListener("click",event=>{
+  const button=event.target.closest("[data-print-maintenance]");
+  if(button) openMaintenancePrint(button.dataset.printMaintenance);
+});
 $("confirmMaintenanceBtn").addEventListener("click",confirmSelectedMaintenance);
+$("printMaintenanceBtn").addEventListener("click",printMaintenance);
 $("refresh").addEventListener("click",loadAll);
 $("contractCustomer").addEventListener("change",fillBuildings);
 $("contractBuilding").addEventListener("change",fillElevators);
