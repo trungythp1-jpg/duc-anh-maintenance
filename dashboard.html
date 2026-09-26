@@ -1163,7 +1163,12 @@ function renderLatestElevators() {
       elevatorStatusLabel(elevator.status);
 
     return `
-      <div class="work-row">
+      <div
+        class="work-row"
+        role="button"
+        tabindex="0"
+        data-href="elevators.html?id=${encodeURIComponent(elevator.id)}"
+        title="Mở hồ sơ thang máy">
 
         <time>↕</time>
         <i></i>
@@ -1171,14 +1176,16 @@ function renderLatestElevators() {
         <div>
           <strong>
             ${escapeHtml(
-              elevator.name ||
               elevator.assetCode ||
+              elevator.name ||
               elevator.id ||
               "Thang máy"
             )}
           </strong>
 
           <span>
+            ${escapeHtml(elevator.name || "Thang máy")}
+            ·
             ${escapeHtml(
               buildingName(elevator.buildingId)
             )}
@@ -1186,8 +1193,6 @@ function renderLatestElevators() {
             ${escapeHtml(
               customerName(elevator.customerId)
             )}
-            ·
-            ${escapeHtml(elevator.id)}
           </span>
         </div>
 
