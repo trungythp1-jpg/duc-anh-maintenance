@@ -109,6 +109,8 @@ body.dashboard-auth-pending::before{
 }
 
 
+.dashboard-action-center + .dashboard-grid .work-row[role="button"]{cursor:pointer}
+.dashboard-action-center + .dashboard-grid .work-row[role="button"]:hover{border-color:#6a5520;background:#181712}
 /* DASHBOARD ACTION CENTER V2.5 — COMPACT + CLICKABLE */
 .dashboard-action-compact{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .dashboard-action-group{background:#151512;border:1px solid #343028;border-radius:12px;padding:12px;min-width:0}
@@ -202,7 +204,7 @@ body.dashboard-auth-pending::before{
         ⌂ <span>Tòa nhà</span>
       </a>
 
-      <a class="nav-item" href="elevators.html">
+      <a class="nav-item" href="#elevators" data-app-module="elevators">
         ↕ <span>Thang máy</span>
       </a>
 
@@ -366,7 +368,7 @@ body.dashboard-auth-pending::before{
         </article>
 
 
-        <article class="stat-card" data-href="elevators.html" role="button" tabindex="0">
+        <article class="stat-card" data-app-module="elevators" role="button" tabindex="0">
 
           <div class="stat-top">
             TỔNG THANG MÁY
@@ -382,7 +384,7 @@ body.dashboard-auth-pending::before{
         </article>
 
 
-        <article class="stat-card" data-href="elevators.html" role="button" tabindex="0">
+        <article class="stat-card" data-app-module="elevators" role="button" tabindex="0">
 
           <div class="stat-top">
             ĐANG HOẠT ĐỘNG
@@ -473,7 +475,7 @@ body.dashboard-auth-pending::before{
             <button
               class="text-button"
               type="button"
-              data-href="elevators.html">
+              data-app-module="elevators">
               Mở danh sách →
             </button>
 
@@ -631,7 +633,7 @@ body.dashboard-auth-pending::before{
           <button
             class="text-button"
             type="button"
-            data-href="elevators.html">
+            data-app-module="elevators">
             Xem tất cả →
           </button>
 
@@ -1163,12 +1165,7 @@ function renderLatestElevators() {
       elevatorStatusLabel(elevator.status);
 
     return `
-      <div
-        class="work-row"
-        role="button"
-        tabindex="0"
-        data-href="elevators.html?id=${encodeURIComponent(elevator.id)}"
-        title="Mở hồ sơ thang máy">
+      <div class="work-row" role="button" tabindex="0" data-href="elevators.html?id=${encodeURIComponent(elevator.id)}" title="Mở hồ sơ thang máy">
 
         <time>↕</time>
         <i></i>
@@ -1826,6 +1823,7 @@ watchCurrentUserProfile();
 <script type="module">
 import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
+import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -1936,6 +1934,46 @@ async function showBuildings() {
   }
 }
 
+async function showElevators() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "elevators";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("elevators");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Thang máy...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountElevatorModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL ELEVATOR MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Thang máy</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -1947,6 +1985,8 @@ async function route() {
       await showCustomers();
     } else if (hash === "buildings") {
       await showBuildings();
+    } else if (hash === "elevators") {
+      await showElevators();
     } else {
       showDashboard();
     }
@@ -1960,7 +2000,7 @@ document.addEventListener("click", event => {
   if (!target) return;
 
   const moduleName = String(target.dataset.appModule || "").trim();
-  if (moduleName !== "customers" && moduleName !== "buildings") return;
+  if (moduleName !== "customers" && moduleName !== "buildings" && moduleName !== "elevators") return;
 
   event.preventDefault();
   event.stopPropagation();
