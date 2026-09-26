@@ -1205,7 +1205,7 @@ $("quickExternal").addEventListener("click",()=>{resetRequest();openModal("reque
 $("quickContracts").addEventListener("click",()=>location.href="contracts.html");
 $("quickRequests").addEventListener("click",()=>document.querySelector("#allTasks")?.scrollIntoView({behavior:"smooth"}));
 $("quickMaintenanceConfirm").addEventListener("click",()=>document.querySelector("#maintenanceConfirmList")?.scrollIntoView({behavior:"smooth"}));
-$("quickMaterialQuote").addEventListener("click",()=>{fillQuoteWorkOrders();resetMaterialQuote();openModal("materialQuoteModal")});
+$("quickMaterialQuote").addEventListener("click",()=>location.href="material-quotes.html");
 $("quoteWorkOrder").addEventListener("change",renderQuoteWorkOrderInfo);
 $("addQuoteItem").addEventListener("click",()=>{addQuoteItemRow();calculateQuoteTotals()});
 $("quoteDiscount").addEventListener("input",calculateQuoteTotals);
