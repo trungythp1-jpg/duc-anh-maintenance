@@ -1200,11 +1200,11 @@ html.da-sidebar-open #addButton{
       ♢
     </button>
 
-    <div class="da-user-chip">
-      <div class="da-avatar">AD</div>
+    <div class="da-user-chip" id="currentUserChip">
+      <div class="da-avatar" id="currentUserAvatar">DA</div>
       <div class="da-user-text">
-        <strong>Administrator</strong>
-        <small>ADMIN</small>
+        <strong id="currentUserName">Đang tải...</strong>
+        <small id="currentUserRole">...</small>
       </div>
     </div>
   </div>
@@ -1993,6 +1993,56 @@ document.addEventListener("keydown",event => {
 });
 
 loadData();
+</script>
+
+<script type="module">
+/* USER PROFILE / ROLE BRIDGE — Đức Anh Maintenance
+   V1: dùng Firebase Auth + users/{uid}; không thay đổi nghiệp vụ module. */
+import { auth, db } from "./js/core/firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const ROLE_LABELS = {
+  admin: ["Administrator", "ADMIN"],
+  manager: ["Quản lý", "MANAGER"],
+  technician: ["Kỹ thuật viên", "TECHNICIAN"],
+  customer_service: ["CSKH", "CSKH"],
+  cskh: ["CSKH", "CSKH"],
+  warehouse: ["Kho", "WAREHOUSE"],
+  director: ["Giám đốc", "DIRECTOR"]
+};
+
+function setUserProfile(profile, user) {
+  const roleKey = String(profile?.role || "").trim().toLowerCase();
+  const labels = ROLE_LABELS[roleKey] || [roleKey ? roleKey.toUpperCase() : "USER", roleKey ? roleKey.toUpperCase() : "USER"];
+  const name = String(
+    profile?.name ||
+    user?.displayName ||
+    user?.email?.split("@")[0] ||
+    "Người dùng"
+  ).trim();
+
+  const avatar = document.querySelector(".da-avatar");
+  const nameEl = document.querySelector(".da-user-text strong");
+  const roleEl = document.querySelector(".da-user-text small");
+
+  if (nameEl) nameEl.textContent = name;
+  if (roleEl) roleEl.textContent = labels[1];
+  if (avatar) avatar.textContent = name.slice(0, 2).toUpperCase();
+}
+
+async function syncCurrentUserProfile(user) {
+  if (!user) return;
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    setUserProfile(snap.exists() ? snap.data() : null, user);
+  } catch (error) {
+    console.error("USER PROFILE ERROR:", error);
+    setUserProfile(null, user);
+  }
+}
+
+onAuthStateChanged(auth, syncCurrentUserProfile);
 </script>
 
 <script>
