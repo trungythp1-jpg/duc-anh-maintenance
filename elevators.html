@@ -217,7 +217,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 </div>
 
 <div class="mobile-list" id="mobileList"></div>
-<div class="footer"><span>Dữ liệu Firebase DEV — Mã thang tự động DAE - 000001.</span><span>DEV V1.16</span></div>
+<div class="footer"><span>Dữ liệu Firebase DEV — Mã thang DAE tự cấp, Firebase Document ID tự cấp.</span><span>DEV V1.16</span></div>
 </section>
 </div>
 </main>
@@ -229,7 +229,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 <div>
 <p class="kicker">Elevator Asset Profile</p>
 <h2 id="dName">—</h2>
-<div class="drawer-id" id="dId">—</div>
+<div class="drawer-id"><span id="dAssetCode">DAE - —</span> · Firebase <span id="dId">—</span></div>
 </div>
 
 <div class="drawer-head-actions">
@@ -247,8 +247,8 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 <div class="grid">
 <div class="item"><span>Tòa nhà</span><b id="dBuilding">—</b></div>
 <div class="item"><span>Khách hàng</span><b id="dCustomer">—</b></div>
-<div class="item"><span>Mã thang</span><b id="dAssetCode">—</b></div>
-<div class="item"><span>Định danh Firebase</span><b id="dFirebaseId">Auto ID</b></div>
+<div class="item"><span>Mã thang</span><b id="dAssetCodeDetail">—</b></div>
+<div class="item"><span>Định danh Firebase</span><b>Auto ID</b></div>
 <div class="item"><span>Trạng thái tài sản</span><b id="dAssetStatus">—</b></div>
 </div>
 
@@ -267,9 +267,9 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 
 <div class="grid">
 <div class="item"><span>Bảo trì</span><b id="dMaintenance">—</b></div>
-<div class="item"><span>Hợp đồng</span><b>Chưa kết nối</b></div>
-<div class="item"><span>Work Order</span><b>Chưa kết nối</b></div>
-<div class="item"><span>Kỳ bảo trì gần nhất</span><b>Chưa kết nối</b></div>
+<div class="item"><span>Hợp đồng</span><b>Đang theo dõi</b></div>
+<div class="item"><span>Work Order</span><b>3</b></div>
+<div class="item"><span>Kỳ bảo trì gần nhất</span><b>Đã hoàn thành</b></div>
 </div>
 
 <div class="tabs">
@@ -291,7 +291,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 <div class="modal-head">
 <div>
 <h3 id="modalTitle">Thêm thang máy</h3>
-<p>Mã thang được hệ thống tự động cấp theo thứ tự DAE - 000001, không nhập tay và không thay đổi sau khi cấp.</p>
+<p>Thang máy phải thuộc một tòa nhà và khách hàng đã có trong Firebase.</p>
 </div>
 <button class="close" id="closeModal" type="button">×</button>
 </div>
@@ -384,7 +384,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 
 <script type="module">
 /*
-  ĐỨC ANH MAINTENANCE — ELEVATOR MODULE V1.16
+  ĐỨC ANH MAINTENANCE — ELEVATOR MODULE V1.15
   Reference architecture:
   - Customer page: direct Firebase data lifecycle
   - Building page V1.30: getCustomers/getBuildings/getElevators
@@ -466,8 +466,8 @@ function filtered(){
 
   return elevators.filter(elevator => {
     const haystack = [
-      elevator.assetCode,
       elevator.id,
+      elevator.assetCode,
       elevator.name,
       buildingName(elevator.buildingId),
       customerName(elevator.customerId),
@@ -499,8 +499,7 @@ function render(){
     <tr>
       <td>
         <div class="name">${escapeHtml(elevator.name)}</div>
-        <div class="id">${escapeHtml(elevator.assetCode || "Chưa cấp mã")}</div>
-        <div class="id">ID: ${escapeHtml(elevator.id)}</div>
+        <div class="id">${escapeHtml(elevator.id)}</div>
       </td>
       <td>${escapeHtml(buildingName(elevator.buildingId))}</td>
       <td>${escapeHtml(customerName(elevator.customerId))}</td>
@@ -523,13 +522,12 @@ function render(){
       <div class="e-top">
         <div>
           <div class="name">${escapeHtml(elevator.name)}</div>
-          <div class="id">${escapeHtml(elevator.assetCode || "Chưa cấp mã")}</div>
+          <div class="id">${escapeHtml(elevator.id)}</div>
         </div>
         ${statusLabel(elevator.status)}
       </div>
 
       <div class="e-meta">
-        <strong style="color:#f5c400">${escapeHtml(elevator.assetCode || "Chưa cấp mã")}</strong><br>
         ${escapeHtml(buildingName(elevator.buildingId))}<br>
         ${escapeHtml(customerName(elevator.customerId))}<br>
         ${escapeHtml(machineLabel(elevator))}
@@ -852,9 +850,9 @@ function openDetail(id){
   if(!elevator) return;
 
   $("dName").textContent = elevator.name || "—";
-  $("dId").textContent = elevator.assetCode || "Chưa cấp mã";
-  $("dAssetCode").textContent = elevator.assetCode || "Chưa cấp mã";
-  $("dFirebaseId").textContent = elevator.id;
+  $("dId").textContent = elevator.id;
+  $("dAssetCode").textContent = elevator.assetCode || "Chưa có mã DAE";
+  $("dAssetCodeDetail").textContent = elevator.assetCode || "Chưa có mã DAE";
   $("dStatus").innerHTML = statusLabel(elevator.status);
   $("dBuilding").textContent = buildingName(elevator.buildingId);
   $("dCustomer").textContent = customerName(elevator.customerId);
@@ -1055,8 +1053,8 @@ async function handleCreate(event){
 
     setMessage(
       editingId
-        ? `Đã cập nhật thang máy "${saved?.name || name}" thành công. Mã thang: ${saved?.assetCode || "—"}`
-        : `Đã tạo thang máy "${saved?.name || name}" thành công. Mã thang: ${saved?.assetCode || "—"}`,
+        ? `Đã cập nhật thang máy "${saved?.name || name}" thành công.`
+        : `Đã tạo thang máy "${saved?.name || name}" thành công. Firebase Auto ID: ${saved?.id || "—"}`,
       "success"
     );
 
