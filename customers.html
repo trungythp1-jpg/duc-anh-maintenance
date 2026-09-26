@@ -1242,162 +1242,6 @@ document.querySelectorAll(".detail-tab").forEach(button => {
 searchInput.oninput = renderCustomers;
 statusFilter.onchange = renderCustomers;
 
-function normalizeDuplicateText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/đ/g, "d")
-    .replace(/[^a-z0-9]+/g, "")
-    .trim();
-}
-
-function normalizePhone(value) {
-  return String(value || "").replace(/\D/g, "");
-}
-
-function normalizeTaxCode(value) {
-  return String(value || "").replace(/[^0-9]/g, "");
-}
-
-function findDuplicateCustomers(data) {
-  const name = normalizeDuplicateText(data.name);
-  const phone = normalizePhone(data.phone);
-  const taxCode = normalizeTaxCode(data.taxCode);
-  const address = normalizeDuplicateText(data.address);
-
-  return customers.map(customer => {
-    const customerName = normalizeDuplicateText(customer.name);
-    const customerPhone = normalizePhone(customer.phone);
-    const customerTax = normalizeTaxCode(customer.taxCode);
-    const customerAddress = normalizeDuplicateText(customer.address);
-
-    const reasons = [];
-    let level = 0;
-
-    if (taxCode && customerTax && taxCode === customerTax) {
-      reasons.push("Trùng mã số thuế");
-      level = 3;
-    }
-
-    if (phone && customerPhone && phone === customerPhone) {
-      reasons.push("Trùng số điện thoại");
-      level = Math.max(level, 3);
-    }
-
-    if (name && customerName && name === customerName) {
-      reasons.push("Trùng tên khách hàng");
-      level = Math.max(level, 2);
-
-      if (address && customerAddress && address === customerAddress) {
-        reasons.push("Trùng địa chỉ");
-        level = Math.max(level, 3);
-      }
-    }
-
-    if (!reasons.length) return null;
-
-    return {
-      customer,
-      reasons,
-      level
-    };
-  }).filter(Boolean).sort((a,b) => b.level - a.level);
-}
-
-function ensureDuplicateDialog() {
-  let dialog = $("customerDuplicateDialog");
-  if (dialog) return dialog;
-
-  dialog = document.createElement("div");
-  dialog.id = "customerDuplicateDialog";
-  dialog.style.cssText = "position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.78);";
-  dialog.innerHTML = `
-    <section style="width:min(720px,100%);max-height:90vh;overflow:auto;background:#11110f;color:#eee9df;border:1px solid #4b4334;border-radius:16px;box-shadow:0 18px 70px rgba(0,0,0,.55);">
-      <div style="padding:18px;border-bottom:1px solid #302b23;display:flex;justify-content:space-between;gap:12px;align-items:center;">
-        <div>
-          <div style="color:#f0ca76;font-size:12px;font-weight:900;letter-spacing:.12em;">KIỂM TRA TRÙNG KHÁCH HÀNG</div>
-          <h2 style="margin:5px 0 0;font-size:20px;">Phát hiện khách hàng đã có trong hệ thống</h2>
-        </div>
-        <button type="button" data-dup-close style="border:1px solid #4a453a;background:#151512;color:#eee9df;border-radius:9px;padding:8px 12px;font-size:20px;cursor:pointer;">×</button>
-      </div>
-      <div id="customerDuplicateBody" style="padding:18px;"></div>
-      <div style="padding:12px 18px;border-top:1px solid #302b23;display:flex;justify-content:flex-end;gap:10px;">
-        <button type="button" data-dup-cancel style="border:1px solid #4a453a;background:#151512;color:#eee9df;border-radius:9px;padding:10px 15px;cursor:pointer;">Hủy tạo mới</button>
-        <button type="button" data-dup-force style="display:none;border:1px solid #65522e;background:linear-gradient(180deg,#e2b85d,#bd8d34);color:#111;border-radius:9px;padding:10px 15px;font-weight:800;cursor:pointer;">Vẫn tạo khách hàng</button>
-      </div>
-    </section>`;
-
-  document.body.appendChild(dialog);
-  dialog.querySelector("[data-dup-close]").onclick = () => closeDuplicateDialog();
-  dialog.querySelector("[data-dup-cancel]").onclick = () => closeDuplicateDialog();
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog) closeDuplicateDialog();
-  });
-  return dialog;
-}
-
-function closeDuplicateDialog() {
-  const dialog = $("customerDuplicateDialog");
-  if (dialog) dialog.style.display = "none";
-}
-
-function showDuplicateDialog(matches, data) {
-  const dialog = ensureDuplicateDialog();
-  const body = $("customerDuplicateBody");
-  const forceButton = dialog.querySelector("[data-dup-force]");
-  const hasStrongDuplicate = matches.some(item => item.level >= 3);
-
-  body.innerHTML = `
-    <div style="padding:12px 14px;border:1px solid ${hasStrongDuplicate ? "#7b3f38" : "#66552f"};border-radius:10px;background:${hasStrongDuplicate ? "rgba(240,109,96,.08)" : "rgba(214,168,79,.08)"};margin-bottom:14px;line-height:1.55;">
-      ${hasStrongDuplicate
-        ? "Hệ thống phát hiện thông tin định danh trùng với khách hàng đã có. Không nên tạo khách hàng mới."
-        : "Hệ thống phát hiện khách hàng có tên trùng. Hãy kiểm tra trước khi tạo mới."}
-    </div>
-    <div style="display:grid;gap:10px;">
-      ${matches.slice(0,8).map(item => {
-        const c=item.customer;
-        return `
-          <div style="padding:13px;border:1px solid #3a342a;border-radius:11px;background:#151512;">
-            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-              <strong style="color:#f0ca76;">${escapeHtml(c.name || "—")}</strong>
-              <span style="font-size:11px;color:#a7a198;">${escapeHtml(c.status || "active")}</span>
-            </div>
-            <div style="margin-top:7px;color:#a7a198;font-size:13px;line-height:1.6;">
-              ${c.phone ? `SĐT: <b style="color:#eee9df;">${escapeHtml(c.phone)}</b>` : ""}
-              ${c.taxCode ? ` · MST: <b style="color:#eee9df;">${escapeHtml(c.taxCode)}</b>` : ""}
-              ${c.address ? `<br>Địa chỉ: ${escapeHtml(c.address)}` : ""}
-            </div>
-            <div style="margin-top:8px;color:#d6a84f;font-size:12px;">${escapeHtml(item.reasons.join(" · "))}</div>
-          </div>`;
-      }).join("")}
-    </div>`;
-
-  forceButton.style.display = hasStrongDuplicate ? "none" : "inline-block";
-  forceButton.onclick = () => {
-    closeDuplicateDialog();
-    createCustomerAfterDuplicateCheck(data);
-  };
-  dialog.style.display = "flex";
-}
-
-async function createCustomerAfterDuplicateCheck(data) {
-  const submitButton = form.querySelector("button[type='submit']");
-  try {
-    const created = await createCustomer(data);
-    console.log("CUSTOMER CREATED:", created);
-    closeModal();
-    await loadCustomers();
-    openDetail(created.id);
-  } catch (error) {
-    console.error("CREATE CUSTOMER ERROR:", error);
-    alert("Không thể lưu khách hàng.\n\n" + error.message);
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "Lưu khách hàng";
-  }
-}
-
 form.onsubmit = async event => {
   event.preventDefault();
 
@@ -1429,13 +1273,6 @@ form.onsubmit = async event => {
   };
 
   try {
-    const duplicates = findDuplicateCustomers(data);
-
-    if (duplicates.length) {
-      showDuplicateDialog(duplicates, data);
-      return;
-    }
-
     const created = await createCustomer(data);
     console.log("CUSTOMER CREATED:", created);
 
@@ -1453,7 +1290,6 @@ form.onsubmit = async event => {
 
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
-    closeDuplicateDialog();
     closeDetail();
     closeModal();
   }
