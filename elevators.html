@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0b">
-<title>Thang máy — Đức Anh Maintenance DEV V1.15</title>
+<title>Thang máy — Đức Anh Maintenance DEV V1.16</title>
 
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/mobile.css">
@@ -217,7 +217,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 </div>
 
 <div class="mobile-list" id="mobileList"></div>
-<div class="footer"><span>Dữ liệu Firebase DEV — Document ID tự cấp.</span><span>DEV V1.15</span></div>
+<div class="footer"><span>Dữ liệu Firebase DEV — Mã thang tự động DAE - 000001.</span><span>DEV V1.16</span></div>
 </section>
 </div>
 </main>
@@ -247,7 +247,8 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 <div class="grid">
 <div class="item"><span>Tòa nhà</span><b id="dBuilding">—</b></div>
 <div class="item"><span>Khách hàng</span><b id="dCustomer">—</b></div>
-<div class="item"><span>Định danh Firebase</span><b>Auto ID</b></div>
+<div class="item"><span>Mã thang</span><b id="dAssetCode">—</b></div>
+<div class="item"><span>Định danh Firebase</span><b id="dFirebaseId">Auto ID</b></div>
 <div class="item"><span>Trạng thái tài sản</span><b id="dAssetStatus">—</b></div>
 </div>
 
@@ -266,9 +267,9 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 
 <div class="grid">
 <div class="item"><span>Bảo trì</span><b id="dMaintenance">—</b></div>
-<div class="item"><span>Hợp đồng</span><b>Đang theo dõi</b></div>
-<div class="item"><span>Work Order</span><b>3</b></div>
-<div class="item"><span>Kỳ bảo trì gần nhất</span><b>Đã hoàn thành</b></div>
+<div class="item"><span>Hợp đồng</span><b>Chưa kết nối</b></div>
+<div class="item"><span>Work Order</span><b>Chưa kết nối</b></div>
+<div class="item"><span>Kỳ bảo trì gần nhất</span><b>Chưa kết nối</b></div>
 </div>
 
 <div class="tabs">
@@ -290,7 +291,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 <div class="modal-head">
 <div>
 <h3 id="modalTitle">Thêm thang máy</h3>
-<p>Thang máy phải thuộc một tòa nhà và khách hàng đã có trong Firebase.</p>
+<p>Mã thang được hệ thống tự động cấp theo thứ tự DAE - 000001, không nhập tay và không thay đổi sau khi cấp.</p>
 </div>
 <button class="close" id="closeModal" type="button">×</button>
 </div>
@@ -367,11 +368,6 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 <input id="controller" placeholder="Step">
 </div>
 
-<div class="field">
-<label for="assetCode">Mã tài sản (tùy chọn)</label>
-<input id="assetCode" placeholder="Để trống nếu chưa có">
-</div>
-
 </div>
 </div>
 
@@ -388,7 +384,7 @@ body.da-nav-page{padding-left:236px !important}.da-nav-overlay{position:fixed;in
 
 <script type="module">
 /*
-  ĐỨC ANH MAINTENANCE — ELEVATOR MODULE V1.15
+  ĐỨC ANH MAINTENANCE — ELEVATOR MODULE V1.16
   Reference architecture:
   - Customer page: direct Firebase data lifecycle
   - Building page V1.30: getCustomers/getBuildings/getElevators
@@ -470,6 +466,7 @@ function filtered(){
 
   return elevators.filter(elevator => {
     const haystack = [
+      elevator.assetCode,
       elevator.id,
       elevator.name,
       buildingName(elevator.buildingId),
@@ -502,7 +499,8 @@ function render(){
     <tr>
       <td>
         <div class="name">${escapeHtml(elevator.name)}</div>
-        <div class="id">${escapeHtml(elevator.id)}</div>
+        <div class="id">${escapeHtml(elevator.assetCode || "Chưa cấp mã")}</div>
+        <div class="id">ID: ${escapeHtml(elevator.id)}</div>
       </td>
       <td>${escapeHtml(buildingName(elevator.buildingId))}</td>
       <td>${escapeHtml(customerName(elevator.customerId))}</td>
@@ -525,12 +523,13 @@ function render(){
       <div class="e-top">
         <div>
           <div class="name">${escapeHtml(elevator.name)}</div>
-          <div class="id">${escapeHtml(elevator.id)}</div>
+          <div class="id">${escapeHtml(elevator.assetCode || "Chưa cấp mã")}</div>
         </div>
         ${statusLabel(elevator.status)}
       </div>
 
       <div class="e-meta">
+        <strong style="color:#f5c400">${escapeHtml(elevator.assetCode || "Chưa cấp mã")}</strong><br>
         ${escapeHtml(buildingName(elevator.buildingId))}<br>
         ${escapeHtml(customerName(elevator.customerId))}<br>
         ${escapeHtml(machineLabel(elevator))}
@@ -829,7 +828,6 @@ async function openEditModal(id){
   $("year").value = elevator.technical?.installationYear ?? "";
   $("machine").value = elevator.technical?.machine?.brand ?? "";
   $("controller").value = elevator.technical?.controller?.brand ?? "";
-  $("assetCode").value = elevator.assetCode ?? "";
 
   $("modalBackdrop").classList.add("show");
   document.body.style.overflow = "hidden";
@@ -854,7 +852,9 @@ function openDetail(id){
   if(!elevator) return;
 
   $("dName").textContent = elevator.name || "—";
-  $("dId").textContent = elevator.id;
+  $("dId").textContent = elevator.assetCode || "Chưa cấp mã";
+  $("dAssetCode").textContent = elevator.assetCode || "Chưa cấp mã";
+  $("dFirebaseId").textContent = elevator.id;
   $("dStatus").innerHTML = statusLabel(elevator.status);
   $("dBuilding").textContent = buildingName(elevator.buildingId);
   $("dCustomer").textContent = customerName(elevator.customerId);
@@ -1001,7 +1001,6 @@ async function handleCreate(event){
     customerId,
     buildingId,
     status: selectedStatus,
-    assetCode: safe($("assetCode").value),
     technical:{
       capacityKg:
         safe($("capacity").value)
@@ -1056,8 +1055,8 @@ async function handleCreate(event){
 
     setMessage(
       editingId
-        ? `Đã cập nhật thang máy "${saved?.name || name}" thành công.`
-        : `Đã tạo thang máy "${saved?.name || name}" thành công. Firebase Auto ID: ${saved?.id || "—"}`,
+        ? `Đã cập nhật thang máy "${saved?.name || name}" thành công. Mã thang: ${saved?.assetCode || "—"}`
+        : `Đã tạo thang máy "${saved?.name || name}" thành công. Mã thang: ${saved?.assetCode || "—"}`,
       "success"
     );
 
@@ -1195,8 +1194,8 @@ loadData().catch(error => {
   {section:"HỆ THỐNG",items:[{label:"Import Center",module:"import-center",icon:"⇧"},{label:"Documents",module:"documents",icon:"▱"},{label:"Cài đặt",module:"settings",icon:"⚙"}]}
  ];
  function currentPage(){return window.location.pathname.split('/').pop()||'index.html';}
- function buildSidebar(){const aside=document.createElement('aside');aside.className='da-shared-sidebar';aside.id='daSidebar';aside.innerHTML=`<div class="da-brand"><div class="da-brand-mark">DA</div><div><div class="da-brand-name">ĐỨC ANH</div><div class="da-brand-sub">MAINTENANCE</div></div></div><nav class="da-nav-scroll" aria-label="Điều hướng chính">${NAV_ITEMS.map(s=>`<div class="da-nav-section"><div class="da-nav-label">${s.section}</div>${s.items.map(i=>`<a class="da-nav-item" href="${i.href||'#'}"${i.module?` data-module="${i.module}"`:''}><span class="da-nav-icon">${i.icon}</span><span>${i.label}</span></a>`).join('')}</div>`).join('')}</nav><div class="da-nav-footer"><strong>ĐỨC ANH MAINTENANCE</strong><span>DEV V1.15</span></div>`;return aside;}
- function init(){if(document.querySelector('.da-shared-sidebar'))return;document.body.classList.add('da-nav-page');const sidebar=buildSidebar(),button=document.getElementById('daMenuButton'),overlay=document.createElement('div');overlay.className='da-nav-overlay';overlay.id='daNavOverlay';document.body.prepend(overlay);document.body.prepend(sidebar);if(!button)return;const page=currentPage();sidebar.querySelectorAll('.da-nav-item').forEach(link=>{if(link.getAttribute('href')===page){link.classList.add('active');link.setAttribute('aria-current','page')}});const close=()=>{sidebar.classList.remove('open');overlay.classList.remove('show');button.classList.remove('open');button.setAttribute('aria-expanded','false');document.documentElement.classList.remove('da-sidebar-open')};const open=()=>{sidebar.classList.add('open');overlay.classList.add('show');button.classList.add('open');button.setAttribute('aria-expanded','true');document.documentElement.classList.add('da-sidebar-open')};button.addEventListener('click',()=>sidebar.classList.contains('open')?close():open());overlay.addEventListener('click',close);sidebar.addEventListener('click',e=>{const link=e.target.closest('.da-nav-item');if(!link)return;if(link.dataset.module){e.preventDefault();close();alert('Module này đang trong quá trình xây dựng.\n\nĐức Anh Maintenance DEV V1.15');return}if(window.innerWidth<=820)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});window.addEventListener('resize',()=>{if(window.innerWidth>820)close()});}
+ function buildSidebar(){const aside=document.createElement('aside');aside.className='da-shared-sidebar';aside.id='daSidebar';aside.innerHTML=`<div class="da-brand"><div class="da-brand-mark">DA</div><div><div class="da-brand-name">ĐỨC ANH</div><div class="da-brand-sub">MAINTENANCE</div></div></div><nav class="da-nav-scroll" aria-label="Điều hướng chính">${NAV_ITEMS.map(s=>`<div class="da-nav-section"><div class="da-nav-label">${s.section}</div>${s.items.map(i=>`<a class="da-nav-item" href="${i.href||'#'}"${i.module?` data-module="${i.module}"`:''}><span class="da-nav-icon">${i.icon}</span><span>${i.label}</span></a>`).join('')}</div>`).join('')}</nav><div class="da-nav-footer"><strong>ĐỨC ANH MAINTENANCE</strong><span>DEV V1.16</span></div>`;return aside;}
+ function init(){if(document.querySelector('.da-shared-sidebar'))return;document.body.classList.add('da-nav-page');const sidebar=buildSidebar(),button=document.getElementById('daMenuButton'),overlay=document.createElement('div');overlay.className='da-nav-overlay';overlay.id='daNavOverlay';document.body.prepend(overlay);document.body.prepend(sidebar);if(!button)return;const page=currentPage();sidebar.querySelectorAll('.da-nav-item').forEach(link=>{if(link.getAttribute('href')===page){link.classList.add('active');link.setAttribute('aria-current','page')}});const close=()=>{sidebar.classList.remove('open');overlay.classList.remove('show');button.classList.remove('open');button.setAttribute('aria-expanded','false');document.documentElement.classList.remove('da-sidebar-open')};const open=()=>{sidebar.classList.add('open');overlay.classList.add('show');button.classList.add('open');button.setAttribute('aria-expanded','true');document.documentElement.classList.add('da-sidebar-open')};button.addEventListener('click',()=>sidebar.classList.contains('open')?close():open());overlay.addEventListener('click',close);sidebar.addEventListener('click',e=>{const link=e.target.closest('.da-nav-item');if(!link)return;if(link.dataset.module){e.preventDefault();close();alert('Module này đang trong quá trình xây dựng.\n\nĐức Anh Maintenance DEV V1.16');return}if(window.innerWidth<=820)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});window.addEventListener('resize',()=>{if(window.innerWidth>820)close()});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
