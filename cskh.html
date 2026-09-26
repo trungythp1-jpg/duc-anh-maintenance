@@ -178,7 +178,7 @@ button{cursor:pointer}
 <script type="module">
 import { auth, db } from "./js/core/firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { doc, getDoc, addDoc, collection, updateDoc, getDocs, query, where, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
 import {
   getCustomers,getBuildings,getElevators,createContract,getWorkOrders,
@@ -192,6 +192,81 @@ const profileRole=r=>String(r||"").trim().toLowerCase();
 let profile=null,customers=[],buildings=[],elevators=[],requests=[],workOrders=[],maintenances=[];
 
 function callable(name){return httpsCallable(getFunctions(auth.app,"asia-southeast1"),name)}
+
+async function createAndSubmitCSKHRequestDirect(data){
+  const user=auth.currentUser;
+  if(!user) throw new Error("Chưa đăng nhập Firebase.");
+
+  const now=serverTimestamp();
+  const createdHistoryAt=Timestamp.now();
+  const requestRef=await addDoc(collection(db,"cskhRequests"),{
+    requestSource:data.requestSource,
+    requestType:data.requestType,
+    status:"DRAFT",
+    customerId:data.customerId||"",
+    buildingId:data.buildingId||"",
+    elevatorId:data.elevatorId||"",
+    externalCustomer:data.externalCustomer||null,
+    externalBuilding:data.externalBuilding||null,
+    externalElevator:data.externalElevator||null,
+    externalContract:data.externalContract||null,
+    description:data.description||"",
+    note:data.note||"",
+    createdByUid:user.uid,
+    createdByName:profile?.name||user.displayName||user.email||"CSKH",
+    createdAt:now,
+    updatedAt:now,
+    assignedAdminUid:"",
+    assignedAdminName:"",
+    processedAt:null,
+    resultNote:"",
+    history:[{
+      action:"CREATED",
+      byUid:user.uid,
+      byName:profile?.name||user.displayName||user.email||"CSKH",
+      fromStatus:"",
+      toStatus:"DRAFT",
+      note:"",
+      metadata:{},
+      createdAt:createdHistoryAt
+    }]
+  });
+
+  try{
+    const submittedAt=Timestamp.now();
+    const updatedAt=serverTimestamp();
+    await updateDoc(requestRef,{
+      status:"SUBMITTED",
+      updatedAt:updatedAt,
+      history:[
+        {
+          action:"CREATED",
+          byUid:user.uid,
+          byName:profile?.name||user.displayName||user.email||"CSKH",
+          fromStatus:"",
+          toStatus:"DRAFT",
+          note:"",
+          metadata:{},
+          createdAt:createdHistoryAt
+        },
+        {
+          action:"SUBMITTED",
+          byUid:user.uid,
+          byName:profile?.name||user.displayName||user.email||"CSKH",
+          fromStatus:"DRAFT",
+          toStatus:"SUBMITTED",
+          note:"",
+          metadata:{},
+          createdAt:submittedAt
+        }
+      ]
+    });
+  }catch(error){
+    throw new Error(`Tạo phiếu được nhưng chưa gửi Admin: ${error?.message||String(error)}`);
+  }
+
+  return requestRef.id;
+}
 
 async function safeLoad(fn,fallback){
   try{
@@ -389,16 +464,27 @@ async function submitExternalRequest(){
         note:$("extNote").value.trim()
       }
     };
-    const created=await callable("createCSKHRequest")(data);if(!created.data?.id)throw new Error("Không nhận được mã phiếu.");
-    await callable("submitCSKHRequest")({requestId:created.data.id});
-    closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng + hợp đồng cho Admin. Mã phiếu: ${created.data.id}`);
+    const requestId=await createAndSubmitCSKHRequestDirect(data);
+    closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng + hợp đồng cho Admin. Mã phiếu: ${requestId}`);
   }catch(e){$("requestError").textContent=e?.message||"Không thể gửi phiếu.";$("requestError").style.display="block"}
   finally{btn.disabled=false;btn.textContent="Gửi Admin"}
 }
 
 async function loadRequests(){
-  const result=await callable("getCSKHRequests")({});
-  requests=Array.isArray(result.data)?result.data:[];
+  const user=auth.currentUser;
+  if(!user) return [];
+
+  const snap=await getDocs(query(
+    collection(db,"cskhRequests"),
+    where("createdByUid","==",user.uid)
+  ));
+
+  requests=snap.docs.map(item=>({id:item.id,...item.data()}));
+  requests.sort((a,b)=>{
+    const av=a.createdAt?.toMillis?.()||0;
+    const bv=b.createdAt?.toMillis?.()||0;
+    return bv-av;
+  });
   return requests;
 }
 
@@ -505,7 +591,6 @@ $("refresh").addEventListener("click",loadAll);
 $("contractCustomer").addEventListener("change",fillBuildings);
 $("contractBuilding").addEventListener("change",fillElevators);
 $("saveContract").addEventListener("click",saveExistingContract);
-$("submitRequest").addEventListener("click",submitExternalRequest);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>closeModal(m.id))});
