@@ -212,7 +212,7 @@ body.dashboard-auth-pending::before{
         ▤ <span>Hợp đồng</span>
       </a>
 
-      <a class="nav-item" href="#maintenance" data-app-module="maintenance">
+      <a class="nav-item" href="maintenance.html">
         ◷ <span>Bảo trì</span>
       </a>
 
@@ -1745,6 +1745,7 @@ document.addEventListener("keydown", event => {
 const pendingModules = [
 
   "contracts",
+  "maintenance",
   "work-orders",
   "technicians",
   "kpi",
@@ -1824,7 +1825,6 @@ import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
-import { mountMaintenanceModule } from "./js/modules/maintenance-module-v1.0.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -2015,46 +2015,6 @@ async function showContracts() {
   }
 }
 
-async function showMaintenance() {
-  if (!appContent || !dashboardHome) return;
-
-  currentModule = "maintenance";
-  dashboardHome.style.display = "none";
-  appContent.style.display = "";
-  setActiveModule("maintenance");
-
-  appContent.innerHTML = `
-    <div class="panel" style="margin-top:18px;">
-      <div class="work-row">
-        <time>…</time>
-        <i></i>
-        <div>
-          <strong>Đang mở Bảo trì...</strong>
-          <span>Đang tải module nghiệp vụ trong App Shell.</span>
-        </div>
-      </div>
-    </div>
-  `;
-
-  try {
-    await mountMaintenanceModule(appContent);
-  } catch (error) {
-    console.error("APP SHELL MAINTENANCE MODULE ERROR:", error);
-    appContent.innerHTML = `
-      <div class="panel" style="margin-top:18px;">
-        <div class="work-row">
-          <time>!</time>
-          <i></i>
-          <div>
-            <strong>Không thể mở module Bảo trì</strong>
-            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-}
-
 async function route() {
   if (routing) return;
   routing = true;
@@ -2070,8 +2030,6 @@ async function route() {
       await showElevators();
     } else if (hash === "contracts") {
       await showContracts();
-    } else if (hash === "maintenance") {
-      await showMaintenance();
     } else {
       showDashboard();
     }
@@ -2089,8 +2047,7 @@ document.addEventListener("click", event => {
     moduleName !== "customers" &&
     moduleName !== "buildings" &&
     moduleName !== "elevators" &&
-    moduleName !== "contracts" &&
-    moduleName !== "maintenance"
+    moduleName !== "contracts"
   ) return;
 
   event.preventDefault();
