@@ -28,7 +28,7 @@ button{cursor:pointer}
 .kpi{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px}.kpi .n{font-size:30px;font-weight:900;margin-top:6px}.kpi .l{color:var(--muted);font-size:12px}.kpi .cap{color:var(--gold2);font-size:11px;font-weight:900;letter-spacing:.1em}
 .grid{display:grid;grid-template-columns:1.35fr .65fr;gap:16px}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:15px;overflow:hidden}.head{padding:16px 18px;border-bottom:1px solid #2d2922;display:flex;justify-content:space-between;gap:10px;align-items:center}.head strong{color:var(--gold2)}.head span{color:var(--muted);font-size:12px}
-.urgent{padding:16px 18px}.task{border:1px solid #40392e;border-radius:12px;padding:14px;margin-bottom:10px;background:#151512}.task:last-child{margin-bottom:0}.task-top{display:flex;justify-content:space-between;gap:10px}.dot{width:12px;height:12px;border-radius:50%;background:var(--danger);display:inline-block;margin-right:8px}.task-code{font-weight:900;color:var(--gold2)}.task-meta{color:var(--muted);font-size:13px;margin-top:5px}.task-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.tag{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;background:#29261f;color:#cfc6b7}.tag.blue{background:rgba(127,170,255,.14);color:#9bbdff}.tag.green{background:rgba(110,213,154,.14);color:#78e1a4}.tag.gold{background:rgba(214,168,79,.14);color:var(--gold2)}
+.urgent{padding:16px 18px}.task{border:1px solid #40392e;border-radius:12px;padding:14px;margin-bottom:10px;background:#151512}.task:last-child{margin-bottom:0}.task-top{display:flex;justify-content:space-between;gap:10px}.dot{width:12px;height:12px;border-radius:50%;background:var(--danger);display:inline-block;margin-right:8px}.task-code{font-weight:900;color:var(--gold2)}.task-meta{color:var(--muted);font-size:13px;margin-top:5px}.task-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px}.tag{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;background:#29261f;color:#cfc6b7}.tag.blue{background:rgba(127,170,255,.14);color:#9bbdff}.tag.green{background:rgba(110,213,154,.14);color:#78e1a4}.tag.gold{background:rgba(214,168,79,.14);color:var(--gold2)}.tag.red{background:rgba(240,109,96,.14);color:#ff8176}
 .list{padding:8px 18px 16px}.list-row{display:grid;grid-template-columns:150px 1.2fr 1fr 110px;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #292722}.list-row:last-child{border-bottom:0}.list-row strong{display:block}.list-row small{display:block;color:var(--muted);margin-top:3px}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px}.quick .btn{min-height:58px;text-align:left}.quick b{display:block}.quick small{color:var(--muted)}
 .maintenance-list{padding:0 18px 10px}.maintenance-task{padding:14px 0;border-bottom:1px solid var(--line)}.maintenance-task:last-child{border-bottom:0}.maintenance-task .task-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.maintenance-task .task-meta{margin-top:7px;color:var(--muted);font-size:13px}.maintenance-task .task-foot{margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}.dot.red{background:#ff6b5f}.confirm-detail{display:grid;gap:10px}.confirm-row{display:flex;justify-content:space-between;gap:18px;padding-bottom:10px;border-bottom:1px solid var(--line)}.confirm-row span{color:var(--muted)}.confirm-row strong{text-align:right}.confirm-note{padding:12px;border:1px solid var(--line);border-radius:10px;color:var(--muted)}
@@ -516,7 +516,7 @@ function openRequestDetail(id){
   const c=r.externalCustomer||{};
   const b=r.externalBuilding||{};
   const e=r.externalElevator||{};
-  const editable=["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""));
+  const editable=["DRAFT","NEED_INFO"].includes(String(r.status||""));
   box.innerHTML=`
     <div class="confirm-detail">
       <div class="confirm-row"><span>Mã phiếu</span><strong>${esc(r.id.slice(0,8).toUpperCase())}</strong></div>
@@ -534,7 +534,9 @@ function openRequestDetail(id){
       <div class="confirm-row"><span>Tải trọng</span><strong>${e.technical?.capacityKg?esc(e.technical.capacityKg)+" kg":"—"}</strong></div>
       <div class="confirm-row"><span>Hãng sản xuất</span><strong>${esc(e.manufacturer||"—")}</strong></div>
       <div class="confirm-row"><span>Nội dung yêu cầu</span><strong>${esc(r.description||"—")}</strong></div>
-      <div class="confirm-row"><span>Ghi chú</span><strong>${esc(r.note||"—")}</strong></div>
+      <div class="confirm-row"><span>Ghi chú CSKH</span><strong>${esc(r.note||"—")}</strong></div>
+      ${r.assignedAdminName?`<div class="confirm-row"><span>Admin xử lý</span><strong>${esc(r.assignedAdminName)}</strong></div>`:""}
+      ${r.resultNote?`<div class="confirm-note"><b>Phản hồi từ Admin:</b><br>${esc(r.resultNote)}</div>`:""}
       <div class="confirm-row"><span>Cập nhật</span><strong>${esc(formatDate(r.updatedAt||r.createdAt))}</strong></div>
       ${editable?`<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" id="editRequestBtn" data-edit-request="${esc(r.id)}">✎ Sửa phiếu</button></div>`:""}
     </div>`;
@@ -544,8 +546,8 @@ function openRequestDetail(id){
 function startEditRequest(id){
   const r=requests.find(x=>x.id===id);
   if(!r) return;
-  if(!["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""))){
-    alert("Phiếu đã được Admin duyệt hoặc xử lý, không thể sửa.");
+  if(!["DRAFT","NEED_INFO"].includes(String(r.status||""))){
+    alert("Chỉ phiếu Nháp hoặc Cần bổ sung mới được sửa.");
     return;
   }
   editingRequestId=r.id;
@@ -567,8 +569,8 @@ function startEditRequest(id){
   $("extManufacturer").value=e.manufacturer||"";
   $("extDescription").value=r.description||"";
   $("extNote").value=r.note||"";
-  $("requestModalTitle").textContent="Sửa phiếu CSKH";
-  $("submitRequest").textContent="Lưu thay đổi";
+  $("requestModalTitle").textContent=r.status==="NEED_INFO"?"Bổ sung phiếu CSKH":"Sửa phiếu CSKH";
+  $("submitRequest").textContent=r.status==="NEED_INFO"?"Lưu & gửi lại Admin":"Lưu thay đổi";
   $("requestError").style.display="none";
   closeModal("requestDetailModal");
   openModal("requestModal");
@@ -681,7 +683,7 @@ function render(){
   confirmedMaintenancePage=1;
   renderConfirmedMaintenances();
 
-  const urgent=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(r.status)).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,3);
+  const urgent=requests.filter(r=>["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(r.status)).sort((a,b)=>(b.updatedAt?.toMillis?.()||b.createdAt?.toMillis?.()||0)-(a.updatedAt?.toMillis?.()||a.createdAt?.toMillis?.()||0)).slice(0,3);
   $("urgentCount").textContent=urgent.length;
   $("urgent").innerHTML=urgent.length?urgent.map(r=>`
     <div class="task">
@@ -691,7 +693,7 @@ function render(){
       <div class="task-foot"><span class="muted">${r.requestSource==="EXTERNAL_CUSTOMER"?"Khách hàng mới":"Khách hàng cũ"}</span><button class="btn" data-request="${esc(r.id)}">Mở phiếu</button></div>
     </div>`).join(""):`<div class="empty" style="padding:25px;color:var(--muted)">Không có việc cần xử lý ngay.</div>`;
 
-  const all=[...requests].sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));
+  const all=[...requests].sort((a,b)=>(b.updatedAt?.toMillis?.()||b.createdAt?.toMillis?.()||0)-(a.updatedAt?.toMillis?.()||a.createdAt?.toMillis?.()||0));
   $("allCount").textContent=all.length;
   $("allTasks").innerHTML=all.length?all.slice(0,12).map(r=>`
     <div class="list-row" style="grid-template-columns:1fr auto;align-items:center;gap:12px">
@@ -702,8 +704,8 @@ function render(){
         </small>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="tag ${r.status==="CREATED"?"green":r.status==="NEED_INFO"?"gold":"blue"}">${esc(statusText[r.status]||r.status)}</span>
-
+        <span class="tag ${r.status==="CREATED"?"green":r.status==="NEED_INFO"?"gold":r.status==="REJECTED"?"red":"blue"}">${esc(statusText[r.status]||r.status)}</span>
+        <button class="btn" data-request="${esc(r.id)}">Mở phiếu</button>
       </div>
     </div>`).join(""):`<div style="padding:25px;color:var(--muted)">Chưa có phiếu CSKH.</div>`;
 }
@@ -783,9 +785,10 @@ async function submitExternalRequest(){
       const user=auth.currentUser;
       const r=requests.find(x=>x.id===editingRequestId);
       if(!user||!r) throw new Error("Không tìm thấy phiếu cần sửa.");
-      if(!["DRAFT","SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(r.status||""))) throw new Error("Phiếu đã được Admin duyệt hoặc xử lý, không thể sửa.");
+      if(!["DRAFT","NEED_INFO"].includes(String(r.status||""))) throw new Error("Chỉ phiếu Nháp hoặc Cần bổ sung mới được sửa.");
       const oldHistory=Array.isArray(r.history)?r.history:[];
       const now=Timestamp.now();
+      const businessHistory={action:"EDITED",byUid:user.uid,byName:profile?.name||user.displayName||user.email||"CSKH",fromStatus:r.status,toStatus:r.status,note:r.status==="NEED_INFO"?"CSKH bổ sung thông tin theo yêu cầu của Admin.":"CSKH sửa phiếu.",metadata:{},createdAt:now};
       await updateDoc(doc(db,"cskhRequests",editingRequestId),{
         requestSource:data.requestSource,
         requestType:data.requestType,
@@ -797,13 +800,24 @@ async function submitExternalRequest(){
         externalElevator:data.externalElevator,
         description:data.description,
         note:data.note,
-        history:[...oldHistory,{action:"EDITED",byUid:user.uid,byName:profile?.name||user.displayName||user.email||"CSKH",fromStatus:r.status,toStatus:r.status,note:"CSKH sửa phiếu trước khi Admin duyệt.",metadata:{},createdAt:now}],
+        history:[...oldHistory,businessHistory],
         updatedAt:serverTimestamp()
       });
+      if(r.status==="NEED_INFO"){
+        const submittedHistory={action:"RESUBMITTED",byUid:user.uid,byName:profile?.name||user.displayName||user.email||"CSKH",fromStatus:"NEED_INFO",toStatus:"SUBMITTED",note:"CSKH đã bổ sung và gửi lại Admin.",metadata:{},createdAt:Timestamp.now()};
+        await updateDoc(doc(db,"cskhRequests",editingRequestId),{
+          status:"SUBMITTED",
+          assignedAdminUid:"",
+          assignedAdminName:"",
+          updatedAt:serverTimestamp(),
+          history:[...oldHistory,businessHistory,submittedHistory]
+        });
+      }
+      const wasNeedInfo=r.status==="NEED_INFO";
       editingRequestId="";
       closeModal("requestModal");
       await loadAll();
-      alert("Đã lưu thay đổi phiếu CSKH.");
+      alert(wasNeedInfo?"Đã bổ sung và gửi lại phiếu cho Admin.":"Đã lưu thay đổi phiếu CSKH.");
     }else{
       const requestId=await createAndSubmitCSKHRequestDirect(data);
       closeModal("requestModal");await loadAll();alert(`Đã gửi yêu cầu tạo khách hàng cho Admin. Mã phiếu: ${requestId}`);
@@ -1032,8 +1046,7 @@ async function loadRequests(){
     where("createdByUid","==",user.uid)
   ));
 
-  requests=snap.docs.map(item=>({id:item.id,...item.data()}))
-    .filter(r=>!["APPROVED","CREATED"].includes(String(r.status||"")));
+  requests=snap.docs.map(item=>({id:item.id,...item.data()}));
   requests.sort((a,b)=>{
     const av=a.createdAt?.toMillis?.()||0;
     const bv=b.createdAt?.toMillis?.()||0;
@@ -1213,8 +1226,8 @@ $("quoteVatRate").addEventListener("input",calculateQuoteTotals);
 $("saveMaterialQuote").addEventListener("click",()=>saveMaterialQuote().catch(()=>{}));
 $("printMaterialQuote").addEventListener("click",printMaterialQuote);
 $("allTasks").addEventListener("click",event=>{
-  const button=event.target.closest("[data-edit-request]");
-  if(button) startEditRequest(button.dataset.editRequest);
+  const button=event.target.closest("[data-request]");
+  if(button) openRequestDetail(button.dataset.request);
 });
 
 $("requestDetailContent").addEventListener("click",event=>{
