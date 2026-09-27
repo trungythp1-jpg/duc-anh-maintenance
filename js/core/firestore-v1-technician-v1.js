@@ -10,40 +10,10 @@
  * - status: active | leave | inactive
  */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  query,
-  where,
-  serverTimestamp,
-  getFirestore
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { db, auth } from "./firebase.js";
 
-/* Không phụ thuộc export db/auth từ ./firebase.js. */
-async function loadFirebaseConfig(){
-  const response=await fetch("./js/core/firebase.js?v=20260927-technician-bootstrap",{cache:"no-store"});
-  if(!response.ok) throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
-  const source=await response.text();
-  let match=source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
-  if(!match) match=source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
-  if(!match) throw new Error("Không tìm thấy firebaseConfig trong /js/core/firebase.js.");
-  const config=Function(`"use strict"; return (${match[1]});`)();
-  const required=["apiKey","authDomain","projectId","appId"];
-  const missing=required.filter(key=>!config?.[key]);
-  if(missing.length) throw new Error("firebaseConfig thiếu: "+missing.join(", "));
-  return config;
-}
-
-const firebaseConfig=await loadFirebaseConfig();
-const app=initializeApp(firebaseConfig,"duc-anh-maintenance-technician-v1");
-const db=getFirestore(app);
-const auth=getAuth(app);
+/* CORE FIX: dùng đúng singleton Firebase/Auth của Dashboard. */
 
 const COLLECTION = "technicians";
 const VALID_STATUS = ["active", "leave", "inactive"];
