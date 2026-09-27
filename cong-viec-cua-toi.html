@@ -84,7 +84,6 @@
 </main>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "./js/core/firebase.js";
 import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getMaintenances, getWorkOrders, reportWorkOrderByTechnician, startMaintenanceByTechnician } from "./js/core/firestore-v1.js?v=maintenance-start-v1";
@@ -442,13 +441,28 @@ async function load(){
   }catch(err){$("status").textContent=err?.message||"Không tải được công việc.";$("status").className="status error"}
 }
 import { db } from "./js/core/firebase.js";
-onAuthStateChanged(auth,async user=>{
-  if(!user){$("status").textContent="Chưa đăng nhập Firebase.";$("status").className="status error";return}
+
+async function bootMyWork(){
+  $("status").textContent="Đang xác thực tài khoản KTV…";
+  $("status").className="status";
   try{
+    if(typeof auth?.authStateReady==="function"){
+      await auth.authStateReady();
+    }
+
+    const user=auth?.currentUser||null;
+    if(!user){
+      $("status").textContent="Chưa đăng nhập Firebase.";
+      $("status").className="status error";
+      return;
+    }
+
     const s=await getDoc(doc(db,"users",user.uid));
     profile=s.exists()?s.data():null;
     if(!profile)throw new Error("Không tồn tại users/{uid}.");
-    if(String(profile.role||"").toUpperCase()!=="TECHNICIAN")throw new Error("Màn hình này dành cho tài khoản KTV.");
+    if(String(profile.role||"").toUpperCase()!=="TECHNICIAN"){
+      throw new Error("Màn hình này dành cho tài khoản KTV.");
+    }
 
     const technicianName=String(
       profile.technicianName ||
@@ -461,8 +475,14 @@ onAuthStateChanged(auth,async user=>{
     $("technicianName").textContent=technicianName;
 
     await load();
-  }catch(err){$("status").textContent=err?.message||"Không tải được dữ liệu.";$("status").className="status error"}
-});
+  }catch(err){
+    console.error("MY WORK BOOT ERROR:",err);
+    $("status").textContent=err?.message||"Không tải được dữ liệu.";
+    $("status").className="status error";
+  }
+}
+
+void bootMyWork();
 
 setInterval(()=>{
   if(profile && String(profile.role||"").toUpperCase()==="TECHNICIAN"){
