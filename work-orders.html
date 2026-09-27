@@ -1,99 +1,85 @@
-/* ĐỨC ANH MAINTENANCE — WORK ORDER MODULE V1.15
- * Source of truth: current work-orders-v1.14-auth-core-fix
- * App Shell mount only. Dashboard owns Auth/route.
- */
-
-import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "../core/firebase.js";
-import {
-  getCustomers,
-  getBuildingsByCustomer,
-  getElevatorsByBuilding,
-  getMaintenances,
-  getWorkOrders,
-  createWorkOrder,
-  updateWorkOrder,
-  reportWorkOrderByTechnician,
-  completeWorkOrderByTechnician
-} from "../core/firestore-v1.js?v=wo2.2";
-import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
-
-export async function mountWorkOrderModule(root) {
-  if (!root) throw new Error("WORK_ORDER_ROOT_MISSING");
-
-  root.innerHTML = `<div id="work-order-module-root" class="work-order-module"><style>
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Work Order — Đức Anh Maintenance</title>
+<style>
 :root{
   --bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;
   --gold2:#f0ca76;--border:#3b3428;--text:#eee9df;--muted:#aaa49a;
   --ok:#70d89f;--danger:#ff8176;--blue:#8fb8ff;
 }
-#work-order-module-root *{box-sizing:border-box}
-.work-order-module{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.work-order-module{min-height:100%;background:radial-gradient(circle at 80% -10%,rgba(214,168,79,.1),transparent 30%),#090909}
-#work-order-module-root main{max-width:1450px;margin:auto;padding:24px 16px 70px}
-#work-order-module-root h1{margin:0;color:var(--gold2);font-size:30px}
-#work-order-module-root .sub{color:var(--muted);margin-top:5px}
-#work-order-module-root .head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:20px}
-#work-order-module-root .btn{border:1px solid var(--border);background:#151512;color:var(--text);border-radius:10px;padding:11px 15px;font:inherit;cursor:pointer;min-height:46px}
-#work-order-module-root .btn.primary{background:linear-gradient(#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}
-#work-order-module-root .btn:disabled{opacity:.5}
-#work-order-module-root .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}
-#work-order-module-root .kpi{background:linear-gradient(#151512,#10100e);border:1px solid var(--border);border-radius:14px;padding:16px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh;background:radial-gradient(circle at 80% -10%,rgba(214,168,79,.1),transparent 30%),#090909}
+main{max-width:1450px;margin:auto;padding:24px 16px 70px}
+h1{margin:0;color:var(--gold2);font-size:30px}
+.sub{color:var(--muted);margin-top:5px}
+.head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:20px}
+.btn{border:1px solid var(--border);background:#151512;color:var(--text);border-radius:10px;padding:11px 15px;font:inherit;cursor:pointer;min-height:46px}
+.btn.primary{background:linear-gradient(#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}
+.btn:disabled{opacity:.5}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}
+.kpi{background:linear-gradient(#151512,#10100e);border:1px solid var(--border);border-radius:14px;padding:16px}
 .kpi b{display:block;font-size:12px;color:var(--gold2);margin-bottom:5px}
 .kpi strong{font-size:28px}
-#work-order-module-root .toolbar,#work-order-module-root .card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
-#work-order-module-root .toolbar{padding:14px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:15px}
-#work-order-module-root label{display:block;font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:6px}
-#work-order-module-root input,#work-order-module-root select,#work-order-module-root textarea{width:100%;background:#171714;color:var(--text);border:1px solid #4a4438;border-radius:9px;padding:11px;font:inherit}
-#work-order-module-root input:focus,#work-order-module-root select:focus,#work-order-module-root textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(214,168,79,.1)}
-#work-order-module-root .table-wrap{overflow:auto}
-#work-order-module-root table{width:100%;border-collapse:collapse;min-width:1100px}
-#work-order-module-root th,#work-order-module-root td{padding:12px;border-bottom:1px solid #292722;text-align:left;vertical-align:top}
-#work-order-module-root th{background:#171714;color:var(--gold2);font-size:12px;text-transform:uppercase}
-#work-order-module-root tr:hover td{background:#161613}
-#work-order-module-root .muted{color:var(--muted);font-size:12px}
-#work-order-module-root .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#28261f;font-size:12px}
-#work-order-module-root .badge.ok{color:var(--ok);background:rgba(112,216,159,.12)}
-#work-order-module-root .badge.blue{color:var(--blue);background:rgba(143,184,255,.12)}
-#work-order-module-root .badge.gold{color:var(--gold2);background:rgba(214,168,79,.13)}
-#work-order-module-root .badge.red{color:var(--danger);background:rgba(255,129,118,.12)}
-#work-order-module-root .empty{padding:45px;text-align:center;color:var(--muted)}
-#work-order-module-root .status{padding:10px 0;color:var(--muted)}
-#work-order-module-root .status.error{color:var(--danger)}
-#work-order-module-root .status.ok{color:var(--ok)}
-#work-order-module-root .modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:12px;z-index:100}
-#work-order-module-root .modal.show{display:flex}
-#work-order-module-root .box{width:min(1000px,100%);max-height:94vh;overflow:auto;background:#10100e;border:1px solid #80652e;border-radius:16px}
-#work-order-module-root .modal-head{position:sticky;top:0;background:#171714;border-bottom:1px solid var(--gold);padding:15px 18px;display:flex;justify-content:space-between;z-index:2}
-#work-order-module-root .modal-head h2{margin:0;color:var(--gold2);font-size:21px}
-#work-order-module-root .close{border:0;background:none;color:var(--gold2);font-size:28px}
-#work-order-module-root .body{padding:18px}
-#work-order-module-root .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-#work-order-module-root .full{grid-column:1/-1}
-#work-order-module-root .ref{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#151512;border:1px solid var(--border);padding:12px;border-radius:12px;margin-bottom:15px}
-#work-order-module-root .ref small{display:block;color:var(--muted);margin-bottom:3px}
-#work-order-module-root .ref strong{color:var(--text)}
-#work-order-module-root .actions{position:sticky;bottom:0;background:#10100e;border-top:1px solid var(--gold);padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:flex-end;gap:10px}
-#work-order-module-root .actions #work-order-module-root .btn{min-height:52px;min-width:120px}
-#work-order-module-root .actions .primary{min-width:150px}
-#work-order-module-root .err{color:var(--danger);margin-top:8px;display:none}
-#work-order-module-root .err.show{display:block}
-#work-order-module-root .audit-history{display:grid;gap:8px}
-#work-order-module-root .audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
-#work-order-module-root .audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-#work-order-module-root .audit-action{color:var(--gold2)!important;font-weight:700;font-size:13px}#work-order-module-root .audit-time{color:#999!important;font-size:11px}
-#work-order-module-root .audit-meta{margin-top:5px;font-size:12px;color:#eee!important;line-height:1.55}#work-order-module-root .audit-meta span{color:#999!important}
-#work-order-module-root .audit-empty{color:#999!important;font-size:12px;padding:8px 0}
-#work-order-module-root .tech-readonly{opacity:.82}#work-order-module-root .tech-readonly input,#work-order-module-root .tech-readonly select,#work-order-module-root .tech-readonly textarea{pointer-events:none}#work-order-module-root .tech-hidden{display:none!important}
+.toolbar,.card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
+.toolbar{padding:14px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:15px}
+label{display:block;font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:6px}
+input,select,textarea{width:100%;background:#171714;color:var(--text);border:1px solid #4a4438;border-radius:9px;padding:11px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(214,168,79,.1)}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+th,td{padding:12px;border-bottom:1px solid #292722;text-align:left;vertical-align:top}
+th{background:#171714;color:var(--gold2);font-size:12px;text-transform:uppercase}
+tr:hover td{background:#161613}
+.muted{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#28261f;font-size:12px}
+.badge.ok{color:var(--ok);background:rgba(112,216,159,.12)}
+.badge.blue{color:var(--blue);background:rgba(143,184,255,.12)}
+.badge.gold{color:var(--gold2);background:rgba(214,168,79,.13)}
+.badge.red{color:var(--danger);background:rgba(255,129,118,.12)}
+.empty{padding:45px;text-align:center;color:var(--muted)}
+.status{padding:10px 0;color:var(--muted)}
+.status.error{color:var(--danger)}
+.status.ok{color:var(--ok)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:12px;z-index:100}
+.modal.show{display:flex}
+.box{width:min(1000px,100%);max-height:94vh;overflow:auto;background:#10100e;border:1px solid #80652e;border-radius:16px}
+.modal-head{position:sticky;top:0;background:#171714;border-bottom:1px solid var(--gold);padding:15px 18px;display:flex;justify-content:space-between;z-index:2}
+.modal-head h2{margin:0;color:var(--gold2);font-size:21px}
+.close{border:0;background:none;color:var(--gold2);font-size:28px}
+.body{padding:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.ref{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#151512;border:1px solid var(--border);padding:12px;border-radius:12px;margin-bottom:15px}
+.ref small{display:block;color:var(--muted);margin-bottom:3px}
+.ref strong{color:var(--text)}
+.actions{position:sticky;bottom:0;background:#10100e;border-top:1px solid var(--gold);padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:flex-end;gap:10px}
+.actions .btn{min-height:52px;min-width:120px}
+.actions .primary{min-width:150px}
+.err{color:var(--danger);margin-top:8px;display:none}
+.err.show{display:block}
+.audit-history{display:grid;gap:8px}
+.audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
+.audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.audit-action{color:var(--gold2)!important;font-weight:700;font-size:13px}.audit-time{color:#999!important;font-size:11px}
+.audit-meta{margin-top:5px;font-size:12px;color:#eee!important;line-height:1.55}.audit-meta span{color:#999!important}
+.audit-empty{color:#999!important;font-size:12px;padding:8px 0}
+.tech-readonly{opacity:.82}.tech-readonly input,.tech-readonly select,.tech-readonly textarea{pointer-events:none}.tech-hidden{display:none!important}
 
-@media(max-width:850px){#work-order-module-root .kpis{grid-template-columns:1fr 1fr}#work-order-module-root .toolbar{grid-template-columns:1fr 1fr}#work-order-module-root .ref{grid-template-columns:1fr 1fr}}
+@media(max-width:850px){.kpis{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}.ref{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){
-  #work-order-module-root main{padding:16px 12px 50px}#work-order-module-root .head{flex-direction:column}#work-order-module-root .toolbar{grid-template-columns:1fr}#work-order-module-root .grid{grid-template-columns:1fr}#work-order-module-root .full{grid-column:auto}
-  #work-order-module-root .modal{align-items:flex-end;padding:0}#work-order-module-root .box{height:100dvh;max-height:100dvh;border-radius:16px 16px 0 0}
-  #work-order-module-root .body{padding:14px 13px 120px}#work-order-module-root .ref{grid-template-columns:1fr}
-  #work-order-module-root .actions{justify-content:stretch}#work-order-module-root .actions #work-order-module-root .btn{flex:1;min-width:0}
+  main{padding:16px 12px 50px}.head{flex-direction:column}.toolbar{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.full{grid-column:auto}
+  .modal{align-items:flex-end;padding:0}.box{height:100dvh;max-height:100dvh;border-radius:16px 16px 0 0}
+  .body{padding:14px 13px 120px}.ref{grid-template-columns:1fr}
+  .actions{justify-content:stretch}.actions .btn{flex:1;min-width:0}
 }
-</style><main>
+</style>
+</head>
+<body>
+<main>
   <div class="head">
     <div>
       <h1>Phiếu công việc</h1>
@@ -256,9 +242,23 @@ export async function mountWorkOrderModule(root) {
   </div>
 </div>
 
-<!-- BUILD: work-orders-v1.13-completion-fix -->\n</div>`;
+<!-- BUILD: work-orders-v1.13-completion-fix -->\n<script type="module">
+import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { auth, db } from "./js/core/firebase.js";
+import {
+  getCustomers,
+  getBuildingsByCustomer,
+  getElevatorsByBuilding,
+  getMaintenances,
+  getWorkOrders,
+  createWorkOrder,
+  updateWorkOrder,
+  reportWorkOrderByTechnician,
+  completeWorkOrderByTechnician
+} from "./js/core/firestore-v1.js?v=wo2.2";
+import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
-const $ = id => root.querySelector(`#${id}`);
+const $ = id => document.getElementById(id);
 
 let customers=[];
 let buildings=[];
@@ -347,7 +347,7 @@ function render(){
       <td><button class="btn" data-open="${esc(w.id)}">Mở</button></td>
     </tr>`).join(""):`<tr><td colspan="9" class="empty">Chưa có Work Order.</td></tr>`;
 
-  root.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openEdit(b.dataset.open));
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openEdit(b.dataset.open));
 }
 
 function renderCustomers(selected=""){
@@ -722,7 +722,7 @@ function renderRequests(){
     <td><span class="badge gold">Chờ xử lý</span></td>
     <td><button class="btn" data-request-open="${esc(r.id)}">Xem / tạo WO</button></td>
   </tr>`).join(""):"";
-  root.querySelectorAll("[data-request-open]").forEach(b=>b.onclick=()=>openRequest(b.dataset.requestOpen));
+  document.querySelectorAll("[data-request-open]").forEach(b=>b.onclick=()=>openRequest(b.dataset.requestOpen));
 }
 
 async function loadWorkOrderRequests(){
@@ -932,37 +932,33 @@ async function load(){
   }
 }
 
-  // Dashboard App Shell đã xác thực Firebase trước khi mount module.
-  authUser = auth?.currentUser || null;
-  if (!authUser) {
-    const status = $("status");
-    if (status) {
-      status.className = "status error";
-      status.textContent = "Chưa đăng nhập Firebase.";
+// App Shell/Core Firebase đã chịu trách nhiệm xác thực.
+// Work Order chỉ sử dụng phiên Auth hiện tại, không tạo auth listener riêng.
+async function bootWorkOrder(){
+  authUser=auth?.currentUser||null;
+  try{
+    if(typeof auth?.authStateReady === "function") await auth.authStateReady();
+    authUser=auth?.currentUser||null;
+    if(!authUser){
+      $("status").className="status error";
+      $("status").textContent="Chưa đăng nhập Firebase.";
+      return;
     }
-    return;
-  }
-
-  try {
-    currentProfile = null;
-    const snap = await getDoc(doc(db, "users", authUser.uid));
-    currentProfile = snap.exists() ? snap.data() : null;
-    if (!currentProfile) throw new Error("Không tồn tại users/{uid}.");
-
-    const tech = isTech();
-    $("newBtn").textContent = tech ? "＋ Gửi yêu cầu tạo Work Order" : "＋ Tạo Work Order";
+    currentProfile=null;
+    const snap=await getDoc(doc(db,"users",authUser.uid));
+    currentProfile=snap.exists()?snap.data():null;
+    if(!currentProfile)throw new Error("Không tồn tại users/{uid}.");
+    const tech=isTech();
+    $("newBtn").textContent=tech?"＋ Gửi yêu cầu tạo Work Order":"＋ Tạo Work Order";
     await load();
-  } catch (err) {
-    console.error("WORK ORDER MODULE LOAD ERROR:", err);
-    const status = $("status");
-    if (status) {
-      status.className = "status error";
-      status.textContent = err?.message || "Không tải được dữ liệu.";
-    }
+  }catch(err){
+    console.error("WORK ORDER BOOT ERROR:",err);
+    $("status").className="status error";
+    $("status").textContent=err?.message||"Không tải được dữ liệu.";
   }
-
-  root.__workOrderCleanup = () => {
-    // Module hiện không đăng ký auth listener toàn cục.
-    // Giữ hook để App Shell có thể cleanup khi chuyển module.
-  };
 }
+
+void bootWorkOrder();
+</script>
+</body>
+</html>
