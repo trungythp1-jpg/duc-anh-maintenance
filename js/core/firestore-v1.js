@@ -1,5 +1,6 @@
 /* MAINTENANCE DATA LAYER V4 */
 import {
+  getFirestore,
   collection,
   doc,
   addDoc,
@@ -12,7 +13,12 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-import { db } from "./firebase.js";
+import { app } from "./firebase.js";
+
+// QUAN TRỌNG: tạo Firestore từ cùng Firebase SDK instance với collection/query.
+// Tránh lỗi: Expected first argument to collection() to be a CollectionReference,
+// a DocumentReference or FirebaseFirestore.
+const db = getFirestore(app);
 
 /*
  * ĐỨC ANH MAINTENANCE
