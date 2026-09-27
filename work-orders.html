@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Work Order — Đức Anh Maintenance</title>
+<title>Work Order — Đức Anh Maintenance — DEBUG V1.16</title>
 <style>
 :root{
   --bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;
@@ -83,7 +83,7 @@ tr:hover td{background:#161613}
   <div class="head">
     <div>
       <h1>Phiếu công việc</h1>
-      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.</div>
+      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.<div style="font-size:11px;color:#d6a84f;margin-top:4px">BUILD DEBUG V1.17 — DYNAMIC IMPORT TRACE</div></div>
     </div>
     <button class="btn primary" id="newBtn">＋ Tạo Work Order</button>
   </div>
@@ -242,24 +242,60 @@ tr:hover td{background:#161613}
   </div>
 </div>
 
-<!-- BUILD: work-orders-v1.18-clean -->
+<!-- BUILD: work-orders-v1.17-DYNAMIC-IMPORT-DEBUG -->
+<script>
+// Classic script chạy trước module để phân biệt "JS không chạy" với "module import lỗi".
+(function(){
+  const el=document.getElementById("status");
+  if(el){
+    el.className="status";
+    el.textContent="DEBUG V1.17 — JAVASCRIPT ĐÃ CHẠY, ĐANG NẠP MODULE…";
+  }
+})();
+</script>
 <script type="module">
-import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "./js/core/firebase.js?v=wo-clean-1.18";
-import {
-  getCustomers,
-  getBuildingsByCustomer,
-  getElevatorsByBuilding,
-  getMaintenances,
-  getWorkOrders,
-  createWorkOrder,
-  updateWorkOrder,
-  reportWorkOrderByTechnician,
-  completeWorkOrderByTechnician
-} from "./js/core/firestore-v1.js?v=wo-clean-1.18";
-import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js?v=wo-clean-1.18";
-
 const $ = id => document.getElementById(id);
+let moduleReady=false;
+let doc,getDoc,getDocs,addDoc,updateDoc,collection,query,where,serverTimestamp;
+let auth,db;
+let getCustomers,getBuildingsByCustomer,getElevatorsByBuilding,getMaintenances,getWorkOrders,createWorkOrder,updateWorkOrder,reportWorkOrderByTechnician,completeWorkOrderByTechnician;
+let getTechnician,getTechnicians;
+
+async function loadDependencies(){
+  try{
+    $("status").textContent="IMPORT 1/4 — Firebase Firestore SDK…";
+    const firestore=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js");
+    ({doc,getDoc,getDocs,addDoc,updateDoc,collection,query,where,serverTimestamp}=firestore);
+
+    $("status").textContent="IMPORT 2/4 — core/firebase.js…";
+    const core=await import("./js/core/firebase.js?v=wo-debug-1.17");
+    ({auth,db}=core);
+    if(!auth||!db)throw new Error("core/firebase.js không export auth hoặc db.");
+
+    $("status").textContent="IMPORT 3/4 — core/firestore-v1.js…";
+    const api=await import("./js/core/firestore-v1.js?v=wo2.2-debug-1.17");
+    ({getCustomers,getBuildingsByCustomer,getElevatorsByBuilding,getMaintenances,getWorkOrders,createWorkOrder,updateWorkOrder,reportWorkOrderByTechnician,completeWorkOrderByTechnician}=api);
+
+    $("status").textContent="IMPORT 4/4 — technician API…";
+    const techApi=await import("./js/core/firestore-v1-technician-v1.js?v=wo-debug-1.17");
+    ({getTechnician,getTechnicians}=techApi);
+
+    if(typeof getCustomers!=="function"||typeof getMaintenances!=="function"||typeof getWorkOrders!=="function")
+      throw new Error("firestore-v1.js thiếu hàm bắt buộc cho Work Order.");
+    if(typeof getTechnician!=="function"||typeof getTechnicians!=="function")
+      throw new Error("firestore-v1-technician-v1.js thiếu hàm KTV.");
+
+    moduleReady=true;
+    $("status").className="status ok";
+    $("status").textContent="IMPORT PASS — Firebase modules đã nạp xong.";
+  }catch(err){
+    console.error("WO DEBUG IMPORT ERROR:",err);
+    $("status").className="status error";
+    $("status").textContent=`❌ IMPORT LỖI: ${err?.message||String(err)}`;
+  }
+}
+
+await loadDependencies();
 
 let customers=[];
 let buildings=[];
@@ -911,46 +947,76 @@ function withTimeout(promise,label,ms=12000){
 
 async function load(){
   $("status").className="status";
-  $("status").textContent="Đang tải dữ liệu…";
+  $("status").textContent="DEBUG V1.16 — bắt đầu tải dữ liệu…";
+
+  const step = (message, cls="status") => {
+    const el=$("status");
+    if(el){ el.className=cls; el.textContent=message; }
+    console.log("[WO DEBUG]",message);
+  };
+
   try{
     if(isTech()){
       const technicianId=String(currentProfile?.technicianId||"").trim();
-      if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+      if(!technicianId)throw new Error("BƯỚC PROFILE: users/{uid} không có technicianId.");
 
-      const [own,customerData,maintenanceData,workOrderData]=await Promise.all([
-        withTimeout(getTechnician(technicianId),"KTV"),
-        withTimeout(getCustomers(),"Khách hàng"),
-        withTimeout(getMaintenances({technicianId}),"Phiếu bảo trì"),
-        withTimeout(getWorkOrders({technicianId}),"Work Order")
-      ]);
-      if(!own)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
-      customers=customerData;
-      maintenances=maintenanceData;
-      workOrders=workOrderData;
+      step(`DEBUG 1/4 — KTV: đang đọc technicians/${technicianId}…`);
+      const own=await withTimeout(getTechnician(technicianId),"KTV",10000);
+      if(!own)throw new Error(`DEBUG 1/4 — Không tìm thấy technicians/${technicianId}.`);
       technicians=[own];
+      step(`DEBUG 1/4 — KTV: OK (${technicianId})`,"status ok");
+
+      step("DEBUG 2/4 — Khách hàng: đang đọc customers…");
+      customers=await withTimeout(getCustomers(),"Khách hàng",10000);
+      step(`DEBUG 2/4 — Khách hàng: OK (${customers.length})`,"status ok");
+
+      step(`DEBUG 3/4 — Phiếu bảo trì: đang đọc theo technicianId=${technicianId}…`);
+      maintenances=await withTimeout(
+        getMaintenances({technicianId}),
+        "Phiếu bảo trì",
+        10000
+      );
+      step(`DEBUG 3/4 — Phiếu bảo trì: OK (${maintenances.length})`,"status ok");
+
+      step(`DEBUG 4/4 — Work Order: đang đọc theo technicianId=${technicianId}…`);
+      workOrders=await withTimeout(
+        getWorkOrders({technicianId}),
+        "Work Order",
+        10000
+      );
+      step(`DEBUG 4/4 — Work Order: OK (${workOrders.length})`,"status ok");
+
     }else{
-      const [customerData,maintenanceData,workOrderData,technicianData]=await Promise.all([
-        withTimeout(getCustomers(),"Khách hàng"),
-        withTimeout(getMaintenances(),"Phiếu bảo trì"),
-        withTimeout(getWorkOrders(),"Work Order"),
-        withTimeout(getTechnicians(),"Kỹ thuật viên")
-      ]);
-      customers=customerData;
-      maintenances=maintenanceData;
-      workOrders=workOrderData;
-      technicians=technicianData;
+      step("DEBUG 1/4 — Quản lý: đang đọc Khách hàng…");
+      customers=await withTimeout(getCustomers(),"Khách hàng",10000);
+      step(`DEBUG 1/4 — Khách hàng: OK (${customers.length})`,"status ok");
+
+      step("DEBUG 2/4 — Phiếu bảo trì: đang đọc…");
+      maintenances=await withTimeout(getMaintenances(),"Phiếu bảo trì",10000);
+      step(`DEBUG 2/4 — Phiếu bảo trì: OK (${maintenances.length})`,"status ok");
+
+      step("DEBUG 3/4 — Work Order: đang đọc…");
+      workOrders=await withTimeout(getWorkOrders(),"Work Order",10000);
+      step(`DEBUG 3/4 — Work Order: OK (${workOrders.length})`,"status ok");
+
+      step("DEBUG 4/4 — Kỹ thuật viên: đang đọc…");
+      technicians=await withTimeout(getTechnicians(),"Kỹ thuật viên",10000);
+      step(`DEBUG 4/4 — Kỹ thuật viên: OK (${technicians.length})`,"status ok");
     }
 
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+
+    step("DEBUG — Đang render giao diện…");
     render();
     void loadWorkOrderRequests();
+
     $("status").className="status ok";
-    $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${customers.length} khách hàng`;
+    $("status").textContent=`DEBUG HOÀN TẤT — ${workOrders.length} Work Order · ${customers.length} khách hàng`;
   }catch(err){
-    console.error("WORK ORDER LOAD ERROR:",err);
+    console.error("WORK ORDER DEBUG ERROR:",err);
     $("status").className="status error";
-    $("status").textContent=err?.message||String(err);
+    $("status").textContent=`❌ ${err?.message||String(err)}`;
   }
 }
 
@@ -980,7 +1046,12 @@ async function bootWorkOrder(){
   }
 }
 
-void bootWorkOrder();
+if(moduleReady){
+  void bootWorkOrder();
+}else{
+  $("status").className="status error";
+  // loadDependencies() đã ghi lỗi import lên màn hình.
+}
 </script>
 </body>
 </html>
