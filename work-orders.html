@@ -255,7 +255,7 @@ import {
   updateWorkOrder,
   reportWorkOrderByTechnician,
   completeWorkOrderByTechnician
-} from "./js/core/firestore-v1.js?v=wo2.3";
+} from "./js/core/firestore-v1.js?v=wo2.2";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $ = id => document.getElementById(id);
@@ -901,73 +901,40 @@ $("form").onsubmit=async e=>{
   }
 };
 
-function withTimeout(promise,label,ms=15000){
-  let timer;
-  const timeout=new Promise((_,reject)=>{
-    timer=setTimeout(()=>reject(new Error(`${label} quá thời gian phản hồi (${Math.round(ms/1000)} giây).`)),ms);
-  });
-  return Promise.race([Promise.resolve(promise),timeout]).finally(()=>clearTimeout(timer));
-}
-
 async function load(){
   $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
   try{
     if(isTech()){
       const technicianId=String(currentProfile?.technicianId||"").trim();
       if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
-
-      const [own,customerData,maintenanceData,workOrderData]=await Promise.all([
-        withTimeout(getTechnician(technicianId),"Hồ sơ kỹ thuật viên"),
-        withTimeout(getCustomers(),"Khách hàng"),
-        withTimeout(getMaintenances({technicianId}),"Phiếu bảo trì"),
-        withTimeout(getWorkOrders({technicianId}),"Work Order")
+      const ownPromise=getTechnician(technicianId);
+      const dataPromise=Promise.all([
+        getCustomers(),
+        getMaintenances({technicianId}),
+        getWorkOrders({technicianId})
       ]);
-
+      const [own,[customerData,maintenanceData,workOrderData]]=await Promise.all([ownPromise,dataPromise]);
       if(!own)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
-      customers=customerData||[];
-      maintenances=maintenanceData||[];
-      workOrders=workOrderData||[];
-      technicians=[own];
+      customers=customerData;maintenances=maintenanceData;workOrders=workOrderData;technicians=[own];
     }else{
-      // Không để collection technicians làm treo toàn bộ màn hình.
-      // Danh sách KTV chỉ phục vụ form phân công nên tải riêng sau khi dữ liệu chính đã hiện.
-      const [customerData,maintenanceData,workOrderData]=await Promise.all([
-        withTimeout(getCustomers(),"Khách hàng"),
-        withTimeout(getMaintenances(),"Phiếu bảo trì"),
-        withTimeout(getWorkOrders(),"Work Order")
+      [customers,maintenances,workOrders,technicians]=await Promise.all([
+        getCustomers(),getMaintenances(),getWorkOrders(),getTechnicians()
       ]);
-
-      customers=customerData||[];
-      maintenances=maintenanceData||[];
-      workOrders=workOrderData||[];
     }
 
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
     render();
-
-    if(!isTech()){
-      // Tải KTV nền, không chặn việc hiển thị Work Order.
-      void withTimeout(getTechnicians(),"Danh sách kỹ thuật viên")
-        .then(data=>{technicians=data||[];})
-        .catch(err=>console.error("TECHNICIANS LOAD ERROR:",err));
-    }
-
     void loadWorkOrderRequests();
-    $("status").className="status ok";
     $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${customers.length} khách hàng`;
   }catch(err){
-    console.error("WORK ORDER LOAD ERROR:",err);
-    $("status").className="status error";
-    $("status").textContent=err?.message||String(err);
+    $("status").className="status error";$("status").textContent=err?.message||String(err);
   }
 }
 
 // App Shell/Core Firebase đã chịu trách nhiệm xác thực.
 // Work Order chỉ sử dụng phiên Auth hiện tại, không tạo auth listener riêng.
 async function bootWorkOrder(){
-  $("status").className="status";
-  $("status").textContent="Đang xác thực tài khoản…";
   authUser=auth?.currentUser||null;
   try{
     if(typeof auth?.authStateReady === "function") await auth.authStateReady();
