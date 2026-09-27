@@ -1,5 +1,4 @@
 /* MAINTENANCE DATA LAYER V4 */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -13,40 +12,16 @@ import {
   runTransaction,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { app } from "./firebase.js";
 
 /*
- * FIREBASE BOOTSTRAP ĐỘC LẬP
- * Không import ./firebase.js ở Data Layer.
- * Mục đích: tránh lỗi module khi firebase.js không export đúng app/db
- * và đảm bảo collection()/doc()/query() dùng cùng Firestore SDK instance.
+ * MAINTENANCE FIRESTORE RUNTIME
+ *
+ * - Dùng app Firebase đang chạy của hệ thống để giữ nguyên phiên Auth.
+ * - Tạo db bằng CHÍNH Firestore SDK module được dùng bởi collection/doc/query
+ *   trong file này, tránh lỗi SDK instance mismatch.
+ * - Không sửa hoặc thay thế firestore-v1.js dùng chung.
  */
-async function loadFirebaseConfig(){
-  const response = await fetch("./firebase.js?v=20260927-maintenance-datalayer", {cache:"no-store"});
-  if(!response.ok){
-    throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
-  }
-  const source = await response.text();
-  let match = source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
-  if(!match){
-    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
-  }
-  if(!match){
-    throw new Error("Không tìm thấy firebaseConfig trong /js/core/firebase.js.");
-  }
-  let config;
-  try{
-    config = Function(`"use strict"; return (${match[1]});`)();
-  }catch(error){
-    throw new Error("firebaseConfig không hợp lệ: " + (error?.message || error));
-  }
-  const required=["apiKey","authDomain","projectId","appId"];
-  const missing=required.filter(key=>!config?.[key]);
-  if(missing.length) throw new Error("firebaseConfig thiếu: " + missing.join(", "));
-  return config;
-}
-
-const firebaseConfig = await loadFirebaseConfig();
-const app = initializeApp(firebaseConfig, "duc-anh-maintenance-data-v1");
 const db = getFirestore(app);
 
 /*
@@ -2212,6 +2187,68 @@ export async function updateRecord(
   );
 
   return getRecord(collectionName, recordId);
+}
+
+/* =========================
+   TECHNICIANS — DÙNG CÙNG FIRESTORE RUNTIME
+========================= */
+
+const TECHNICIANS_COLLECTION = "technicians";
+const TECHNICIAN_STATUS = ["active", "leave", "inactive"];
+
+function normalizeTechnicianId(value){
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeTechnicianText(value){
+  return String(value || "").trim();
+}
+
+function normalizeTechnicianStatus(value){
+  const status=String(value || "active").trim().toLowerCase();
+  if(!TECHNICIAN_STATUS.includes(status)){
+    throw new Error("Trạng thái KTV không hợp lệ. Chỉ chấp nhận active, leave hoặc inactive.");
+  }
+  return status;
+}
+
+export async function getTechnician(technicianId){
+  requireValue(technicianId, "Mã kỹ thuật viên");
+  const id=normalizeTechnicianId(technicianId);
+  const snapshot=await getDoc(doc(db, TECHNICIANS_COLLECTION, id));
+  if(!snapshot.exists()) return null;
+  return {id:snapshot.id,...snapshot.data()};
+}
+
+export async function getTechnicians(){
+  const snapshot=await getDocs(collection(db, TECHNICIANS_COLLECTION));
+  return snapshot.docs
+    .map(item=>({id:item.id,...item.data()}))
+    .sort((a,b)=>String(a.technicianId||a.id).localeCompare(
+      String(b.technicianId||b.id),
+      "vi",
+      {numeric:true}
+    ));
+}
+
+export async function getTechniciansByStatus(status){
+  const normalized=normalizeTechnicianStatus(status);
+  const q=query(collection(db, TECHNICIANS_COLLECTION),where("status","==",normalized));
+  const snapshot=await getDocs(q);
+  return snapshot.docs.map(item=>({id:item.id,...item.data()}));
+}
+
+/* Module UI không gọi doc()/updateDoc()/serverTimestamp() trực tiếp. */
+export async function updateMaintenanceByTechnician(recordId,data){
+  requireValue(recordId,"recordId");
+  await updateDoc(
+    doc(db,"maintenance",recordId),
+    {
+      ...(data || {}),
+      updatedAt:serverTimestamp()
+    }
+  );
+  return getRecord("maintenance",recordId);
 }
 
 /* =========================
