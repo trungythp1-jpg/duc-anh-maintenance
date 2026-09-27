@@ -1,4 +1,5 @@
 /* MAINTENANCE DATA LAYER V4 */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -13,11 +14,39 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-import { app } from "./firebase.js";
+/*
+ * FIREBASE BOOTSTRAP ĐỘC LẬP
+ * Không import ./firebase.js ở Data Layer.
+ * Mục đích: tránh lỗi module khi firebase.js không export đúng app/db
+ * và đảm bảo collection()/doc()/query() dùng cùng Firestore SDK instance.
+ */
+async function loadFirebaseConfig(){
+  const response = await fetch("./firebase.js?v=20260927-maintenance-datalayer", {cache:"no-store"});
+  if(!response.ok){
+    throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
+  }
+  const source = await response.text();
+  let match = source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
+  if(!match){
+    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
+  }
+  if(!match){
+    throw new Error("Không tìm thấy firebaseConfig trong /js/core/firebase.js.");
+  }
+  let config;
+  try{
+    config = Function(`"use strict"; return (${match[1]});`)();
+  }catch(error){
+    throw new Error("firebaseConfig không hợp lệ: " + (error?.message || error));
+  }
+  const required=["apiKey","authDomain","projectId","appId"];
+  const missing=required.filter(key=>!config?.[key]);
+  if(missing.length) throw new Error("firebaseConfig thiếu: " + missing.join(", "));
+  return config;
+}
 
-// QUAN TRỌNG: tạo Firestore từ cùng Firebase SDK instance với collection/query.
-// Tránh lỗi: Expected first argument to collection() to be a CollectionReference,
-// a DocumentReference or FirebaseFirestore.
+const firebaseConfig = await loadFirebaseConfig();
+const app = initializeApp(firebaseConfig, "duc-anh-maintenance-data-v1");
 const db = getFirestore(app);
 
 /*
