@@ -27,7 +27,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth
 
 /* Không phụ thuộc export db/auth từ ./firebase.js. */
 async function loadFirebaseConfig(){
-  const response=await fetch("./firebase.js?v=20260927-technician-bootstrap",{cache:"no-store"});
+  const response=await fetch("./js/core/firebase.js?v=20260927-technician-bootstrap",{cache:"no-store"});
   if(!response.ok) throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
   const source=await response.text();
   let match=source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
