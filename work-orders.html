@@ -83,7 +83,7 @@ tr:hover td{background:#161613}
   <div class="head">
     <div>
       <h1>Phiếu công việc</h1>
-      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.<div style="font-size:11px;color:#d6a84f;margin-top:4px">BUILD DEBUG V1.16 — FIREBASE LOAD TRACE</div></div>
+      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.<div style="font-size:11px;color:#d6a84f;margin-top:4px">BUILD DEBUG V1.17 — DYNAMIC IMPORT TRACE</div></div>
     </div>
     <button class="btn primary" id="newBtn">＋ Tạo Work Order</button>
   </div>
@@ -242,24 +242,60 @@ tr:hover td{background:#161613}
   </div>
 </div>
 
-<!-- BUILD: work-orders-v1.15-standalone-load-debug -->
+<!-- BUILD: work-orders-v1.17-DYNAMIC-IMPORT-DEBUG -->
+<script>
+// Classic script chạy trước module để phân biệt "JS không chạy" với "module import lỗi".
+(function(){
+  const el=document.getElementById("status");
+  if(el){
+    el.className="status";
+    el.textContent="DEBUG V1.17 — JAVASCRIPT ĐÃ CHẠY, ĐANG NẠP MODULE…";
+  }
+})();
+</script>
 <script type="module">
-import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "./js/core/firebase.js";
-import {
-  getCustomers,
-  getBuildingsByCustomer,
-  getElevatorsByBuilding,
-  getMaintenances,
-  getWorkOrders,
-  createWorkOrder,
-  updateWorkOrder,
-  reportWorkOrderByTechnician,
-  completeWorkOrderByTechnician
-} from "./js/core/firestore-v1.js?v=wo2.2";
-import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
-
 const $ = id => document.getElementById(id);
+let moduleReady=false;
+let doc,getDoc,getDocs,addDoc,updateDoc,collection,query,where,serverTimestamp;
+let auth,db;
+let getCustomers,getBuildingsByCustomer,getElevatorsByBuilding,getMaintenances,getWorkOrders,createWorkOrder,updateWorkOrder,reportWorkOrderByTechnician,completeWorkOrderByTechnician;
+let getTechnician,getTechnicians;
+
+async function loadDependencies(){
+  try{
+    $("status").textContent="IMPORT 1/4 — Firebase Firestore SDK…";
+    const firestore=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js");
+    ({doc,getDoc,getDocs,addDoc,updateDoc,collection,query,where,serverTimestamp}=firestore);
+
+    $("status").textContent="IMPORT 2/4 — core/firebase.js…";
+    const core=await import("./js/core/firebase.js?v=wo-debug-1.17");
+    ({auth,db}=core);
+    if(!auth||!db)throw new Error("core/firebase.js không export auth hoặc db.");
+
+    $("status").textContent="IMPORT 3/4 — core/firestore-v1.js…";
+    const api=await import("./js/core/firestore-v1.js?v=wo2.2-debug-1.17");
+    ({getCustomers,getBuildingsByCustomer,getElevatorsByBuilding,getMaintenances,getWorkOrders,createWorkOrder,updateWorkOrder,reportWorkOrderByTechnician,completeWorkOrderByTechnician}=api);
+
+    $("status").textContent="IMPORT 4/4 — technician API…";
+    const techApi=await import("./js/core/firestore-v1-technician-v1.js?v=wo-debug-1.17");
+    ({getTechnician,getTechnicians}=techApi);
+
+    if(typeof getCustomers!=="function"||typeof getMaintenances!=="function"||typeof getWorkOrders!=="function")
+      throw new Error("firestore-v1.js thiếu hàm bắt buộc cho Work Order.");
+    if(typeof getTechnician!=="function"||typeof getTechnicians!=="function")
+      throw new Error("firestore-v1-technician-v1.js thiếu hàm KTV.");
+
+    moduleReady=true;
+    $("status").className="status ok";
+    $("status").textContent="IMPORT PASS — Firebase modules đã nạp xong.";
+  }catch(err){
+    console.error("WO DEBUG IMPORT ERROR:",err);
+    $("status").className="status error";
+    $("status").textContent=`❌ IMPORT LỖI: ${err?.message||String(err)}`;
+  }
+}
+
+await loadDependencies();
 
 let customers=[];
 let buildings=[];
@@ -1010,7 +1046,12 @@ async function bootWorkOrder(){
   }
 }
 
-void bootWorkOrder();
+if(moduleReady){
+  void bootWorkOrder();
+}else{
+  $("status").className="status error";
+  // loadDependencies() đã ghi lỗi import lên màn hình.
+}
 </script>
 </body>
 </html>
