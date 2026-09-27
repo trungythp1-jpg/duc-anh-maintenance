@@ -1,14 +1,11 @@
-<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Đức Anh Maintenance — Phiếu bảo trì</title>
-<link rel="stylesheet" href="css/main.css">
-<link rel="stylesheet" href="css/mobile.css">
+/* ĐỨC ANH MAINTENANCE — MAINTENANCE MODULE V1.0
+ * Source of truth: maintenance-v1.26-ktv-create-maintenance
+ * App Shell mount only. No standalone navigation/sidebar.
+ */
 
-<style>
-:root{
+const maintenanceStyle = document.createElement("style");
+maintenanceStyle.textContent = `
+#maintenance-module-root{
   --da-bg:#090909;
   --da-panel:#11110f;
   --da-panel-2:#171714;
@@ -26,27 +23,17 @@
   --da-blue:#7aa7ff;
 }
 
-*{box-sizing:border-box}
-html,body{background:var(--da-bg);color:var(--da-text)}
-body{
-  margin:0;
-  background:
-    radial-gradient(circle at 82% -10%,rgba(214,168,79,.09),transparent 30%),
-    linear-gradient(180deg,#0b0b0a 0%,#080808 100%);
-  color:var(--da-text);
-}
-.app-header{
-  background:#090909!important;
-  border-bottom:1px solid var(--da-border-gold)!important;
-  color:var(--da-ivory)!important;
-}
-.app-header .brand{color:var(--da-gold-light)!important;font-weight:700}
-.page{max-width:1400px;margin:0 auto;padding:24px 18px 60px}
-.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
-.page-head h1{margin:0 0 6px;font-size:30px;color:var(--da-gold-light)!important}
-.muted{color:var(--da-muted)!important}
+#maintenance-module-root *{box-sizing:border-box}
 
-.btn{
+
+
+
+#maintenance-module-root .page{max-width:1400px;margin:0 auto;padding:24px 18px 60px}
+#maintenance-module-root .page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+#maintenance-module-root .page-head h1{margin:0 0 6px;font-size:30px;color:var(--da-gold-light)!important}
+#maintenance-module-root .muted{color:var(--da-muted)!important}
+
+#maintenance-module-root .btn{
   border:1px solid var(--da-border-gold)!important;
   background:#151512!important;
   color:var(--da-ivory)!important;
@@ -59,27 +46,27 @@ body{
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
 }
-.btn.primary{
+#maintenance-module-root .btn.primary{
   background:linear-gradient(180deg,#e0b65c,#bd8e34)!important;
   color:#111!important;
   border-color:var(--da-gold)!important;
   font-weight:700;
   box-shadow:0 4px 18px rgba(214,168,79,.12);
 }
-.btn:hover{border-color:var(--da-gold)!important}
-.btn:disabled{opacity:.55;cursor:not-allowed}
+#maintenance-module-root .btn:hover{border-color:var(--da-gold)!important}
+#maintenance-module-root .btn:disabled{opacity:.55;cursor:not-allowed}
 
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.kpi{
+#maintenance-module-root .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+#maintenance-module-root .kpi{
   background:linear-gradient(180deg,#151512,#10100e)!important;
   border:1px solid var(--da-border)!important;
   border-radius:14px;
   padding:16px;
 }
-.kpi .label{font-size:13px;color:var(--da-gold-light)!important}
-.kpi .value{font-size:28px;font-weight:700;margin-top:5px;color:var(--da-ivory)!important}
+#maintenance-module-root .kpi .label{font-size:13px;color:var(--da-gold-light)!important}
+#maintenance-module-root .kpi .value{font-size:28px;font-weight:700;margin-top:5px;color:var(--da-ivory)!important}
 
-.toolbar{
+#maintenance-module-root .toolbar{
   background:#11110f!important;
   border:1px solid var(--da-border)!important;
   border-radius:14px;
@@ -89,9 +76,9 @@ body{
   grid-template-columns:2fr 1fr 1fr 1fr;
   gap:10px
 }
-.field{display:flex;flex-direction:column;gap:6px}
-.field label{font-size:13px;font-weight:600;color:var(--da-gold-light)!important}
-.field input,.field select,.field textarea{
+#maintenance-module-root .field{display:flex;flex-direction:column;gap:6px}
+#maintenance-module-root .field label{font-size:13px;font-weight:600;color:var(--da-gold-light)!important}
+#maintenance-module-root .field input, #maintenance-module-root .field select, #maintenance-module-root .field textarea{
   width:100%;
   box-sizing:border-box;
   border:1px solid #4a4438!important;
@@ -102,22 +89,22 @@ body{
   font:inherit;
   outline:none;
 }
-.field input::placeholder,.field textarea::placeholder{color:#777268!important}
-.field input:focus,.field select:focus,.field textarea:focus{
+#maintenance-module-root .field input::placeholder, #maintenance-module-root .field textarea::placeholder{color:#777268!important}
+#maintenance-module-root .field input:focus, #maintenance-module-root .field select:focus, #maintenance-module-root .field textarea:focus{
   border-color:var(--da-gold)!important;
   box-shadow:0 0 0 2px rgba(214,168,79,.10);
 }
-.field input[readonly],.field select:disabled{background:#121210!important;color:#777268!important}
+#maintenance-module-root .field input[readonly], #maintenance-module-root .field select:disabled{background:#121210!important;color:#777268!important}
 
-.card{
+#maintenance-module-root .card{
   background:#11110f!important;
   border:1px solid var(--da-border)!important;
   border-radius:14px;
   overflow:hidden;
 }
-.table-wrap{overflow:auto}
-.data-table{width:100%;border-collapse:collapse;min-width:1050px}
-.data-table th,.data-table td{
+#maintenance-module-root .table-wrap{overflow:auto}
+#maintenance-module-root .data-table{width:100%;border-collapse:collapse;min-width:1050px}
+#maintenance-module-root .data-table th, #maintenance-module-root .data-table td{
   padding:12px 13px;
   border-bottom:1px solid #292722!important;
   text-align:left;
@@ -125,29 +112,29 @@ body{
   font-size:14px;
   color:var(--da-text)!important;
 }
-.data-table th{
+#maintenance-module-root .data-table th{
   font-size:12px;
   text-transform:uppercase;
   letter-spacing:.03em;
   color:var(--da-gold-light)!important;
   background:#171714!important;
 }
-.data-table tr:hover td{background:#161613!important}
-.data-table tr:last-child td{border-bottom:0}
-.data-table td strong{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
-.data-table td .muted{display:block;margin-top:4px;line-height:1.3}
-.data-table td .cell-sub{display:block;margin-top:4px;color:var(--da-muted)!important;font-size:12px;line-height:1.3}
-.data-table td .cell-primary{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
-.data-table td .cell-gold{display:block;color:var(--da-gold-light)!important;font-weight:700;line-height:1.35}
-.data-table td .date-cell{display:block;white-space:nowrap;font-weight:600;color:var(--da-text)!important}
-.link-btn{
+#maintenance-module-root .data-table tr:hover td{background:#161613!important}
+#maintenance-module-root .data-table tr:last-child td{border-bottom:0}
+#maintenance-module-root .data-table td strong{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
+#maintenance-module-root .data-table td .muted{display:block;margin-top:4px;line-height:1.3}
+#maintenance-module-root .data-table td .cell-sub{display:block;margin-top:4px;color:var(--da-muted)!important;font-size:12px;line-height:1.3}
+#maintenance-module-root .data-table td .cell-primary{display:block;color:var(--da-ivory)!important;font-weight:700;line-height:1.35}
+#maintenance-module-root .data-table td .cell-gold{display:block;color:var(--da-gold-light)!important;font-weight:700;line-height:1.35}
+#maintenance-module-root .data-table td .date-cell{display:block;white-space:nowrap;font-weight:600;color:var(--da-text)!important}
+#maintenance-module-root .link-btn{
   border:0;background:none;padding:0;cursor:pointer;
   color:var(--da-text)!important;font:inherit;text-align:left
 }
-.link-btn strong{display:block;color:var(--da-gold-light)!important}
-.link-btn span{display:block;color:var(--da-muted)!important;font-size:12px;margin-top:2px}
+#maintenance-module-root .link-btn strong{display:block;color:var(--da-gold-light)!important}
+#maintenance-module-root .link-btn span{display:block;color:var(--da-muted)!important;font-size:12px;margin-top:2px}
 
-.badge{
+#maintenance-module-root .badge{
   display:inline-flex;
   align-items:center;
   border-radius:999px;
@@ -157,20 +144,20 @@ body{
   background:#25231e!important;
   color:var(--da-ivory)!important;
 }
-.badge.done{background:rgba(95,202,145,.14)!important;color:#75dda5!important}
-.badge.progress{background:rgba(122,167,255,.14)!important;color:#8fb8ff!important}
-.badge.assigned{background:rgba(181,145,255,.14)!important;color:#c1a0ff!important}
-.badge.cancelled{background:rgba(227,91,79,.14)!important;color:#ff8176!important}
-.badge.draft{background:#27261f!important;color:#c9c1b2!important}
-.badge.issue{background:rgba(214,168,79,.15)!important;color:var(--da-gold-light)!important}
-.badge.waiting_confirmation{background:rgba(214,168,79,.16)!important;color:var(--da-gold-light)!important}
+#maintenance-module-root .badge.done{background:rgba(95,202,145,.14)!important;color:#75dda5!important}
+#maintenance-module-root .badge.progress{background:rgba(122,167,255,.14)!important;color:#8fb8ff!important}
+#maintenance-module-root .badge.assigned{background:rgba(181,145,255,.14)!important;color:#c1a0ff!important}
+#maintenance-module-root .badge.cancelled{background:rgba(227,91,79,.14)!important;color:#ff8176!important}
+#maintenance-module-root .badge.draft{background:#27261f!important;color:#c9c1b2!important}
+#maintenance-module-root .badge.issue{background:rgba(214,168,79,.15)!important;color:var(--da-gold-light)!important}
+#maintenance-module-root .badge.waiting_confirmation{background:rgba(214,168,79,.16)!important;color:var(--da-gold-light)!important}
 
-.empty{padding:42px;text-align:center;color:var(--da-muted)!important}
-.statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
-.statusline.error{color:#ff8176!important}
-.statusline.ok{color:#75dda5!important}
+#maintenance-module-root .empty{padding:42px;text-align:center;color:var(--da-muted)!important}
+#maintenance-module-root .statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
+#maintenance-module-root .statusline.error{color:#ff8176!important}
+#maintenance-module-root .statusline.ok{color:#75dda5!important}
 
-.permission-panel{
+#maintenance-module-root .permission-panel{
   display:none;
   margin:0 14px 14px;
   padding:14px;
@@ -179,28 +166,28 @@ body{
   border-radius:12px;
   color:var(--da-text)!important
 }
-.permission-panel.show{display:block}
-.permission-panel h3{margin:0 0 8px;color:#ff9a90!important}
-.diag-user{margin-bottom:10px;color:var(--da-muted)!important;word-break:break-word}
-.permission-list{display:grid;gap:7px}
-.permission-row{
+#maintenance-module-root .permission-panel.show{display:block}
+#maintenance-module-root .permission-panel h3{margin:0 0 8px;color:#ff9a90!important}
+#maintenance-module-root .diag-user{margin-bottom:10px;color:var(--da-muted)!important;word-break:break-word}
+#maintenance-module-root .permission-list{display:grid;gap:7px}
+#maintenance-module-root .permission-row{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:8px 10px;background:#11110f!important;
   border:1px solid #302c25!important;border-radius:8px;font-size:13px
 }
-.permission-row .ok{color:#75dda5!important;font-weight:700}
-.permission-row .fail{color:#ff8176!important;font-weight:700}
-.permission-row .detail{font-size:11px;color:var(--da-muted)!important;text-align:right;max-width:60%;word-break:break-word}
+#maintenance-module-root .permission-row .ok{color:#75dda5!important;font-weight:700}
+#maintenance-module-root .permission-row .fail{color:#ff8176!important;font-weight:700}
+#maintenance-module-root .permission-row .detail{font-size:11px;color:var(--da-muted)!important;text-align:right;max-width:60%;word-break:break-word}
 
-.modal{
+#maintenance-module-root .modal{
   position:fixed;inset:0;
   background:rgba(0,0,0,.76)!important;
   backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;
   padding:14px;z-index:1000
 }
-.modal.show{display:flex}
-.modal-box{
+#maintenance-module-root .modal.show{display:flex}
+#maintenance-module-root .modal-box{
   background:#0f0f0d!important;
   color:var(--da-text)!important;
   border:1px solid var(--da-gold-soft)!important;
@@ -211,7 +198,7 @@ body{
   -webkit-overflow-scrolling:touch;
   box-shadow:0 24px 80px rgba(0,0,0,.62),0 0 0 1px rgba(214,168,79,.08)
 }
-.modal-head{
+#maintenance-module-root .modal-head{
   position:sticky;top:0;
   background:linear-gradient(180deg,#171714,#10100e)!important;
   border-bottom:1px solid var(--da-border-gold)!important;
@@ -219,34 +206,34 @@ body{
   display:flex;justify-content:space-between;align-items:center;
   z-index:20
 }
-.modal-head h2{margin:0;font-size:22px;color:var(--gold,var(--da-gold-light))!important}
-.close{
+#maintenance-module-root .modal-head h2{margin:0;font-size:22px;color:var(--gold,var(--da-gold-light))!important}
+#maintenance-module-root .close{
   border:0;background:none;font-size:28px;cursor:pointer;
   color:var(--da-gold-light)!important;
   -webkit-appearance:none;
   appearance:none;
   touch-action:manipulation;
 }
-.modal-body{padding:18px}
+#maintenance-module-root .modal-
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.full{grid-column:1/-1}
-.section{
+#maintenance-module-root .full{grid-column:1/-1}
+#maintenance-module-root .section{
   border-top:1px solid var(--da-border-gold)!important;
   margin-top:18px;padding-top:18px
 }
-.section h3{font-size:14px;margin:0 0 12px;color:var(--da-gold-light)!important}
-.ref-box{
+#maintenance-module-root .section h3{font-size:14px;margin:0 0 12px;color:var(--da-gold-light)!important}
+#maintenance-module-root .ref-box{
   background:#151512!important;
   border:1px solid #40382b!important;
   color:var(--da-text)!important;
   border-radius:12px;padding:12px;margin-bottom:14px;
   display:grid;grid-template-columns:repeat(5,1fr);gap:10px
 }
-.ref-box small{display:block;color:var(--da-muted)!important;margin-bottom:3px}
-.ref-box strong{font-size:14px;color:var(--da-ivory)!important}
+#maintenance-module-root .ref-box small{display:block;color:var(--da-muted)!important;margin-bottom:3px}
+#maintenance-module-root .ref-box strong{font-size:14px;color:var(--da-ivory)!important}
 
-.checklist{display:grid;gap:8px}
-.check-row{
+#maintenance-module-root .checklist{display:grid;gap:8px}
+#maintenance-module-root .check-row{
   display:grid;
   grid-template-columns:1.4fr repeat(4,auto);
   gap:8px;align-items:center;
@@ -254,9 +241,9 @@ body{
   background:#141412!important;
   border-radius:9px;padding:9px
 }
-.check-row label{font-size:13px;color:var(--da-text)!important}
-.check-row input{accent-color:var(--da-gold)}
-.actions{
+#maintenance-module-root .check-row label{font-size:13px;color:var(--da-text)!important}
+#maintenance-module-root .check-row input{accent-color:var(--da-gold)}
+#maintenance-module-root .actions{
   display:flex;justify-content:flex-end;gap:8px;
   padding:14px 18px;
   border-top:1px solid var(--da-border-gold)!important;
@@ -265,66 +252,60 @@ body{
   z-index:20;
   isolation:isolate;
 }
-.actions .btn{
+#maintenance-module-root .actions .btn{
   position:relative;
   z-index:21;
   pointer-events:auto;
   min-height:48px;
 }
-.audit-history{display:grid;gap:8px}
-.audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
-.audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.audit-action{color:var(--da-gold-light)!important;font-weight:700;font-size:13px}.audit-time{color:var(--da-muted)!important;font-size:11px}
-.audit-meta{margin-top:5px;font-size:12px;color:var(--da-text)!important;line-height:1.55}.audit-meta span{color:var(--da-muted)!important}
-.audit-empty{color:var(--da-muted)!important;font-size:12px;padding:8px 0}
-.form-error{color:#ff8176!important;font-size:13px;margin-top:8px;display:none}
-.form-error.show{display:block}
+#maintenance-module-root .audit-history{display:grid;gap:8px}
+#maintenance-module-root .audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
+#maintenance-module-root .audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+#maintenance-module-root .audit-action{color:var(--da-gold-light)!important;font-weight:700;font-size:13px}#maintenance-module-root .audit-time{color:var(--da-muted)!important;font-size:11px}
+#maintenance-module-root .audit-meta{margin-top:5px;font-size:12px;color:var(--da-text)!important;line-height:1.55}#maintenance-module-root .audit-meta span{color:var(--da-muted)!important}
+#maintenance-module-root .audit-empty{color:var(--da-muted)!important;font-size:12px;padding:8px 0}
+#maintenance-module-root .form-error{color:#ff8176!important;font-size:13px;margin-top:8px;display:none}
+#maintenance-module-root .form-error.show{display:block}
 
-.auth-gate{
-  position:fixed;inset:0;background:#090909!important;
-  color:var(--da-text)!important;
-  display:flex;align-items:center;justify-content:center;z-index:2000
-}
-.auth-gate.hidden{display:none}
-.auth-box{text-align:center;padding:30px}
-.auth-box h2{margin-bottom:8px;color:var(--da-gold-light)!important}
 
-/* Gold accents for native date/select controls where supported */
-select, input, textarea{color-scheme:dark}
-input[type="date"]::-webkit-calendar-picker-indicator{filter:sepia(1) saturate(3) hue-rotate(355deg)}
-input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 
-.pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid #302b23;background:#11110f}.pagination-info{font-size:13px;color:var(--da-muted)}.pagination-actions{display:flex;gap:8px}.pagination .btn{min-width:86px}
-@media(max-width:520px){.pagination{flex-direction:column;align-items:stretch}.pagination-actions{width:100%}.pagination-actions .btn{flex:1}}
+
+
+
+#maintenance-module-root /* Gold accents for native date/select controls where supported */
+select, #maintenance-module-root input, #maintenance-module-root textarea{color-scheme:dark}
+#maintenance-module-root input[type="date"]::-webkit-calendar-picker-indicator{filter:sepia(1) saturate(3) hue-rotate(355deg)}
+#maintenance-module-root input[type="checkbox"], #maintenance-module-root input[type="radio"]{accent-color:var(--da-gold)}
+
+#maintenance-module-root .pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid #302b23;background:#11110f}#maintenance-module-root .pagination-info{font-size:13px;color:var(--da-muted)}#maintenance-module-root .pagination-actions{display:flex;gap:8px}#maintenance-module-root .pagination .btn{min-width:86px}
+@media(max-width:520px){#maintenance-module-root .pagination{flex-direction:column;align-items:stretch}#maintenance-module-root .pagination-actions{width:100%}#maintenance-module-root .pagination-actions .btn{flex:1}}
 @media(max-width:850px){
-  .kpis{grid-template-columns:repeat(2,1fr)}
-  .toolbar{grid-template-columns:1fr 1fr}
-  .grid{grid-template-columns:1fr}
-  .full{grid-column:auto}
-  .ref-box{grid-template-columns:1fr 1fr}
-  .page-head{flex-direction:column}
-  .check-row{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
-  .check-row label{grid-column:1/-1}
+  #maintenance-module-root .kpis{grid-template-columns:repeat(2,1fr)}
+  #maintenance-module-root .toolbar{grid-template-columns:1fr 1fr}
+  #maintenance-module-root .grid{grid-template-columns:1fr}
+  #maintenance-module-root .full{grid-column:auto}
+  #maintenance-module-root .ref-box{grid-template-columns:1fr 1fr}
+  #maintenance-module-root .page-head{flex-direction:column}
+  #maintenance-module-root .check-row{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
+  #maintenance-module-root .check-row label{grid-column:1/-1}
 }
 @media(max-width:520px){
-  .toolbar{grid-template-columns:1fr}
-  .kpis{grid-template-columns:1fr 1fr}
-  .ref-box{grid-template-columns:1fr}
-  .page{padding:16px 12px 40px}
-  .modal{
+  #maintenance-module-root .toolbar{grid-template-columns:1fr}
+  #maintenance-module-root .kpis{grid-template-columns:1fr 1fr}
+  #maintenance-module-root .ref-box{grid-template-columns:1fr}
+  #maintenance-module-root .page{padding:16px 12px 40px}
+  #maintenance-module-root .modal{
     align-items:flex-end;
     padding:0;
   }
-  .modal-box{
+  #maintenance-module-root .modal-box{
     width:100%;
     max-height:100dvh;
     height:100dvh;
     border-radius:16px 16px 0 0;
     padding-bottom:env(safe-area-inset-bottom);
   }
-  .modal-body{
-    padding-bottom:120px;
-  }
+  #maintenance-module-root .modal-
   .actions{
     position:fixed;
     left:0;
@@ -335,22 +316,44 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
     z-index:100;
     background:#10100e!important;
   }
-  .actions .btn{
+  #maintenance-module-root .actions .btn{
     flex:1;
     min-width:0;
     min-height:54px;
     font-size:16px;
   }
-  .actions .primary{
+  #maintenance-module-root .actions .primary{
     min-width:0;
   }
 }
-</style>
+`;
 
-</head>
-<body data-maintenance-build="v1.31-bootstrap-fix">
-<div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
-<header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
+import { initializeApp as initializeFirebaseApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+async function loadMaintenanceFirebaseConfig(){
+  const response=await fetch("../core/firebase.js?v=20260927-maintenance-module-auth",{cache:"no-store"});
+  if(!response.ok) throw new Error(`Không đọc được ../core/firebase.js (HTTP ${response.status}).`);
+  const source=await response.text();
+  let match=source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
+  if(!match) match=source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
+  if(!match) throw new Error("Không tìm thấy firebaseConfig trong ../core/firebase.js.");
+  const config=Function(`"use strict"; return (${match[1]});`)();
+  const required=["apiKey","authDomain","projectId","appId"];
+  const missing=required.filter(key=>!config?.[key]);
+  if(missing.length) throw new Error("firebaseConfig thiếu: "+missing.join(", "));
+  return config;
+}
+
+let auth=null;
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1.js?v=20260927-maintenance-unified-data";
+import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
+
+export async function mountMaintenanceModule(root) {
+  if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
+  if (root.__maintenanceCleanup) { root.__maintenanceCleanup(); root.__maintenanceCleanup = null; }
+  if (!document.getElementById("maintenance-module-style")) { maintenanceStyle.id = "maintenance-module-style"; document.head.appendChild(maintenanceStyle); }
+  root.innerHTML = `<div id="maintenance-module-root" class="maintenance-module">
 <main class="page">
   <div class="page-head">
     <div><h1>Phiếu bảo trì</h1><div class="muted">Ghi nhận công việc bảo trì thực tế từ Hợp đồng → Lịch bảo trì. KTV có thể chủ động tạo phiếu và phiếu mới sẽ tự phân công cho chính KTV.</div></div>
@@ -383,7 +386,6 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
     <div class="empty" id="empty">Chưa có phiếu bảo trì.</div>
   </div>
 </main>
-
 <div class="modal" id="modal">
   <section class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head"><h2 id="modalTitle">Tạo phiếu bảo trì</h2><button class="close" id="closeBtn" type="button">×</button></div>
@@ -421,42 +423,9 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
     </form>
   </section>
 </div>
+</div>`;
+  const cleanup = [];
 
-<script type="module">
-import {
-  initializeApp as initializeFirebaseApp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-
-async function loadMaintenanceFirebaseConfig(){
-  const response = await fetch("./js/core/firebase.js?v=20260927-maintenance-auth", {cache:"no-store"});
-  if(!response.ok){
-    throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
-  }
-  const source = await response.text();
-  let match = source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
-  if(!match){
-    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
-  }
-  if(!match) throw new Error("Không tìm thấy firebaseConfig trong /js/core/firebase.js.");
-  let config;
-  try{
-    config=Function(`"use strict"; return (${match[1]});`)();
-  }catch(error){
-    throw new Error("firebaseConfig không hợp lệ: " + (error?.message || error));
-  }
-  const required=["apiKey","authDomain","projectId","appId"];
-  const missing=required.filter(key=>!config?.[key]);
-  if(missing.length) throw new Error("firebaseConfig thiếu: " + missing.join(", "));
-  return config;
-}
-
-let auth=null;
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "./js/core/firestore-v1.js?v=20260927-maintenance-unified-data";
-import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -489,7 +458,7 @@ function renderChecklist(values=[]){
     return `<div class="check-row"><label>${esc(label)}</label>${["pass","fail","action","na"].map(s=>`<label><input type="radio" name="check_${esc(key)}" value="${s}" ${val===s?"checked":""}> ${s==="pass"?"Đạt":s==="fail"?"Không đạt":s==="action"?"Cần xử lý":"N/A"}</label>`).join("")}</div>`;
   }).join("");
 }
-function readChecklist(){return checklistItems.map(([key])=>{const checked=document.querySelector(`input[name="check_${key}"]:checked`);return {key,status:checked?.value||""};}).filter(x=>x.status)}
+function readChecklist(){return checklistItems.map(([key])=>{const checked=root.querySelector(`input[name="check_${key}"]:checked`);return {key,status:checked?.value||""};}).filter(x=>x.status)}
 
 function resetRefs(){
   $("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>';$("buildingId").disabled=true;
@@ -1004,64 +973,25 @@ async function loadData(){
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
-let authHandledUid="";
+  const config=await loadMaintenanceFirebaseConfig();
+  const app=initializeFirebaseApp(config,"duc-anh-maintenance-module-v1");
+  auth=getAuth(app);
+  if(typeof auth?.authStateReady==="function") await auth.authStateReady();
 
-async function handleAuthUser(user){
-  authUser=user||null;
-
-  if(!user){
-    authHandledUid="";
-    $("authGate").classList.remove("hidden");
-    setStatus("Chưa đăng nhập Firebase","error");
-    return;
-  }
-
-  const uid=String(user.uid||"");
-  if(uid && uid===authHandledUid){
-    $("authGate").classList.add("hidden");
-    return;
-  }
-
-  authHandledUid=uid;
-
-  try{
-    await loadData();
-    $("authGate").classList.add("hidden");
-  }catch(err){
-    console.error("MAINTENANCE AUTH STATE ERROR:",err);
-    setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
-    $("authGate").classList.add("hidden");
-  }
-}
-
-async function bootstrapAuth(){
-  try{
-    /*
-     * Không phụ thuộc export auth từ ./js/core/firebase.js.
-     * Khởi tạo Auth từ cùng firebaseConfig bằng chính Firebase Auth SDK.
-     */
-    const config=await loadMaintenanceFirebaseConfig();
-    const app=initializeFirebaseApp(config,"duc-anh-maintenance-page-v1");
-    auth=getAuth(app);
-
-    if(typeof auth?.authStateReady==="function"){
-      await auth.authStateReady();
+  const unsubscribe = onAuthStateChanged(auth,async user=>{
+    authUser=user||null;
+    if(!user){setStatus("Chưa đăng nhập Firebase","error");return}
+    try{
+      await loadData();
+    }catch(err){
+      console.error(err);
+      setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
     }
-
-    await handleAuthUser(auth?.currentUser||null);
-
-    onAuthStateChanged(auth,user=>{
-      void handleAuthUser(user);
-    });
-  }catch(err){
-    console.error("MAINTENANCE AUTH BOOTSTRAP ERROR:",err);
-    $("authGate").classList.add("hidden");
-    setStatus(err?.message||"Không thể xác thực phiên đăng nhập Firebase.","error");
-  }
+  });
+  cleanup.push(unsubscribe);
+  renderChecklist();
+  root.__maintenanceCleanup = () => {
+    cleanup.forEach(fn => { try { if (typeof fn === "function") fn(); } catch {} });
+    if (document.body) document.body.style.overflow="";
+  };
 }
-
-bootstrapAuth();
-renderChecklist();
-</script>
-</body>
-</html>
