@@ -445,12 +445,36 @@ import { db } from "./js/core/firebase.js";
 async function bootMyWork(){
   $("status").textContent="Đang xác thực tài khoản KTV…";
   $("status").className="status";
+
   try{
-    if(typeof auth?.authStateReady==="function"){
-      await auth.authStateReady();
+    let user=auth?.currentUser||null;
+
+    // Nếu Firebase đã khôi phục phiên thì dùng ngay, không chờ authStateReady().
+    if(!user && typeof auth?.authStateReady==="function"){
+      await Promise.race([
+        auth.authStateReady(),
+        new Promise(resolve=>setTimeout(resolve,8000))
+      ]);
+      user=auth?.currentUser||null;
     }
 
-    const user=auth?.currentUser||null;
+    // Safari/iOS đôi khi khôi phục Auth chậm hơn; chờ listener tối đa 8 giây.
+    if(!user){
+      user=await new Promise(resolve=>{
+        let done=false;
+        const finish=value=>{if(done)return;done=true;resolve(value||null);};
+        const timer=setTimeout(()=>finish(auth?.currentUser||null),8000);
+        const unsubscribe=auth.onAuthStateChanged
+          ? auth.onAuthStateChanged(value=>{
+              clearTimeout(timer);
+              try{unsubscribe?.()}catch(e){}
+              finish(value);
+            })
+          : null;
+      });
+    }
+
+    user=user||auth?.currentUser||null;
     if(!user){
       $("status").textContent="Chưa đăng nhập Firebase.";
       $("status").className="status error";
