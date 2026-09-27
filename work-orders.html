@@ -243,7 +243,6 @@ tr:hover td{background:#161613}
 </div>
 
 <!-- BUILD: work-orders-v1.13-completion-fix -->\n<script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { auth, db } from "./js/core/firebase.js";
 import {
@@ -933,20 +932,33 @@ async function load(){
   }
 }
 
-onAuthStateChanged(auth,async user=>{
-  authUser=user||null;currentProfile=null;
-  if(!user){$("status").className="status error";$("status").textContent="Chưa đăng nhập Firebase.";return;}
+// App Shell/Core Firebase đã chịu trách nhiệm xác thực.
+// Work Order chỉ sử dụng phiên Auth hiện tại, không tạo auth listener riêng.
+async function bootWorkOrder(){
+  authUser=auth?.currentUser||null;
   try{
-    const snap=await getDoc(doc(db,"users",user.uid));
+    if(typeof auth?.authStateReady === "function") await auth.authStateReady();
+    authUser=auth?.currentUser||null;
+    if(!authUser){
+      $("status").className="status error";
+      $("status").textContent="Chưa đăng nhập Firebase.";
+      return;
+    }
+    currentProfile=null;
+    const snap=await getDoc(doc(db,"users",authUser.uid));
     currentProfile=snap.exists()?snap.data():null;
     if(!currentProfile)throw new Error("Không tồn tại users/{uid}.");
     const tech=isTech();
     $("newBtn").textContent=tech?"＋ Gửi yêu cầu tạo Work Order":"＋ Tạo Work Order";
     await load();
   }catch(err){
-    $("status").className="status error";$("status").textContent=err?.message||"Không tải được dữ liệu.";
+    console.error("WORK ORDER BOOT ERROR:",err);
+    $("status").className="status error";
+    $("status").textContent=err?.message||"Không tải được dữ liệu.";
   }
-});
+}
+
+void bootWorkOrder();
 </script>
 </body>
 </html>
