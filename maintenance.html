@@ -324,6 +324,7 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 `;
 
 import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "./js/core/firestore-v1.js?v=5";
@@ -947,15 +948,40 @@ async function loadData(){
 
     const root = document.getElementById("maintenance-module-root");
     if (!root) throw new Error("Không tìm thấy #maintenance-module-root");
-    try {
-      await mountMaintenanceModule(root);
-    } catch (error) {
+
+    const showBootError = (title, error) => {
       console.error("MAINTENANCE STANDALONE ERROR:", error);
       root.innerHTML = `
         <div style="padding:24px;color:#eee9df;background:#090909;min-height:100vh;box-sizing:border-box">
-          <h2 style="color:#d6a84f;margin:0 0 10px">Không thể mở module Bảo trì</h2>
-          <pre style="white-space:pre-wrap;color:#aaa49a">${String(error?.message || error)}</pre>
+          <h2 style="color:#d6a84f;margin:0 0 10px">${title}</h2>
+          <pre style="white-space:pre-wrap;color:#aaa49a">${String(error?.message || error || "Không xác định")}</pre>
         </div>`;
+    };
+
+    // Standalone maintenance.html must wait for Firebase Auth initialization.
+    // The Dashboard App Shell already owns authentication when this module is mounted there.
+    // This listener exists only for direct maintenance.html access.
+    try {
+      root.innerHTML = `<div style="padding:24px;color:#aaa49a;background:#090909;min-height:100vh;box-sizing:border-box">Đang khởi tạo Bảo trì…</div>`;
+      let unsubscribe = null;
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+        if (!user) {
+          root.innerHTML = `
+            <div style="padding:24px;color:#eee9df;background:#090909;min-height:100vh;box-sizing:border-box">
+              <h2 style="color:#d6a84f;margin:0 0 10px">Bảo trì</h2>
+              <div style="color:#aaa49a">Chưa có phiên đăng nhập Firebase. Hãy đăng nhập qua Dashboard rồi mở lại module Bảo trì.</div>
+            </div>`;
+          return;
+        }
+        try {
+          await mountMaintenanceModule(root);
+        } catch (error) {
+          showBootError("Không thể mở module Bảo trì", error);
+        }
+      });
+    } catch (error) {
+      showBootError("Không thể khởi tạo Firebase Auth", error);
     }
   </script>
 </body>
