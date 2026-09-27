@@ -212,11 +212,11 @@ body.dashboard-auth-pending::before{
         ▤ <span>Hợp đồng</span>
       </a>
 
-      <a class="nav-item" href="maintenance.html">
+      <a class="nav-item" href="#maintenance" data-app-module="maintenance">
         ◷ <span>Bảo trì</span>
       </a>
 
-      <a class="nav-item" href="work-orders.html">
+      <a class="nav-item" href="#work-orders" data-app-module="work-orders">
         ✓ <span>Work Order</span>
       </a>
 
@@ -689,8 +689,8 @@ body.dashboard-auth-pending::before{
         <div class="activity-row">
           <span>04</span>
           <span>Work Order / Bảo trì</span>
-          <span>Chưa triển khai collection nghiệp vụ</span>
-          <label>CHƯA CÓ</label>
+          <span>Đã liên kết App Shell · dữ liệu nghiệp vụ đọc từ Firebase</span>
+          <label class="success">APP SHELL</label>
         </div>
 
       </section>
@@ -1744,9 +1744,6 @@ document.addEventListener("keydown", event => {
 
 const pendingModules = [
 
-  "contracts",
-  "maintenance",
-  "work-orders",
   "technicians",
   "kpi",
   "import-center",
@@ -1775,10 +1772,13 @@ document.querySelectorAll(
 
       alert(
         "Module này đang trong quá trình xây dựng.\n\n" +
-        "Dashboard hiện đã liên kết:\n" +
+        "Dashboard hiện đã liên kết App Shell:\n" +
         "• Khách hàng\n" +
         "• Tòa nhà\n" +
-        "• Thang máy"
+        "• Thang máy\n" +
+        "• Hợp đồng\n" +
+        "• Bảo trì\n" +
+        "• Work Order"
       );
 
     }
@@ -1825,6 +1825,8 @@ import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
+import { mountMaintenanceModule } from "./js/modules/maintenance-module-v1.1.js";
+import { mountWorkOrderModule } from "./js/modules/work-order-module-v1.15.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -2015,6 +2017,87 @@ async function showContracts() {
   }
 }
 
+
+async function showMaintenance() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "maintenance";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("maintenance");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Bảo trì...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountMaintenanceModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL MAINTENANCE MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Bảo trì</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showWorkOrders() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "work-orders";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("work-orders");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Work Order...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountWorkOrderModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL WORK ORDER MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Work Order</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -2030,6 +2113,10 @@ async function route() {
       await showElevators();
     } else if (hash === "contracts") {
       await showContracts();
+    } else if (hash === "maintenance") {
+      await showMaintenance();
+    } else if (hash === "work-orders") {
+      await showWorkOrders();
     } else {
       showDashboard();
     }
@@ -2047,7 +2134,9 @@ document.addEventListener("click", event => {
     moduleName !== "customers" &&
     moduleName !== "buildings" &&
     moduleName !== "elevators" &&
-    moduleName !== "contracts"
+    moduleName !== "contracts" &&
+    moduleName !== "maintenance" &&
+    moduleName !== "work-orders"
   ) return;
 
   event.preventDefault();
