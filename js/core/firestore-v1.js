@@ -2184,3 +2184,41 @@ export async function updateRecord(
 
   return getRecord(collectionName, recordId);
 }
+
+/* =========================
+   MAINTENANCE / AUTH HELPERS
+   Dùng chung một Firestore instance của DATA LAYER.
+   Module UI không được gọi collection()/doc() trực tiếp với db riêng.
+========================= */
+
+export async function getUserProfile(uid) {
+  requireValue(uid, "uid");
+  return getRecord("users", String(uid));
+}
+
+export async function createAuditLog(data) {
+  return createRecord("auditLogs", data || {});
+}
+
+export async function getMaintenanceAuditHistory(entityId) {
+  requireValue(entityId, "entityId");
+
+  const rows = await getRecords("auditLogs");
+
+  return rows
+    .filter(item =>
+      String(item.entityType || "") === "maintenance" &&
+      String(item.entityId || "") === String(entityId)
+    )
+    .sort((a, b) => {
+      const aa = a.createdAt?.toMillis?.() || 0;
+      const bb = b.createdAt?.toMillis?.() || 0;
+      return bb - aa;
+    })
+    .slice(0, 3);
+}
+
+export async function updateMaintenanceRecordRaw(recordId, data) {
+  return updateRecord("maintenance", recordId, data || {});
+}
+
