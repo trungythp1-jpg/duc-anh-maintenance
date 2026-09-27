@@ -84,7 +84,8 @@
 </main>
 
 <script type="module">
-import { auth } from "./js/core/firebase.js";
+import { auth, db } from "./js/core/firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getMaintenances, getWorkOrders, reportWorkOrderByTechnician, startMaintenanceByTechnician } from "./js/core/firestore-v1.js?v=maintenance-start-v1";
 
@@ -440,79 +441,99 @@ async function load(){
     $("status").textContent=`Đã tải ${items.length} công việc được phân công.`;$("status").className="status ok";
   }catch(err){$("status").textContent=err?.message||"Không tải được công việc.";$("status").className="status error"}
 }
-import { db } from "./js/core/firebase.js";
+async function withTimeout(promise, ms, label){
+  let timer;
+  try{
+    return await Promise.race([
+      promise,
+      new Promise((_,reject)=>{
+        timer=setTimeout(()=>reject(new Error(`${label} — timeout ${Math.round(ms/1000)}s.`)),ms);
+      })
+    ]);
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+function debugStatus(message, ok=false){
+  $("status").textContent=message;
+  $("status").className=ok?"status ok":"status";
+  console.log("[MY-WORK DEBUG]", message);
+}
 
 async function bootMyWork(){
-  $("status").textContent="Đang xác thực tài khoản KTV…";
-  $("status").className="status";
-
+  debugStatus("[1/5] Đang kiểm tra Firebase Auth…");
   try{
     let user=auth?.currentUser||null;
 
-    // Nếu Firebase đã khôi phục phiên thì dùng ngay, không chờ authStateReady().
-    if(!user && typeof auth?.authStateReady==="function"){
-      await Promise.race([
-        auth.authStateReady(),
-        new Promise(resolve=>setTimeout(resolve,8000))
-      ]);
-      user=auth?.currentUser||null;
-    }
-
-    // Safari/iOS đôi khi khôi phục Auth chậm hơn; chờ listener tối đa 8 giây.
     if(!user){
-      user=await new Promise(resolve=>{
-        let done=false;
-        const finish=value=>{if(done)return;done=true;resolve(value||null);};
-        const timer=setTimeout(()=>finish(auth?.currentUser||null),8000);
-        const unsubscribe=auth.onAuthStateChanged
-          ? auth.onAuthStateChanged(value=>{
-              clearTimeout(timer);
-              try{unsubscribe?.()}catch(e){}
-              finish(value);
-            })
-          : null;
-      });
+      debugStatus("[1/5] Auth chưa có currentUser — chờ onAuthStateChanged…");
+      user=await withTimeout(new Promise((resolve,reject)=>{
+        let unsubscribe=null;
+        unsubscribe=onAuthStateChanged(auth, value=>{
+          try{unsubscribe?.();}catch(e){}
+          resolve(value||null);
+        }, error=>{
+          try{unsubscribe?.();}catch(e){}
+          reject(error);
+        });
+      }),10000,"Firebase Auth không trả về trạng thái đăng nhập");
     }
 
     user=user||auth?.currentUser||null;
-    if(!user){
-      $("status").textContent="Chưa đăng nhập Firebase.";
-      $("status").className="status error";
-      return;
-    }
+    if(!user)throw new Error("[1/5] Firebase Auth: không có người dùng đăng nhập.");
+    debugStatus(`[1/5] Firebase Auth: OK — UID ${user.uid}` , true);
 
-    const s=await getDoc(doc(db,"users",user.uid));
-    profile=s.exists()?s.data():null;
-    if(!profile)throw new Error("Không tồn tại users/{uid}.");
-    if(String(profile.role||"").toUpperCase()!=="TECHNICIAN"){
-      throw new Error("Màn hình này dành cho tài khoản KTV.");
-    }
+    debugStatus("[2/5] Đang đọc users/{uid}…");
+    const s=await withTimeout(getDoc(doc(db,"users",user.uid)),10000,"Đọc users/{uid}");
+    if(!s.exists())throw new Error("[2/5] Firestore: không tồn tại users/{uid}.");
+    profile=s.data();
+    debugStatus(`[2/5] users/{uid}: OK — role=${String(profile.role||"(trống)")} technicianId=${String(profile.technicianId||"(trống)")}`, true);
 
-    const technicianName=String(
-      profile.technicianName ||
-      profile.displayName ||
-      profile.name ||
-      profile.fullName ||
-      profile.hoTen ||
-      "Kỹ thuật viên"
-    ).trim() || "Kỹ thuật viên";
+    if(String(profile.role||"").toUpperCase()!=="TECHNICIAN")throw new Error("[2/5] Tài khoản không có role TECHNICIAN.");
+    const technicianId=String(profile.technicianId||"").trim();
+    if(!technicianId)throw new Error("[3/5] Tài khoản TECHNICIAN chưa có technicianId.");
+
+    const technicianName=String(profile.technicianName||profile.displayName||profile.name||profile.fullName||profile.hoTen||"Kỹ thuật viên").trim()||"Kỹ thuật viên";
     $("technicianName").textContent=technicianName;
 
-    await load();
+    debugStatus(`[3/5] technicianId: ${technicianId} — đang kiểm tra dữ liệu bảo trì…`);
+    let m;
+    try{
+      m=await withTimeout(getMaintenances({technicianId}),12000,"getMaintenances");
+      debugStatus(`[3/5] Maintenance: OK — ${Array.isArray(m)?m.length:0} bản ghi`, true);
+    }catch(e){
+      throw new Error(`[3/5] Maintenance lỗi: ${e?.code||""} ${e?.message||e}`);
+    }
+
+    debugStatus("[4/5] Đang đọc Work Order…");
+    let w;
+    try{
+      w=await withTimeout(getWorkOrders({technicianId}),12000,"getWorkOrders");
+      debugStatus(`[4/5] Work Order: OK — ${Array.isArray(w)?w.length:0} bản ghi`, true);
+    }catch(e){
+      throw new Error(`[4/5] Work Order lỗi: ${e?.code||""} ${e?.message||e}`);
+    }
+
+    debugStatus("[5/5] Đang render danh sách công việc…");
+    items=normalize(m||[],w||[]);
+    const maintenanceItems=items.filter(x=>x.kind==="maintenance");
+    const workOrderItems=items.filter(x=>x.kind==="workorder");
+    await checkForNewAssignedWork(maintenanceItems,workOrderItems);
+    render();
+    $("status").textContent=`[5/5] Firebase + Firestore OK — ${items.length} công việc (${maintenanceItems.length} PBM, ${workOrderItems.length} WO).`;
+    $("status").className="status ok";
   }catch(err){
-    console.error("MY WORK BOOT ERROR:",err);
-    $("status").textContent=err?.message||"Không tải được dữ liệu.";
+    console.error("MY WORK FIREBASE DEBUG ERROR:",err);
+    $("status").textContent=err?.message||String(err);
     $("status").className="status error";
   }
 }
 
 void bootMyWork();
 
-setInterval(()=>{
-  if(profile && String(profile.role||"").toUpperCase()==="TECHNICIAN"){
-    load();
-  }
-},30000);
+// DEBUG: tạm tắt auto-refresh để không che mất lỗi gốc.
+
 </script>
 </body>
 </html>
