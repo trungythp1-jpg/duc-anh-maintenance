@@ -328,8 +328,6 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 }
 `;
 
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { auth } from "../core/firebase.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw,getTechnician,getTechnicians,updateMaintenanceByTechnician } from "../core/firestore-v1-maintenance-runtime-v1.1.js?v=20260927-maintenance-runtime-v11";
 
 export async function mountMaintenanceModule(root) {
@@ -956,20 +954,12 @@ async function loadData(){
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
-  if(typeof auth?.authStateReady==="function") await auth.authStateReady();
-  await (async()=>{
-    const user=auth?.currentUser||null;
-    authUser=user||null;
-    if(!user){setStatus("Chưa đăng nhập Firebase","error");return}
-    try{ await loadData(); }catch(err){ console.error(err); setStatus(err?.message||"Không tải được dữ liệu Firebase.","error"); }
-  })();
-
-  const unsubscribe = onAuthStateChanged(auth,async user=>{
-    authUser=user||null;
-    if(!user){setStatus("Chưa đăng nhập Firebase","error");return}
-    try{ await loadData(); }catch(err){ console.error(err); setStatus(err?.message||"Không tải được dữ liệu Firebase.","error"); }
-  });
-  cleanup.push(unsubscribe);
+  /* AUTH CHECK TẠM THỜI ĐÃ TẮT.
+   * Không authStateReady, không onAuthStateChanged, không chặn module.
+   * Data/Auth flow sẽ được thiết kế lại ở bước sau.
+   */
+  authUser=null;
+  currentProfile=null;
   renderChecklist();
   root.__maintenanceCleanup = () => {
     cleanup.forEach(fn => { try { if (typeof fn === "function") fn(); } catch {} });
