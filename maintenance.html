@@ -520,9 +520,6 @@ async function bootstrapDependencies(){
     ["getCustomers",getCustomers],["getBuildings",getBuildings],["getElevators",getElevators],
     ["getContracts",getContracts],["getMaintenances",getMaintenances],
     ["createMaintenance",createMaintenance],["updateMaintenance",updateMaintenance],
-    ["reportMaintenanceCompletion",reportMaintenanceCompletion],
-    ["confirmMaintenanceByCSKH",confirmMaintenanceByCSKH],
-    ["confirmMaintenanceAfterExpiry",confirmMaintenanceAfterExpiry],
     ["getTechnician",getTechnician],["getTechnicians",getTechnicians]
   ];
   const missing=required.filter(([,fn])=>typeof fn!=="function").map(([name])=>name);
