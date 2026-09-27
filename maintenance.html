@@ -1,3 +1,20 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090909">
+  <title>Đức Anh Maintenance — Bảo trì</title>
+  <style>
+    html,body{margin:0;padding:0;min-height:100%;background:#090909;color:#eee9df;}
+    body{font-family:Arial,sans-serif;}
+    #maintenance-module-root{min-height:100vh;}
+  </style>
+</head>
+<body>
+  <main id="maintenance-module-root" aria-label="Đức Anh Maintenance — Bảo trì"></main>
+
+  <script type="module">
 /* ĐỨC ANH MAINTENANCE — MAINTENANCE MODULE V1.1
  * Source of truth: current maintenance-module-v1.0.js; App Shell architecture lock
  * App Shell mount only. No standalone navigation/sidebar.
@@ -307,10 +324,10 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 `;
 
 import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "../core/firebase.js";
+import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "../core/firestore-v1.js?v=5";
-import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "./js/core/firestore-v1.js?v=5";
+import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 export async function mountMaintenanceModule(root) {
   if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
@@ -926,3 +943,20 @@ async function loadData(){
     if (document.body) document.body.style.overflow="";
   };
 }
+
+
+    const root = document.getElementById("maintenance-module-root");
+    if (!root) throw new Error("Không tìm thấy #maintenance-module-root");
+    try {
+      await mountMaintenanceModule(root);
+    } catch (error) {
+      console.error("MAINTENANCE STANDALONE ERROR:", error);
+      root.innerHTML = `
+        <div style="padding:24px;color:#eee9df;background:#090909;min-height:100vh;box-sizing:border-box">
+          <h2 style="color:#d6a84f;margin:0 0 10px">Không thể mở module Bảo trì</h2>
+          <pre style="white-space:pre-wrap;color:#aaa49a">${String(error?.message || error)}</pre>
+        </div>`;
+    }
+  </script>
+</body>
+</html>
