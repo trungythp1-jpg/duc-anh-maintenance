@@ -330,8 +330,7 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "../core/firebase.js";
-import { db,getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1-maintenance-runtime-v1.0.js?v=20260927-maintenance-runtime";
-import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw,getTechnician,getTechnicians,updateMaintenanceByTechnician } from "../core/firestore-v1-maintenance-runtime-v1.1.js?v=20260927-maintenance-runtime-v11";
 
 export async function mountMaintenanceModule(root) {
   if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
@@ -860,10 +859,9 @@ if(editingId){
       condition:payload.condition,
       result:payload.result,
       issueFound:payload.issueFound,
-      note:payload.note,
-      updatedAt:serverTimestamp()
+      note:payload.note
     };
-    await updateDoc(doc(db,"maintenance",editingId),technicianPayload);
+    await updateMaintenanceByTechnician(editingId,technicianPayload);
   }else{
     await updateMaintenance(editingId,payload);
   }
