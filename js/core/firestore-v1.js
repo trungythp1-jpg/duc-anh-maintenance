@@ -1,7 +1,5 @@
 /* MAINTENANCE DATA LAYER V4 */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import {
-  getFirestore,
   collection,
   doc,
   addDoc,
@@ -14,40 +12,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-/*
- * FIREBASE BOOTSTRAP ĐỘC LẬP
- * Không import ./firebase.js ở Data Layer.
- * Mục đích: tránh lỗi module khi firebase.js không export đúng app/db
- * và đảm bảo collection()/doc()/query() dùng cùng Firestore SDK instance.
- */
-async function loadFirebaseConfig(){
-  const response = await fetch("./firebase.js?v=20260927-maintenance-datalayer", {cache:"no-store"});
-  if(!response.ok){
-    throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
-  }
-  const source = await response.text();
-  let match = source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
-  if(!match){
-    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
-  }
-  if(!match){
-    throw new Error("Không tìm thấy firebaseConfig trong /js/core/firebase.js.");
-  }
-  let config;
-  try{
-    config = Function(`"use strict"; return (${match[1]});`)();
-  }catch(error){
-    throw new Error("firebaseConfig không hợp lệ: " + (error?.message || error));
-  }
-  const required=["apiKey","authDomain","projectId","appId"];
-  const missing=required.filter(key=>!config?.[key]);
-  if(missing.length) throw new Error("firebaseConfig thiếu: " + missing.join(", "));
-  return config;
-}
-
-const firebaseConfig = await loadFirebaseConfig();
-const app = initializeApp(firebaseConfig, "duc-anh-maintenance-data-v1");
-const db = getFirestore(app);
+import { db } from "./firebase.js";
 
 /*
  * ĐỨC ANH MAINTENANCE
@@ -2213,41 +2178,3 @@ export async function updateRecord(
 
   return getRecord(collectionName, recordId);
 }
-
-/* =========================
-   MAINTENANCE / AUTH HELPERS
-   Dùng chung một Firestore instance của DATA LAYER.
-   Module UI không được gọi collection()/doc() trực tiếp với db riêng.
-========================= */
-
-export async function getUserProfile(uid) {
-  requireValue(uid, "uid");
-  return getRecord("users", String(uid));
-}
-
-export async function createAuditLog(data) {
-  return createRecord("auditLogs", data || {});
-}
-
-export async function getMaintenanceAuditHistory(entityId) {
-  requireValue(entityId, "entityId");
-
-  const rows = await getRecords("auditLogs");
-
-  return rows
-    .filter(item =>
-      String(item.entityType || "") === "maintenance" &&
-      String(item.entityId || "") === String(entityId)
-    )
-    .sort((a, b) => {
-      const aa = a.createdAt?.toMillis?.() || 0;
-      const bb = b.createdAt?.toMillis?.() || 0;
-      return bb - aa;
-    })
-    .slice(0, 3);
-}
-
-export async function updateMaintenanceRecordRaw(recordId, data) {
-  return updateRecord("maintenance", recordId, data || {});
-}
-
