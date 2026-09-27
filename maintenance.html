@@ -940,24 +940,19 @@ async function runPermissionDiagnostics(user){
 }
 
 async function loadData(){
-  setStatus("Đang tải dữ liệu…");
-  const profileSnap=await getDoc(doc(db,"users",authUser.uid));
-  if(!profileSnap.exists()) throw new Error("Không tồn tại users/{uid}.");
-  currentProfile=profileSnap.data()||{};
+  setStatus("Đang tải dữ liệu Firebase…");
 
-  const role=currentRole();
-  const technicianId=String(currentProfile?.technicianId||"").trim();
-  if(role==="TECHNICIAN"&&!technicianId){
-    throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
-  }
+  /* AUTH TẠM THỜI KHÔNG THAM GIA DATA BOOTSTRAP.
+     Chỉ đọc dữ liệu nghiệp vụ để kiểm tra kết nối Firestore. */
+  currentProfile=null;
 
   const [c,b,e,ct,m,techData]=await Promise.all([
     getCustomers(),
     getBuildings(),
     getElevators(),
     getContracts(),
-    role==="TECHNICIAN" ? getMaintenances({technicianId}) : getMaintenances(),
-    role==="TECHNICIAN" ? getTechnician(technicianId) : getTechnicians()
+    getMaintenances(),
+    getTechnicians()
   ]);
 
   customers=c||[];
@@ -981,11 +976,14 @@ async function loadData(){
 }
 
 /* AUTH CHECK TẠM THỜI ĐÃ TẮT.
- * Không onAuthStateChanged, không authGate, không chặn giao diện.
- * Data/Auth flow sẽ được thiết kế lại ở bước sau.
+ * Firestore data bootstrap chạy trực tiếp để kiểm tra kết nối dữ liệu.
  */
 authUser=null;
 currentProfile=null;
+void loadData().catch(err=>{
+  console.error("MAINTENANCE FIRESTORE LOAD ERROR:",err);
+  setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
+});
 renderChecklist();
 </script>
 </body>
