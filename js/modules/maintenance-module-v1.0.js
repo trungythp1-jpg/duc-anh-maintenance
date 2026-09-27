@@ -330,7 +330,7 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "../core/firebase.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1.js?v=20260927-maintenance-unified-data";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1.js?v=20260927-maintenance-bootstrap-v132";
 import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
 
 export async function mountMaintenanceModule(root) {
@@ -861,8 +861,9 @@ if(editingId){
       result:payload.result,
       issueFound:payload.issueFound,
       note:payload.note,
+      updatedAt:serverTimestamp()
     };
-    await updateMaintenanceRecordRaw(editingId,technicianPayload);
+    await updateDoc(doc(db,"maintenance",editingId),technicianPayload);
   }else{
     await updateMaintenance(editingId,payload);
   }
@@ -918,9 +919,9 @@ async function runPermissionDiagnostics(user){
 
 async function loadData(){
   setStatus("Đang tải dữ liệu…");
-  const profileSnap=await getUserProfile(authUser.uid);
-  if(!profileSnap) throw new Error("Không tồn tại users/{uid}.");
-  currentProfile=profileSnap||{};
+  const profileData=await getUserProfile(authUser.uid);
+  if(!profileData) throw new Error("Không tồn tại users/{uid}.");
+  currentProfile=profileData||{};
 
   const role=currentRole();
   const technicianId=String(currentProfile?.technicianId||"").trim();
@@ -957,15 +958,18 @@ async function loadData(){
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
+  if(typeof auth?.authStateReady==="function") await auth.authStateReady();
+  await (async()=>{
+    const user=auth?.currentUser||null;
+    authUser=user||null;
+    if(!user){setStatus("Chưa đăng nhập Firebase","error");return}
+    try{ await loadData(); }catch(err){ console.error(err); setStatus(err?.message||"Không tải được dữ liệu Firebase.","error"); }
+  })();
+
   const unsubscribe = onAuthStateChanged(auth,async user=>{
     authUser=user||null;
     if(!user){setStatus("Chưa đăng nhập Firebase","error");return}
-    try{
-      await loadData();
-    }catch(err){
-      console.error(err);
-      setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
-    }
+    try{ await loadData(); }catch(err){ console.error(err); setStatus(err?.message||"Không tải được dữ liệu Firebase.","error"); }
   });
   cleanup.push(unsubscribe);
   renderChecklist();
