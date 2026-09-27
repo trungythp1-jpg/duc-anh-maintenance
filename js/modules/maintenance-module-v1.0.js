@@ -329,10 +329,8 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 `;
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "../core/firebase.js";
-import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "../core/firestore-v1.js?v=20260927-maintenance-collection-fix";
+import { auth } from "../core/firebase.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1.js?v=20260927-maintenance-unified-data";
 import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
 
 export async function mountMaintenanceModule(root) {
@@ -565,7 +563,7 @@ function applyTechnicianScopeUI(){
   }
 }
 async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
-  await addDoc(collection(db,"auditLogs"),{
+  await createAuditLog({
     action:fromTechnicianId?"TECHNICIAN_REASSIGNED":"TECHNICIAN_ASSIGNED",
     entityType,
     entityId,
@@ -575,8 +573,7 @@ async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicia
     toTechnicianName:toTechnicianName||"",
     reason:String(reason||"").trim()||"Phân công ban đầu",
     performedByUid:authUser?.uid||"",
-    performedByName:currentActorName(),
-    createdAt:serverTimestamp()
+    performedByName:currentActorName()
   });
 }
 
@@ -594,11 +591,7 @@ async function loadAssignmentHistory(entityId){
   if(!entityId){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
   box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
   try{
-    const snap=await getDocs(collection(db,"auditLogs"));
-    const items=snap.docs.map(d=>({id:d.id,...d.data()}))
-      .filter(x=>String(x.entityType||"")==="maintenance"&&String(x.entityId||"")===String(entityId))
-      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa})
-      .slice(0,3);
+    const items=await getMaintenanceAuditHistory(entityId);
     if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
     box.innerHTML=items.map(x=>{
       const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
@@ -868,9 +861,8 @@ if(editingId){
       result:payload.result,
       issueFound:payload.issueFound,
       note:payload.note,
-      updatedAt:serverTimestamp()
     };
-    await updateDoc(doc(db,"maintenance",editingId),technicianPayload);
+    await updateMaintenanceRecordRaw(editingId,technicianPayload);
   }else{
     await updateMaintenance(editingId,payload);
   }
@@ -904,7 +896,7 @@ async function runPermissionDiagnostics(user){
     catch(err){const code=err?.code||"unknown";const msg=err?.message||String(err);checks.push({name,ok:false,detail:`${code}: ${msg}`});return null}
   }
 
-  const profile=await check("users/{uid} · role",async()=>{const snap=await getDoc(doc(db,"users",user.uid));if(!snap.exists())throw new Error("Không tồn tại users/{uid}");const role=snap.data()?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;currentProfile=snap.data();return currentProfile});
+  const profile=await check("users/{uid} · role",async()=>{const profileData=await getUserProfile(user.uid);if(!profileData)throw new Error("Không tồn tại users/{uid}");const role=profileData?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;currentProfile=profileData;return profileData});
   const c=await check("customers",getCustomers);
   const b=await check("buildings",getBuildings);
   const e=await check("elevators",getElevators);
@@ -926,9 +918,9 @@ async function runPermissionDiagnostics(user){
 
 async function loadData(){
   setStatus("Đang tải dữ liệu…");
-  const profileSnap=await getDoc(doc(db,"users",authUser.uid));
-  if(!profileSnap.exists()) throw new Error("Không tồn tại users/{uid}.");
-  currentProfile=profileSnap.data()||{};
+  const profileSnap=await getUserProfile(authUser.uid);
+  if(!profileSnap) throw new Error("Không tồn tại users/{uid}.");
+  currentProfile=profileSnap||{};
 
   const role=currentRole();
   const technicianId=String(currentProfile?.technicianId||"").trim();
