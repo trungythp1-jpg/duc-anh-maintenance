@@ -330,7 +330,7 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth } from "../core/firebase.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1.js?v=20260927-maintenance-bootstrap-v132";
+import { db,getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "../core/firestore-v1-maintenance-runtime-v1.0.js?v=20260927-maintenance-runtime";
 import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
 
 export async function mountMaintenanceModule(root) {
