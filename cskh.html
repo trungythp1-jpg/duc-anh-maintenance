@@ -158,7 +158,7 @@ button{cursor:pointer}
 <body>
 <main class="page">
   <div class="top">
-    <div class="brand">ĐỨC ANH <small>MAINTENANCE</small></div>
+    <div class="brand">ĐỨC ANH <small>MAINTENANCE</small><div style="font-size:11px;color:#d6a84f;margin-top:4px">BUILD DEBUG V1.19 — DYNAMIC IMPORT TRACE</div></div>
     <div class="user"><div class="avatar" id="avatar">CS</div><div><strong id="userName">CSKH</strong><small id="roleLabel">CSKH</small></div></div>
   </div>
 
@@ -193,7 +193,7 @@ button{cursor:pointer}
 
       <div class="head"><strong>📋 TẤT CẢ CÔNG VIỆC</strong><span id="allCount">0</span></div>
       <div class="list" id="allTasks"></div>
-      <div class="status" id="status">Đang tải dữ liệu…</div>
+      <div class="status" id="status">DEBUG V1.19 — CHƯA CHẠY JAVASCRIPT</div>
     </section>
 
     <aside class="card">
@@ -366,16 +366,42 @@ button{cursor:pointer}
 </div>
 
 <script type="module">
-import { auth, db } from "./js/core/firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc, addDoc, collection, updateDoc, getDocs, query, where, serverTimestamp, Timestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js";
-import {
-  getCustomers,getBuildings,getElevators,createContract,getWorkOrders,
-  getMaintenances,confirmMaintenanceByCSKH
-} from "./js/core/firestore-v1.js";
+let auth,db;
+let doc,getDoc,addDoc,collection,updateDoc,getDocs,query,where,serverTimestamp,Timestamp,runTransaction;
+let getFunctions,httpsCallable;
+let getCustomers,getBuildings,getElevators,createContract,getWorkOrders,getMaintenances,confirmMaintenanceByCSKH;
 
 const $=id=>document.getElementById(id);
+
+async function loadDependencies(){
+  try{
+    $("status").textContent="IMPORT 1/4 — Firebase Firestore SDK…";
+    const firestore=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js");
+    ({doc,getDoc,addDoc,collection,updateDoc,getDocs,query,where,serverTimestamp,Timestamp,runTransaction}=firestore);
+
+    $("status").textContent="IMPORT 2/4 — Firebase Functions SDK…";
+    const functions=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-functions.js");
+    ({getFunctions,httpsCallable}=functions);
+
+    $("status").textContent="IMPORT 3/4 — core/firebase.js…";
+    const core=await import("./js/core/firebase.js?v=cskh-debug-1.19");
+    ({auth,db}=core);
+    if(!auth||!db)throw new Error("core/firebase.js không export auth hoặc db.");
+
+    $("status").textContent="IMPORT 4/4 — core/firestore-v1.js…";
+    const api=await import("./js/core/firestore-v1.js?v=cskh-debug-1.19");
+    ({getCustomers,getBuildings,getElevators,createContract,getWorkOrders,getMaintenances,confirmMaintenanceByCSKH}=api);
+    if(typeof getCustomers!=="function"||typeof getWorkOrders!=="function"||typeof getMaintenances!=="function")
+      throw new Error("firestore-v1.js thiếu hàm bắt buộc cho CSKH.");
+    $("status").textContent="IMPORT OK — bắt đầu kiểm tra Auth…";
+  }catch(error){
+    console.error("CSKH IMPORT DEBUG ERROR:",error);
+    $("status").textContent=`IMPORT LỖI — ${error?.message||String(error)}`;
+    $("status").className="err";
+    throw error;
+  }
+}
+
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const statusText={DRAFT:"Nháp",SUBMITTED:"Đã gửi Admin",ADMIN_REVIEW:"Admin đang xử lý",NEED_INFO:"Cần bổ sung",APPROVED:"Đã duyệt",CREATED:"Đã tạo",DUPLICATE:"Trùng dữ liệu",REJECTED:"Từ chối",CANCELLED:"Đã hủy"};
 const profileRole=r=>String(r||"").trim().toLowerCase();
@@ -1277,18 +1303,47 @@ document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>closeModal(m.id))});
 
-onAuthStateChanged(auth,async user=>{
-  if(!user){$("status").textContent="Chưa đăng nhập Firebase.";$("status").className="status err";return}
+async function bootCSKH(){
+  $("status").textContent="[1/5] Đang kiểm tra Firebase Auth…";
+  $("status").className="status";
   try{
-    const snap=await getDoc(doc(db,"users",user.uid));profile=snap.exists()?snap.data():null;
+    if(typeof auth?.authStateReady==="function"){
+      await Promise.race([auth.authStateReady(),new Promise(resolve=>setTimeout(resolve,10000))]);
+    }
+    const user=auth?.currentUser||null;
+    if(!user)throw new Error("[1/5] Firebase Auth: không có người dùng đăng nhập.");
+    $("status").textContent=`[1/5] Auth OK — UID ${user.uid}`;
+    if(!user){
+      $("status").textContent="Chưa đăng nhập Firebase.";
+      $("status").className="status err";
+      return;
+    }
+
+    $("status").textContent="[2/5] Đang đọc users/{uid}…";
+    const snap=await getDoc(doc(db,"users",user.uid));
+    profile=snap.exists()?snap.data():null;
     if(!profile)throw new Error("Không tồn tại users/{uid}.");
+
     const role=profileRole(profile.role);
-    if(!["cskh","customer_service"].includes(role))throw new Error("Màn hình này dành cho tài khoản CSKH.");
+    if(!["cskh","customer_service"].includes(role)){
+      throw new Error("Màn hình này dành cho tài khoản CSKH.");
+    }
+
     const name=String(profile.name||user.displayName||user.email||"CSKH").trim();
-    $("userName").textContent=name;$("pageTitle").textContent=name;$("avatar").textContent=name.slice(0,2).toUpperCase();
+    $("userName").textContent=name;
+    $("pageTitle").textContent=name;
+    $("avatar").textContent=name.slice(0,2).toUpperCase();
+
+    $("status").textContent="[3/5] users/{uid} OK — đang tải dữ liệu CSKH…";
     await loadAll();
-  }catch(e){$("status").textContent=e?.message||"Không thể xác thực tài khoản CSKH.";$("status").className="status err"}
-});
+  }catch(e){
+    console.error("CSKH BOOT ERROR:",e);
+    $("status").textContent=e?.message||"Không thể xác thực tài khoản CSKH.";
+    $("status").className="status err";
+  }
+}
+
+void loadDependencies().then(()=>bootCSKH()).catch(()=>{});
 </script>
 </body>
 </html>
