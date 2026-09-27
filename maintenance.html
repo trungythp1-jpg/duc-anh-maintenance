@@ -1,20 +1,16 @@
 <!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#090909">
-  <title>Đức Anh Maintenance — Bảo trì</title>
-  <style>
-    html,body{margin:0;padding:0;min-height:100%;background:#090909;color:#eee9df;}
-    body{font-family:Arial,sans-serif;}
-    #maintenance-module-root{min-height:100vh;}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>Đức Anh Maintenance — Bảo trì</title>
+<style>html,body{margin:0;min-height:100%;background:#090909;color:#eee9df;font-family:Arial,sans-serif}#boot{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;color:#aaa49a}#boot strong{color:#d6a84f}#maintenance-host{min-height:100vh}</style>
 </head>
 <body>
-  <main id="maintenance-module-root" aria-label="Đức Anh Maintenance — Bảo trì"></main>
-
-  <script type="module">
+<div id="boot"><div><strong>ĐỨC ANH MAINTENANCE</strong><br><span>Đang khởi tạo Bảo trì…</span></div></div>
+<div id="maintenance-host"></div>
+<script type="module">
 /* ĐỨC ANH MAINTENANCE — MAINTENANCE MODULE V1.1
  * Source of truth: current maintenance-module-v1.0.js; App Shell architecture lock
  * App Shell mount only. No standalone navigation/sidebar.
@@ -324,13 +320,12 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 `;
 
 import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { auth, db } from "./js/core/firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "./js/core/firestore-v1.js?v=5";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
-export async function mountMaintenanceModule(root) {
+async function mountMaintenanceModule(root) {
   if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
   if (root.__maintenanceCleanup) { root.__maintenanceCleanup(); root.__maintenanceCleanup = null; }
   if (!document.getElementById("maintenance-module-style")) { maintenanceStyle.id = "maintenance-module-style"; document.head.appendChild(maintenanceStyle); }
@@ -946,43 +941,22 @@ async function loadData(){
 }
 
 
-    const root = document.getElementById("maintenance-module-root");
-    if (!root) throw new Error("Không tìm thấy #maintenance-module-root");
-
-    const showBootError = (title, error) => {
-      console.error("MAINTENANCE STANDALONE ERROR:", error);
-      root.innerHTML = `
-        <div style="padding:24px;color:#eee9df;background:#090909;min-height:100vh;box-sizing:border-box">
-          <h2 style="color:#d6a84f;margin:0 0 10px">${title}</h2>
-          <pre style="white-space:pre-wrap;color:#aaa49a">${String(error?.message || error || "Không xác định")}</pre>
-        </div>`;
-    };
-
-    // Standalone maintenance.html must wait for Firebase Auth initialization.
-    // The Dashboard App Shell already owns authentication when this module is mounted there.
-    // This listener exists only for direct maintenance.html access.
-    try {
-      root.innerHTML = `<div style="padding:24px;color:#aaa49a;background:#090909;min-height:100vh;box-sizing:border-box">Đang khởi tạo Bảo trì…</div>`;
-      let unsubscribe = null;
-      unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-        if (!user) {
-          root.innerHTML = `
-            <div style="padding:24px;color:#eee9df;background:#090909;min-height:100vh;box-sizing:border-box">
-              <h2 style="color:#d6a84f;margin:0 0 10px">Bảo trì</h2>
-              <div style="color:#aaa49a">Chưa có phiên đăng nhập Firebase. Hãy đăng nhập qua Dashboard rồi mở lại module Bảo trì.</div>
-            </div>`;
-          return;
-        }
-        try {
-          await mountMaintenanceModule(root);
-        } catch (error) {
-          showBootError("Không thể mở module Bảo trì", error);
-        }
-      });
-    } catch (error) {
-      showBootError("Không thể khởi tạo Firebase Auth", error);
-    }
-  </script>
+try {
+  const boot=document.getElementById("boot");
+  const host=document.getElementById("maintenance-host");
+  const authReady = auth?.authStateReady ? auth.authStateReady() : Promise.resolve();
+  await authReady;
+  if(!auth?.currentUser){
+    boot.innerHTML='<div><strong>ĐỨC ANH MAINTENANCE</strong><br><span>Chưa có phiên đăng nhập. Hãy đăng nhập qua Dashboard.</span></div>';
+  } else {
+    boot.style.display='none';
+    await mountMaintenanceModule(host);
+  }
+} catch(error) {
+  console.error("MAINTENANCE STANDALONE ERROR", error);
+  const boot=document.getElementById("boot");
+  boot.innerHTML='<div style="max-width:760px"><strong>Lỗi mở Bảo trì</strong><pre style="white-space:pre-wrap;color:#aaa49a;margin-top:12px">'+String(error?.stack||error?.message||error)+'</pre></div>';
+}
+</script>
 </body>
 </html>
