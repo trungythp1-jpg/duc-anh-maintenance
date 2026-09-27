@@ -328,7 +328,9 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 }
 `;
 
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw,getTechnician,getTechnicians,updateMaintenanceByTechnician } from "../core/firestore-v1-maintenance-runtime-v1.1.js?v=20260927-maintenance-runtime-v11";
+import { auth } from "../core/firebase.js?v=20260927-maintenance-auth-shared";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw,getTechnician,getTechnicians,updateMaintenanceByTechnician } from "../core/firestore-v1-maintenance-runtime-v1.2.js?v=20260927-maintenance-runtime-v12";
 
 export async function mountMaintenanceModule(root) {
   if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
@@ -914,19 +916,24 @@ async function runPermissionDiagnostics(user){
 }
 
 async function loadData(){
-  setStatus("Đang tải dữ liệu Firebase…");
+  setStatus("Đang tải dữ liệu…");
+  const profileData=await getUserProfile(authUser.uid);
+  if(!profileData) throw new Error("Không tồn tại users/{uid}.");
+  currentProfile=profileData||{};
 
-  /* AUTH TẠM THỜI KHÔNG THAM GIA DATA BOOTSTRAP.
-     Chỉ đọc dữ liệu nghiệp vụ để kiểm tra kết nối Firestore. */
-  currentProfile=null;
+  const role=currentRole();
+  const technicianId=String(currentProfile?.technicianId||"").trim();
+  if(role==="TECHNICIAN"&&!technicianId){
+    throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+  }
 
   const [c,b,e,ct,m,techData]=await Promise.all([
     getCustomers(),
     getBuildings(),
     getElevators(),
     getContracts(),
-    getMaintenances(),
-    getTechnicians()
+    role==="TECHNICIAN" ? getMaintenances({technicianId}) : getMaintenances(),
+    role==="TECHNICIAN" ? getTechnician(technicianId) : getTechnicians()
   ]);
 
   customers=c||[];
@@ -949,15 +956,38 @@ async function loadData(){
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
-  /* AUTH CHECK TẠM THỜI ĐÃ TẮT.
-   * Firestore data bootstrap chạy trực tiếp để kiểm tra kết nối dữ liệu.
+  /*
+   * AUTH CHẠY NỀN — KHÔNG HIỂN THỊ AUTH GATE.
+   * Dùng đúng auth instance của /js/core/firebase.js để Firestore Rules
+   * nhận cùng phiên đăng nhập của App Shell/Dashboard.
    */
-  authUser=null;
+  authUser=auth?.currentUser||null;
   currentProfile=null;
-  void loadData().catch(err=>{
-    console.error("MAINTENANCE FIRESTORE LOAD ERROR:",err);
-    setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
-  });
+
+  const loadForUser=async(user)=>{
+    authUser=user||null;
+    if(!user){
+      setStatus("Chưa có phiên đăng nhập Firebase — dữ liệu chưa được tải.","error");
+      return;
+    }
+    try{
+      await loadData();
+    }catch(err){
+      console.error("MAINTENANCE DATA LOAD ERROR:",err);
+      setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
+    }
+  };
+
+  try{
+    if(typeof auth?.authStateReady==="function") await auth.authStateReady();
+    await loadForUser(auth?.currentUser||null);
+    const unsubscribe=onAuthStateChanged(auth,user=>{ void loadForUser(user); });
+    cleanup.push(unsubscribe);
+  }catch(err){
+    console.error("MAINTENANCE AUTH BACKGROUND ERROR:",err);
+    setStatus(err?.message||"Không thể khởi tạo phiên Firebase.","error");
+  }
+
   renderChecklist();
   root.__maintenanceCleanup = () => {
     cleanup.forEach(fn => { try { if (typeof fn === "function") fn(); } catch {} });
