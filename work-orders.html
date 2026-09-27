@@ -255,7 +255,7 @@ import {
   updateWorkOrder,
   reportWorkOrderByTechnician,
   completeWorkOrderByTechnician
-} from "./js/core/firestore-v1.js?v=wo2.2";
+} from "./js/core/firestore-v1.js?v=wo2.3";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
 const $ = id => document.getElementById(id);
@@ -935,6 +935,8 @@ async function load(){
 // App Shell/Core Firebase đã chịu trách nhiệm xác thực.
 // Work Order chỉ sử dụng phiên Auth hiện tại, không tạo auth listener riêng.
 async function bootWorkOrder(){
+  $("status").className="status";
+  $("status").textContent="Đang xác thực tài khoản…";
   authUser=auth?.currentUser||null;
   try{
     if(typeof auth?.authStateReady === "function") await auth.authStateReady();
