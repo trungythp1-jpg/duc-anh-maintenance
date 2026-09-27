@@ -348,7 +348,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.28-ktv-completion-fix">
+<body data-maintenance-build="v1.29-auth-bootstrap-fix">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -423,12 +423,129 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </div>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { auth, db } from "./js/core/firebase.js";
-import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "./js/core/firestore-v1.js?v=maintenance-completion-v2";
-import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
+/*
+ * MAINTENANCE V1.29 — ROBUST FIREBASE BOOTSTRAP
+ *
+ * Không dùng static import cho Firebase/core/module ở đầu file.
+ * Nếu một dependency lỗi, trang phải HIỆN LỖI CỤ THỂ thay vì treo
+ * vô hạn tại "Đang xác thực phiên đăng nhập Firebase…".
+ */
+let auth=null,db=null;
+let onAuthStateChanged=null;
+let doc=null,getDoc=null,getDocs=null,updateDoc=null;
+let addDoc=null,collection=null,serverTimestamp=null;
+let getCustomers=null,getBuildings=null,getElevators=null,getContracts=null,getMaintenances=null;
+let createMaintenance=null,updateMaintenance=null,reportMaintenanceCompletion=null,confirmMaintenanceByCSKH=null,confirmMaintenanceAfterExpiry=null;
+let getTechnician=null,getTechnicians=null;
+
+const withTimeout=async(promise,ms,message)=>{
+  let timer;
+  try{
+    return await Promise.race([
+      promise,
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms)})
+    ]);
+  }finally{
+    clearTimeout(timer);
+  }
+};
+
+async function bootstrapDependencies(){
+  setStatus("Đang tải Firebase core…");
+
+  let core;
+  try{
+    core=await withTimeout(
+      import("./js/core/firebase.js?v=20260927-maintenance-auth"),
+      10000,
+      "Không tải được /js/core/firebase.js trong 10 giây."
+    );
+  }catch(err){
+    console.error("MAINTENANCE FIREBASE CORE LOAD ERROR:",err);
+    throw new Error("Không tải được Firebase core: "+(err?.message||err));
+  }
+
+  auth=core?.auth||null;
+  db=core?.db||null;
+  if(!auth)throw new Error("/js/core/firebase.js không export auth.");
+  if(!db)throw new Error("/js/core/firebase.js không export db.");
+
+  setStatus("Firebase core OK · Đang tải Firebase Auth…");
+  let authSdk;
+  try{
+    authSdk=await withTimeout(
+      import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js?v=20260927-maintenance-auth"),
+      10000,
+      "Không tải được Firebase Auth SDK trong 10 giây."
+    );
+  }catch(err){
+    console.error("MAINTENANCE AUTH SDK LOAD ERROR:",err);
+    throw new Error("Không tải được Firebase Auth SDK: "+(err?.message||err));
+  }
+  onAuthStateChanged=authSdk?.onAuthStateChanged;
+  if(typeof onAuthStateChanged!=="function")throw new Error("Firebase Auth SDK thiếu onAuthStateChanged.");
+
+  setStatus("Firebase Auth OK · Đang tải Firestore…");
+  let firestoreSdk;
+  try{
+    firestoreSdk=await withTimeout(
+      import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js?v=20260927-maintenance-auth"),
+      10000,
+      "Không tải được Firebase Firestore SDK trong 10 giây."
+    );
+  }catch(err){
+    console.error("MAINTENANCE FIRESTORE SDK LOAD ERROR:",err);
+    throw new Error("Không tải được Firebase Firestore SDK: "+(err?.message||err));
+  }
+
+  ({doc,getDoc,getDocs,updateDoc,addDoc,collection,serverTimestamp}=firestoreSdk);
+  if(typeof doc!=="function"||typeof getDoc!=="function")throw new Error("Firestore SDK thiếu doc/getDoc.");
+  if(typeof getDocs!=="function"||typeof updateDoc!=="function")throw new Error("Firestore SDK thiếu getDocs/updateDoc.");
+  if(typeof addDoc!=="function"||typeof collection!=="function"||typeof serverTimestamp!=="function")throw new Error("Firestore SDK thiếu addDoc/collection/serverTimestamp.");
+
+  setStatus("Firestore OK · Đang tải module bảo trì…");
+  try{
+    const api=await withTimeout(
+      import("./js/core/firestore-v1.js?v=maintenance-completion-v2&v=20260927-auth"),
+      10000,
+      "Không tải được /js/core/firestore-v1.js trong 10 giây."
+    );
+    ({
+      getCustomers,getBuildings,getElevators,getContracts,getMaintenances,
+      createMaintenance,updateMaintenance,reportMaintenanceCompletion,
+      confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry
+    }=api);
+  }catch(err){
+    console.error("MAINTENANCE FIRESTORE SERVICE LOAD ERROR:",err);
+    throw new Error("Không tải được module dữ liệu bảo trì: "+(err?.message||err));
+  }
+
+  try{
+    const tech=await withTimeout(
+      import("./js/core/firestore-v1-technician-v1.js?v=20260927-auth"),
+      10000,
+      "Không tải được /js/core/firestore-v1-technician-v1.js trong 10 giây."
+    );
+    ({getTechnician,getTechnicians}=tech);
+  }catch(err){
+    console.error("MAINTENANCE TECHNICIAN SERVICE LOAD ERROR:",err);
+    throw new Error("Không tải được module kỹ thuật viên: "+(err?.message||err));
+  }
+
+  const required=[
+    ["getCustomers",getCustomers],["getBuildings",getBuildings],["getElevators",getElevators],
+    ["getContracts",getContracts],["getMaintenances",getMaintenances],
+    ["createMaintenance",createMaintenance],["updateMaintenance",updateMaintenance],
+    ["reportMaintenanceCompletion",reportMaintenanceCompletion],
+    ["confirmMaintenanceByCSKH",confirmMaintenanceByCSKH],
+    ["confirmMaintenanceAfterExpiry",confirmMaintenanceAfterExpiry],
+    ["getTechnician",getTechnician],["getTechnicians",getTechnicians]
+  ];
+  const missing=required.filter(([,fn])=>typeof fn!=="function").map(([name])=>name);
+  if(missing.length)throw new Error("Module bảo trì thiếu hàm: "+missing.join(", "));
+
+  setStatus("Firebase + module bảo trì đã sẵn sàng.");
+}
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -982,18 +1099,65 @@ async function loadData(){
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
-onAuthStateChanged(auth,async user=>{
+let authHandledUid="";
+
+async function handleAuthUser(user){
   authUser=user||null;
-  if(!user){$("authGate").classList.remove("hidden");setStatus("Chưa đăng nhập Firebase","error");return}
+
+  if(!user){
+    authHandledUid="";
+    $("authGate").classList.remove("hidden");
+    setStatus("Chưa đăng nhập Firebase","error");
+    return;
+  }
+
+  const uid=String(user.uid||"");
+  if(uid&&uid===authHandledUid){
+    $("authGate").classList.add("hidden");
+    return;
+  }
+  authHandledUid=uid;
+
   try{
     await loadData();
     $("authGate").classList.add("hidden");
   }catch(err){
-    console.error(err);
+    console.error("MAINTENANCE DATA LOAD ERROR:",err);
     setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
     $("authGate").classList.add("hidden");
   }
-});
+}
+
+async function bootstrapAuth(){
+  try{
+    await bootstrapDependencies();
+
+    /* Firebase Auth v12 hỗ trợ authStateReady().
+       Chờ khôi phục persistence trước khi đọc currentUser. */
+    if(typeof auth?.authStateReady==="function")await withTimeout(
+      auth.authStateReady(),
+      10000,
+      "Firebase Auth không hoàn tất khôi phục phiên trong 10 giây."
+    );
+
+    await handleAuthUser(auth?.currentUser||null);
+
+    onAuthStateChanged(auth,user=>{
+      void handleAuthUser(user);
+    });
+  }catch(err){
+    console.error("MAINTENANCE BOOTSTRAP ERROR:",err);
+    $("authGate").classList.remove("hidden");
+    const msg=err?.message||"Không thể khởi tạo Firebase Maintenance.";
+    setStatus(msg,"error");
+    const box=$("authGate").querySelector(".auth-box");
+    if(box){
+      box.innerHTML=`<h2>Đức Anh Maintenance</h2><div class="muted" style="color:#ffb4a8;line-height:1.6">${esc(msg)}</div><div class="muted" style="margin-top:10px;font-size:12px">Mở Console trình duyệt để xem chi tiết lỗi nếu cần.</div>`;
+    }
+  }
+}
+
+bootstrapAuth();
 renderChecklist();
 </script>
 </body>
