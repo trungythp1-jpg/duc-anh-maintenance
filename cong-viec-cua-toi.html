@@ -28,11 +28,11 @@
 @media(max-width:600px){.page{padding:16px 12px 45px}.head{flex-direction:column}.head-actions{width:100%;justify-content:stretch}.head-actions .btn{flex:1}.toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.task{grid-template-columns:1fr 1fr;gap:8px;padding:14px}.task-code{grid-column:1/-1}.task-main{grid-column:1/-1}.task-sub{grid-column:1/-1}.date{grid-column:1}.task-action{grid-column:2;text-align:right}.hide-md{display:none!important}}
 </style>
 </head>
-<body data-build="cong-viec-cua-toi-v1.13-pbm-confirm">
+<body data-build="cong-viec-cua-toi-v1.18-dynamic-import-debug">
 <main class="page">
   <div class="head">
     <div>
-      <h1>Công việc của tôi <span style="font-size:14px;border:1px solid #ff8176;padding:4px 8px;border-radius:8px;color:#ff8176">DEBUG V1.17</span></h1>
+      <h1>Công việc của tôi <span style="font-size:14px;border:1px solid #ff8176;padding:4px 8px;border-radius:8px;color:#ff8176">DEBUG V1.18</span></h1>
       <div class="technician-name" id="technicianName">Kỹ thuật viên</div>
       <div class="muted">KTV quản lý các công việc được phân công và chủ động ghi nhận công việc phát sinh.</div>
     </div>
@@ -76,18 +76,46 @@
 
   <div class="card">
     <div class="section-title"><strong>LỊCH CÔNG VIỆC</strong><span class="count" id="count">0 công việc</span></div>
-    <div id="status" class="status">DEBUG V1.17 — CHƯA CHẠY JAVASCRIPT</div>
+    <div id="status" class="status">DEBUG V1.18 — CHƯA CHẠY JAVASCRIPT</div>
     <div id="tasks" class="task-list"></div>
     <div id="empty" class="empty" style="display:none">Chưa có công việc được phân công.</div>
     <div class="note"><strong>Nguyên tắc:</strong> Schedule chỉ đề xuất ngày/cửa sổ. KTV tự sắp xếp ngày làm việc phù hợp. KTV không tạo Work Order trực tiếp; chỉ báo cáo trạng thái công việc được giao và báo hoàn thành phiếu bảo trì.</div>
   </div>
 </main>
 
+<script>
+(function(){
+  const el=document.getElementById("status");
+  if(el){el.textContent="DEBUG V1.18 — JAVASCRIPT ĐÃ CHẠY, ĐANG KIỂM TRA MODULE…";el.className="status";}
+})();
+</script>
 <script type="module">
-import { auth, db } from "./js/core/firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getDoc, doc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { getMaintenances, getWorkOrders, reportWorkOrderByTechnician, startMaintenanceByTechnician } from "./js/core/firestore-v1.js?v=maintenance-start-v1";
+let auth,db,onAuthStateChanged,getDoc,doc,getMaintenances,getWorkOrders,reportWorkOrderByTechnician,startMaintenanceByTechnician;
+
+async function loadDependencies(){
+  const el=document.getElementById("status");
+  try{
+    el.textContent="IMPORT 1/4 — Firebase Auth…";
+    ({onAuthStateChanged}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"));
+
+    el.textContent="IMPORT 2/4 — Firebase Firestore SDK…";
+    ({getDoc,doc}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js"));
+
+    el.textContent="IMPORT 3/4 — core/firebase.js…";
+    ({auth,db}=await import("./js/core/firebase.js?v=mywork-debug-1.18"));
+    if(!auth||!db)throw new Error("core/firebase.js không export auth hoặc db.");
+
+    el.textContent="IMPORT 4/4 — core/firestore-v1.js…";
+    ({getMaintenances,getWorkOrders,reportWorkOrderByTechnician,startMaintenanceByTechnician}=await import("./js/core/firestore-v1.js?v=mywork-debug-1.18"));
+    if(typeof getMaintenances!=="function"||typeof getWorkOrders!=="function")throw new Error("firestore-v1.js thiếu getMaintenances/getWorkOrders.");
+    el.textContent="IMPORT OK — bắt đầu kiểm tra Firebase Auth…";
+  }catch(e){
+    console.error("MY WORK IMPORT ERROR",e);
+    el.textContent=`IMPORT LỖI — ${e?.message||e}`;
+    el.className="status error";
+    throw e;
+  }
+}
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -530,7 +558,7 @@ async function bootMyWork(){
   }
 }
 
-void bootMyWork();
+void loadDependencies().then(()=>bootMyWork()).catch(()=>{});
 
 // DEBUG: tạm tắt auto-refresh để không che mất lỗi gốc.
 
