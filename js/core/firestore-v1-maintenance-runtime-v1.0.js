@@ -1,6 +1,5 @@
 /* MAINTENANCE DATA LAYER V4 */
 import {
-  getFirestore,
   collection,
   doc,
   addDoc,
@@ -12,17 +11,16 @@ import {
   runTransaction,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-import { app } from "./firebase.js";
+
+import { app, db } from "./firebase.js";
 
 /*
- * MAINTENANCE FIRESTORE RUNTIME
- *
- * - Dùng app Firebase đang chạy của hệ thống để giữ nguyên phiên Auth.
- * - Tạo db bằng CHÍNH Firestore SDK module được dùng bởi collection/doc/query
- *   trong file này, tránh lỗi SDK instance mismatch.
- * - Không sửa hoặc thay thế firestore-v1.js dùng chung.
+ * MAINTENANCE RUNTIME V1.2
+ * Dùng CHÍNH Firebase app/db của /js/core/firebase.js.
+ * Không initializeApp riêng.
+ * Mục tiêu: Auth và Firestore dùng cùng Firebase App, đồng thời
+ * collection()/doc()/query() dùng đúng Firestore SDK instance.
  */
-const db = getFirestore(app);
 
 /*
  * ĐỨC ANH MAINTENANCE
@@ -2187,68 +2185,6 @@ export async function updateRecord(
   );
 
   return getRecord(collectionName, recordId);
-}
-
-/* =========================
-   TECHNICIANS — DÙNG CÙNG FIRESTORE RUNTIME
-========================= */
-
-const TECHNICIANS_COLLECTION = "technicians";
-const TECHNICIAN_STATUS = ["active", "leave", "inactive"];
-
-function normalizeTechnicianId(value){
-  return String(value || "").trim().toUpperCase();
-}
-
-function normalizeTechnicianText(value){
-  return String(value || "").trim();
-}
-
-function normalizeTechnicianStatus(value){
-  const status=String(value || "active").trim().toLowerCase();
-  if(!TECHNICIAN_STATUS.includes(status)){
-    throw new Error("Trạng thái KTV không hợp lệ. Chỉ chấp nhận active, leave hoặc inactive.");
-  }
-  return status;
-}
-
-export async function getTechnician(technicianId){
-  requireValue(technicianId, "Mã kỹ thuật viên");
-  const id=normalizeTechnicianId(technicianId);
-  const snapshot=await getDoc(doc(db, TECHNICIANS_COLLECTION, id));
-  if(!snapshot.exists()) return null;
-  return {id:snapshot.id,...snapshot.data()};
-}
-
-export async function getTechnicians(){
-  const snapshot=await getDocs(collection(db, TECHNICIANS_COLLECTION));
-  return snapshot.docs
-    .map(item=>({id:item.id,...item.data()}))
-    .sort((a,b)=>String(a.technicianId||a.id).localeCompare(
-      String(b.technicianId||b.id),
-      "vi",
-      {numeric:true}
-    ));
-}
-
-export async function getTechniciansByStatus(status){
-  const normalized=normalizeTechnicianStatus(status);
-  const q=query(collection(db, TECHNICIANS_COLLECTION),where("status","==",normalized));
-  const snapshot=await getDocs(q);
-  return snapshot.docs.map(item=>({id:item.id,...item.data()}));
-}
-
-/* Module UI không gọi doc()/updateDoc()/serverTimestamp() trực tiếp. */
-export async function updateMaintenanceByTechnician(recordId,data){
-  requireValue(recordId,"recordId");
-  await updateDoc(
-    doc(db,"maintenance",recordId),
-    {
-      ...(data || {}),
-      updatedAt:serverTimestamp()
-    }
-  );
-  return getRecord("maintenance",recordId);
 }
 
 /* =========================
