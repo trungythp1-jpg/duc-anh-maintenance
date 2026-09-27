@@ -1,0 +1,968 @@
+/* ĐỨC ANH MAINTENANCE — WORK ORDER MODULE V1.15
+ * Source of truth: current work-orders-v1.14-auth-core-fix
+ * App Shell mount only. Dashboard owns Auth/route.
+ */
+
+import { doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { auth, db } from "../core/firebase.js";
+import {
+  getCustomers,
+  getBuildingsByCustomer,
+  getElevatorsByBuilding,
+  getMaintenances,
+  getWorkOrders,
+  createWorkOrder,
+  updateWorkOrder,
+  reportWorkOrderByTechnician,
+  completeWorkOrderByTechnician
+} from "../core/firestore-v1.js?v=wo2.2";
+import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
+
+export async function mountWorkOrderModule(root) {
+  if (!root) throw new Error("WORK_ORDER_ROOT_MISSING");
+
+  root.innerHTML = `<div id="work-order-module-root" class="work-order-module"><style>
+:root{
+  --bg:#090909;--panel:#11110f;--panel2:#171714;--gold:#d6a84f;
+  --gold2:#f0ca76;--border:#3b3428;--text:#eee9df;--muted:#aaa49a;
+  --ok:#70d89f;--danger:#ff8176;--blue:#8fb8ff;
+}
+#work-order-module-root *{box-sizing:border-box}
+.work-order-module{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.work-order-module{min-height:100%;background:radial-gradient(circle at 80% -10%,rgba(214,168,79,.1),transparent 30%),#090909}
+#work-order-module-root main{max-width:1450px;margin:auto;padding:24px 16px 70px}
+#work-order-module-root h1{margin:0;color:var(--gold2);font-size:30px}
+#work-order-module-root .sub{color:var(--muted);margin-top:5px}
+#work-order-module-root .head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:20px}
+#work-order-module-root .btn{border:1px solid var(--border);background:#151512;color:var(--text);border-radius:10px;padding:11px 15px;font:inherit;cursor:pointer;min-height:46px}
+#work-order-module-root .btn.primary{background:linear-gradient(#e0b65c,#bd8e34);color:#111;border-color:var(--gold);font-weight:700}
+#work-order-module-root .btn:disabled{opacity:.5}
+#work-order-module-root .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}
+#work-order-module-root .kpi{background:linear-gradient(#151512,#10100e);border:1px solid var(--border);border-radius:14px;padding:16px}
+.kpi b{display:block;font-size:12px;color:var(--gold2);margin-bottom:5px}
+.kpi strong{font-size:28px}
+#work-order-module-root .toolbar,#work-order-module-root .card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
+#work-order-module-root .toolbar{padding:14px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:15px}
+#work-order-module-root label{display:block;font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:6px}
+#work-order-module-root input,#work-order-module-root select,#work-order-module-root textarea{width:100%;background:#171714;color:var(--text);border:1px solid #4a4438;border-radius:9px;padding:11px;font:inherit}
+#work-order-module-root input:focus,#work-order-module-root select:focus,#work-order-module-root textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(214,168,79,.1)}
+#work-order-module-root .table-wrap{overflow:auto}
+#work-order-module-root table{width:100%;border-collapse:collapse;min-width:1100px}
+#work-order-module-root th,#work-order-module-root td{padding:12px;border-bottom:1px solid #292722;text-align:left;vertical-align:top}
+#work-order-module-root th{background:#171714;color:var(--gold2);font-size:12px;text-transform:uppercase}
+#work-order-module-root tr:hover td{background:#161613}
+#work-order-module-root .muted{color:var(--muted);font-size:12px}
+#work-order-module-root .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#28261f;font-size:12px}
+#work-order-module-root .badge.ok{color:var(--ok);background:rgba(112,216,159,.12)}
+#work-order-module-root .badge.blue{color:var(--blue);background:rgba(143,184,255,.12)}
+#work-order-module-root .badge.gold{color:var(--gold2);background:rgba(214,168,79,.13)}
+#work-order-module-root .badge.red{color:var(--danger);background:rgba(255,129,118,.12)}
+#work-order-module-root .empty{padding:45px;text-align:center;color:var(--muted)}
+#work-order-module-root .status{padding:10px 0;color:var(--muted)}
+#work-order-module-root .status.error{color:var(--danger)}
+#work-order-module-root .status.ok{color:var(--ok)}
+#work-order-module-root .modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:12px;z-index:100}
+#work-order-module-root .modal.show{display:flex}
+#work-order-module-root .box{width:min(1000px,100%);max-height:94vh;overflow:auto;background:#10100e;border:1px solid #80652e;border-radius:16px}
+#work-order-module-root .modal-head{position:sticky;top:0;background:#171714;border-bottom:1px solid var(--gold);padding:15px 18px;display:flex;justify-content:space-between;z-index:2}
+#work-order-module-root .modal-head h2{margin:0;color:var(--gold2);font-size:21px}
+#work-order-module-root .close{border:0;background:none;color:var(--gold2);font-size:28px}
+#work-order-module-root .body{padding:18px}
+#work-order-module-root .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#work-order-module-root .full{grid-column:1/-1}
+#work-order-module-root .ref{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#151512;border:1px solid var(--border);padding:12px;border-radius:12px;margin-bottom:15px}
+#work-order-module-root .ref small{display:block;color:var(--muted);margin-bottom:3px}
+#work-order-module-root .ref strong{color:var(--text)}
+#work-order-module-root .actions{position:sticky;bottom:0;background:#10100e;border-top:1px solid var(--gold);padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:flex-end;gap:10px}
+#work-order-module-root .actions #work-order-module-root .btn{min-height:52px;min-width:120px}
+#work-order-module-root .actions .primary{min-width:150px}
+#work-order-module-root .err{color:var(--danger);margin-top:8px;display:none}
+#work-order-module-root .err.show{display:block}
+#work-order-module-root .audit-history{display:grid;gap:8px}
+#work-order-module-root .audit-item{border:1px solid #40382b!important;background:#151512!important;border-radius:10px;padding:11px 12px}
+#work-order-module-root .audit-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+#work-order-module-root .audit-action{color:var(--gold2)!important;font-weight:700;font-size:13px}#work-order-module-root .audit-time{color:#999!important;font-size:11px}
+#work-order-module-root .audit-meta{margin-top:5px;font-size:12px;color:#eee!important;line-height:1.55}#work-order-module-root .audit-meta span{color:#999!important}
+#work-order-module-root .audit-empty{color:#999!important;font-size:12px;padding:8px 0}
+#work-order-module-root .tech-readonly{opacity:.82}#work-order-module-root .tech-readonly input,#work-order-module-root .tech-readonly select,#work-order-module-root .tech-readonly textarea{pointer-events:none}#work-order-module-root .tech-hidden{display:none!important}
+
+@media(max-width:850px){#work-order-module-root .kpis{grid-template-columns:1fr 1fr}#work-order-module-root .toolbar{grid-template-columns:1fr 1fr}#work-order-module-root .ref{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){
+  #work-order-module-root main{padding:16px 12px 50px}#work-order-module-root .head{flex-direction:column}#work-order-module-root .toolbar{grid-template-columns:1fr}#work-order-module-root .grid{grid-template-columns:1fr}#work-order-module-root .full{grid-column:auto}
+  #work-order-module-root .modal{align-items:flex-end;padding:0}#work-order-module-root .box{height:100dvh;max-height:100dvh;border-radius:16px 16px 0 0}
+  #work-order-module-root .body{padding:14px 13px 120px}#work-order-module-root .ref{grid-template-columns:1fr}
+  #work-order-module-root .actions{justify-content:stretch}#work-order-module-root .actions #work-order-module-root .btn{flex:1;min-width:0}
+}
+</style><main>
+  <div class="head">
+    <div>
+      <h1>Phiếu công việc</h1>
+      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.</div>
+    </div>
+    <button class="btn primary" id="newBtn">＋ Tạo Work Order</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><b>TỔNG WORK ORDER</b><strong id="kTotal">0</strong></div>
+    <div class="kpi"><b>ĐANG XỬ LÝ</b><strong id="kProgress">0</strong></div>
+    <div class="kpi"><b>HOÀN THÀNH</b><strong id="kDone">0</strong></div>
+    <div class="kpi"><b>KHẨN CẤP</b><strong id="kUrgent">0</strong></div>
+  </div>
+
+  <div id="requestPanel" class="card" style="margin-bottom:15px;display:none">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <div><strong style="color:var(--gold2);font-size:15px">YÊU CẦU TẠO WORK ORDER</strong><div class="muted" style="margin-top:4px">KTV gửi yêu cầu tại đây. ADMIN/MANAGER xem xét và tạo Work Order chính thức.</div></div>
+      <span id="requestCount" class="badge gold">0 chờ xử lý</span>
+    </div>
+    <div class="table-wrap">
+      <table style="min-width:1050px">
+        <thead><tr><th>Thời gian</th><th>PBM / Khách hàng</th><th>Thang máy</th><th>Công việc</th><th>Ưu tiên</th><th>KTV yêu cầu</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody id="requestRows"></tbody>
+      </table>
+    </div>
+    <div id="requestEmpty" class="empty" style="display:none">Không có yêu cầu đang chờ.</div>
+  </div>
+
+  <div class="toolbar">
+    <div><label>Tìm kiếm</label><input id="search" placeholder="WO, PBM, khách hàng, tòa nhà, thang..."></div>
+    <div><label>Trạng thái</label><select id="filterStatus"><option value="">Tất cả</option><option value="draft">Nháp</option><option value="assigned">Đã phân công</option><option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option><option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option></select></div>
+    <div><label>Ưu tiên</label><select id="filterPriority"><option value="">Tất cả</option><option value="low">Thấp</option><option value="normal">Bình thường</option><option value="high">Cao</option><option value="urgent">Khẩn cấp</option></select></div>
+  </div>
+
+  <div id="status" class="status">Đang tải dữ liệu…</div>
+  <div id="workOrderDisplayHint" class="muted" style="margin:10px 0 8px"></div>
+  <div class="card"><div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Work Order</th><th>PBM / Khách hàng</th><th>Thang máy</th><th>Công việc</th><th>Ưu tiên</th><th>Trạng thái</th><th>Phân công</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div></div>
+</main>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="modal-head"><h2 id="modalTitle">Tạo Work Order</h2><button class="close" id="closeBtn">×</button></div>
+    <form id="form">
+      <div class="body">
+        <div class="ref" id="refBox">
+          <div><small>Nguồn</small><strong id="refSource">—</strong></div>
+          <div><small>Khách hàng</small><strong id="refCustomer">—</strong></div>
+          <div><small>Tòa nhà</small><strong id="refBuilding">—</strong></div>
+          <div><small>Thang máy</small><strong id="refElevator">—</strong></div>
+        </div>
+        <div id="techReportPanel" style="display:none;margin-bottom:15px;padding:14px;border:1px solid #80652e;border-radius:12px;background:#151512">
+          <div style="color:var(--gold2);font-weight:700;font-size:15px;margin-bottom:6px">BÁO CÁO CÔNG VIỆC</div>
+          <div class="muted" style="margin-bottom:12px">KTV chỉ được báo cáo trạng thái. Các thông tin Work Order chỉ được xem.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button type="button" class="btn" id="techIncompleteBtn">Chưa hoàn thành</button>
+            <button type="button" class="btn primary" id="techCompleteBtn">Đã hoàn thành</button>
+          </div>
+        </div>
+        <div class="grid">
+          <div>
+            <label>Nguồn Work Order *</label>
+            <select id="sourceType" required>
+              <option value="MAINTENANCE">Phiếu bảo trì</option>
+              <option value="CUSTOMER_REPORT">Khách hàng báo</option>
+              <option value="INCIDENT">Sự cố</option>
+              <option value="SALES">Kinh doanh</option>
+              <option value="MANAGEMENT">Quản lý</option>
+              <option value="OTHER">Khác</option>
+            </select>
+          </div>
+          <div id="sourceNoteWrap"><label>Ghi chú nguồn</label><input id="sourceNote" placeholder="Ví dụ: Khách hàng gọi báo..."></div>
+
+          <div id="maintenanceFieldWrap" class="full">
+            <label>Phiếu bảo trì <span id="maintenanceRequiredMark">*</span></label>
+            <select id="maintenanceId"></select>
+          </div>
+
+          <div>
+            <label>Khách hàng *</label>
+            <select id="customerId" required><option value="">Chọn khách hàng</option></select>
+          </div>
+          <div>
+            <label>Tòa nhà *</label>
+            <select id="buildingId" required disabled><option value="">Chọn tòa nhà</option></select>
+          </div>
+          <div class="full">
+            <label>Thang máy *</label>
+            <select id="elevatorId" required disabled><option value="">Chọn thang máy</option></select>
+          </div>
+
+          <div><label>Mã hợp đồng</label><input id="contractCode" placeholder="Không bắt buộc"></div>
+          <div><label>Mã thang</label><input id="elevatorAssetCode" readonly></div>
+
+          <div>
+            <label>Loại công việc *</label>
+            <select id="type">
+              <option value="MAINTENANCE">Bảo trì</option>
+              <option value="BREAKDOWN">Sự cố</option>
+              <option value="REPAIR">Sửa chữa</option>
+              <option value="INSPECTION">Kiểm tra</option>
+            </select>
+          </div>
+          <div>
+            <label>Ưu tiên *</label>
+            <select id="priority">
+              <option value="low">Thấp</option>
+              <option value="normal" selected>Bình thường</option>
+              <option value="high">Cao</option>
+              <option value="urgent">Khẩn cấp</option>
+            </select>
+          </div>
+
+          <div class="full"><label>Tiêu đề công việc *</label><input id="issueTitle" required placeholder="Ví dụ: Xử lý tiếng kêu bất thường tại máy kéo"></div>
+          <div class="full"><label>Mô tả vấn đề *</label><textarea id="problemDescription" rows="4" required placeholder="Mô tả hiện tượng, vị trí, mức độ..."></textarea></div>
+
+          <div id="requestHintWrap" class="full" style="display:none"><div class="muted" style="padding:10px 12px;border:1px solid #40382b;border-radius:10px;background:#151512">Kỹ thuật viên không tạo Work Order trực tiếp. Phiếu này sẽ được gửi thành <strong style="color:var(--gold2)">Yêu cầu tạo Work Order</strong> để ADMIN/MANAGER xem xét và tạo phiếu.</div></div>
+
+          <div id="statusFieldWrap">
+            <label>Trạng thái</label>
+            <select id="statusField">
+              <option value="draft">Nháp</option><option value="assigned">Đã phân công</option>
+              <option value="in_progress">Đang xử lý</option><option value="waiting_parts">Chờ vật tư</option>
+              <option value="completed">Hoàn thành</option><option value="cancelled">Đã hủy</option>
+            </select>
+          </div>
+          <div id="technicianFieldWrap">
+            <label>Kỹ thuật viên</label>
+            <select id="technicianId"><option value="">Chưa phân công</option></select>
+          </div>
+          <div id="assignmentReasonWrap" class="full"><label>Lý do phân công / thay đổi</label><input id="assignmentReason" placeholder="Ví dụ: Phân công ban đầu / thay KTV nghỉ"></div>
+
+          <div><label>Ngày mở</label><input id="openedDate" type="date"></div>
+          <div><label>Hạn xử lý</label><input id="dueDate" type="date"></div>
+          <div><label>Ngày hoàn thành</label><input id="completedDate" type="date"></div>
+          <div class="full"><label>Nguyên nhân</label><textarea id="cause" rows="3"></textarea></div>
+          <div class="full"><label>Biện pháp xử lý</label><textarea id="resolution" rows="3"></textarea></div>
+          <div><label>Chi phí nhân công</label><input id="laborCost" type="number" min="0" step="1000" value="0"></div>
+          <div><label>Chi phí vật tư</label><input id="materialCost" type="number" min="0" step="1000" value="0"></div>
+          <div><label>Tổng chi phí</label><input id="totalCost" type="number" min="0" step="1000" value="0"></div>
+          <div class="full"><label>Ghi chú</label><textarea id="note" rows="3"></textarea></div>
+        </div>
+        <div id="workflowHint" class="muted" style="margin-top:10px"></div>
+        <div class="section" style="margin-top:18px;padding-top:14px;border-top:1px solid #40382b"><h3 style="margin:0 0 10px;color:var(--gold2)">LỊCH SỬ PHÂN CÔNG</h3><div id="assignmentHistory" class="audit-history"><div class="audit-empty">Chưa có lịch sử phân công.</div></div></div>
+
+        <div id="err" class="err"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="cancelBtn">Hủy</button>
+        <button type="submit" class="btn primary" id="saveBtn">Lưu Work Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- BUILD: work-orders-v1.13-completion-fix -->\n</div>`;
+
+const $ = id => root.querySelector(`#${id}`);
+
+let customers=[];
+let buildings=[];
+let elevators=[];
+let maintenances=[];
+let workOrders=[];
+let technicians=[];
+let workOrderRequests=[];
+let editingId="";
+let authUser=null;
+let currentProfile=null;
+let requestMode=false;
+
+const statusText={
+  draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",
+  waiting_parts:"Chờ vật tư",completed:"Hoàn thành",cancelled:"Đã hủy"
+};
+const priorityText={low:"Thấp",normal:"Bình thường",high:"Cao",urgent:"Khẩn cấp"};
+const typeText={MAINTENANCE:"Bảo trì",BREAKDOWN:"Sự cố",REPAIR:"Sửa chữa",INSPECTION:"Kiểm tra"};
+const sourceText={
+  MAINTENANCE:"Phiếu bảo trì",CUSTOMER_REPORT:"Khách hàng báo",
+  INCIDENT:"Sự cố",SALES:"Kinh doanh",MANAGEMENT:"Quản lý",OTHER:"Khác"
+};
+
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+function badgeStatus(v){
+  const c=v==="completed"?"ok":v==="in_progress"||v==="assigned"?"blue":v==="cancelled"?"red":"gold";
+  return `<span class="badge ${c}">${esc(statusText[v]||v)}</span>`;
+}
+function badgePriority(v){
+  const c=v==="urgent"?"red":v==="high"?"gold":"";
+  return `<span class="badge ${c}">${esc(priorityText[v]||v)}</span>`;
+}
+function formatTime(value){
+  if(!value)return "—";
+  try{const d=value?.toDate?value.toDate():new Date(value);return Number.isNaN(d.getTime())?"—":d.toLocaleString("vi-VN");}
+  catch(e){return "—";}
+}
+function currentRole(){return String(currentProfile?.role||"").trim().toUpperCase();}
+function currentActorName(){return String(currentProfile?.name||authUser?.displayName||authUser?.email||authUser?.uid||"").trim();}
+function canManage(){return ["ADMIN","MANAGER"].includes(currentRole());}
+function isTech(){return currentRole()==="TECHNICIAN";}
+
+function render(){
+  const q=$("search").value.trim().toLowerCase();
+  const fs=$("filterStatus").value,fp=$("filterPriority").value;
+  const filteredRows=workOrders.filter(w=>{
+    const hay=[
+      w.workOrderNo,w.sourceNote,w.maintenanceTicketNo,w.customerName,w.buildingName,
+      w.elevatorName,w.elevatorAssetCode,w.issueTitle,w.problemDescription
+    ].join(" ").toLowerCase();
+    return (!q||hay.includes(q))&&(!fs||w.status===fs)&&(!fp||w.priority===fp);
+  });
+
+  // Mặc định chỉ hiển thị 5 Work Order gần nhất.
+  // Khi người dùng tìm kiếm/lọc, hiển thị toàn bộ kết quả phù hợp.
+  const isSearching=Boolean(q||fs||fp);
+  const rows=isSearching?filteredRows:filteredRows.slice(0,5);
+
+  $("kTotal").textContent=workOrders.length;
+  $("kProgress").textContent=workOrders.filter(w=>["assigned","in_progress","waiting_parts"].includes(w.status)).length;
+  $("kDone").textContent=workOrders.filter(w=>w.status==="completed").length;
+  $("kUrgent").textContent=workOrders.filter(w=>w.priority==="urgent").length;
+
+  const displayHint=$("workOrderDisplayHint");
+  if(displayHint){
+    displayHint.textContent=isSearching
+      ? `Đang hiển thị ${rows.length} kết quả phù hợp`
+      : `Hiển thị 5 Work Order gần nhất · Còn ${Math.max(0,workOrders.length-5)} Work Order, dùng Tìm kiếm để xem`;
+  }
+
+  $("rows").innerHTML=rows.length?rows.map(w=>`
+    <tr>
+      <td><strong style="color:var(--gold2)">${esc(w.workOrderNo)}</strong>
+        <div class="muted">${esc(sourceText[w.sourceType]||w.sourceType||"—")}</div>
+        <div class="muted">${esc(typeText[w.type]||w.type)}</div>
+      </td>
+      <td><strong>${esc(w.maintenanceTicketNo||"—")}</strong><div>${esc(w.customerName||"")}</div><div class="muted">${esc(w.buildingName||"")}</div></td>
+      <td><strong>${esc(w.elevatorName||"—")}</strong><div class="muted">${esc(w.elevatorAssetCode||"")}</div></td>
+      <td><strong>${esc(w.issueTitle||"")}</strong><div class="muted">${esc(w.problemDescription||"").slice(0,120)}</div></td>
+      <td>${badgePriority(w.priority)}</td>
+      <td>${badgeStatus(w.status)}</td>
+      <td>${esc(w.assignedTechnicianName||"Chưa phân công")}</td>
+      <td><button class="btn" data-open="${esc(w.id)}">Mở</button></td>
+    </tr>`).join(""):`<tr><td colspan="9" class="empty">Chưa có Work Order.</td></tr>`;
+
+  root.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openEdit(b.dataset.open));
+}
+
+function renderCustomers(selected=""){
+  $("customerId").innerHTML='<option value="">Chọn khách hàng</option>'+
+    customers.map(c=>`<option value="${esc(c.id)}"${String(c.id)===String(selected)?" selected":""}>${esc(c.name||c.customerName||c.id)}</option>`).join("");
+}
+function renderBuildings(selected=""){
+  $("buildingId").innerHTML='<option value="">Chọn tòa nhà</option>'+
+    buildings.map(b=>`<option value="${esc(b.id)}"${String(b.id)===String(selected)?" selected":""}>${esc(b.name||b.buildingName||b.id)}</option>`).join("");
+  $("buildingId").disabled=!$("customerId").value||!buildings.length;
+}
+function renderElevators(selected=""){
+  $("elevatorId").innerHTML='<option value="">Chọn thang máy</option>'+
+    elevators.map(e=>`<option value="${esc(e.id)}"${String(e.id)===String(selected)?" selected":""}>${esc(e.name||e.elevatorName||e.id)}${e.assetCode?" — "+esc(e.assetCode):""}</option>`).join("");
+  $("elevatorId").disabled=!$("buildingId").value||!elevators.length;
+}
+async function onCustomerChange(selectedBuilding=""){
+  const id=$("customerId").value;
+  buildings=id?await getBuildingsByCustomer(id):[];
+  elevators=[];
+  renderBuildings(selectedBuilding);
+  renderElevators("");
+  updateReference();
+}
+async function onBuildingChange(selectedElevator=""){
+  const id=$("buildingId").value;
+  elevators=id?await getElevatorsByBuilding(id):[];
+  renderElevators(selectedElevator);
+  updateReference();
+}
+function selectedCustomer(){return customers.find(x=>String(x.id)===String($("customerId").value))||null;}
+function selectedBuilding(){return buildings.find(x=>String(x.id)===String($("buildingId").value))||null;}
+function selectedElevator(){return elevators.find(x=>String(x.id)===String($("elevatorId").value))||null;}
+
+function updateReference(){
+  const c=selectedCustomer(),b=selectedBuilding(),e=selectedElevator();
+  $("refSource").textContent=sourceText[$("sourceType").value]||"—";
+  $("refCustomer").textContent=c?.name||c?.customerName||"—";
+  $("refBuilding").textContent=b?.name||b?.buildingName||"—";
+  $("refElevator").textContent=e?.name||e?.elevatorName||"—";
+  $("elevatorAssetCode").value=e?.assetCode||e?.elevatorAssetCode||"";
+}
+
+function fillMaintenanceSelect(selected=""){
+  $("maintenanceId").innerHTML='<option value="">Chọn phiếu bảo trì</option>'+
+    maintenances.map(m=>`<option value="${esc(m.id)}"${String(m.id)===String(selected)?" selected":""}>${esc(m.ticketNo||m.id)} — ${esc(m.customerName||"")} — ${esc(m.elevatorName||"")} — Kỳ ${esc(m.periodNumber||"")}</option>`).join("");
+}
+async function applyMaintenanceSelection(){
+  const m=maintenances.find(x=>String(x.id)===String($("maintenanceId").value));
+  if(!m){
+    $("contractCode").value="";
+    return;
+  }
+
+  $("contractCode").value=m.contractCode||"";
+  $("sourceType").value="MAINTENANCE";
+
+  $("customerId").value=m.customerId||"";
+  await onCustomerChange(m.buildingId||"");
+  await onBuildingChange(m.elevatorId||"");
+  updateReference();
+}
+
+function setAssetFieldsDisabled(disabled){
+  $("customerId").disabled=disabled;
+  $("buildingId").disabled=disabled||!$("customerId").value;
+  $("elevatorId").disabled=disabled||!$("buildingId").value;
+  $("elevatorAssetCode").disabled=false;
+  $("contractCode").disabled=disabled;
+}
+function applySourceUI(){
+  const maintenance=$("sourceType").value==="MAINTENANCE";
+  $("maintenanceFieldWrap").style.display=maintenance?"block":"none";
+  $("maintenanceRequiredMark").style.display=maintenance?"inline":"none";
+  $("maintenanceId").required=maintenance;
+
+  if(!editingId && maintenance){
+    setAssetFieldsDisabled(true);
+    const m=maintenances.find(x=>String(x.id)===String($("maintenanceId").value));
+    if(m && String($("customerId").value)!==String(m.customerId||"")) {
+      applyMaintenanceSelection().catch(console.error);
+    }
+  }else{
+    setAssetFieldsDisabled(false);
+  }
+  updateReference();
+}
+
+function getTechnicianId(t){return String(t?.technicianId||t?.id||"");}
+function getTechnicianStatus(t){return String(t?.status||"active");}
+function findTechnician(id){return technicians.find(t=>getTechnicianId(t)===String(id))||null;}
+function renderTechnicianSelect(selectedId="",selectedName=""){
+  const currentId=String(selectedId||""),currentName=String(selectedName||"").trim();
+  const active=technicians.filter(t=>getTechnicianStatus(t)==="active");
+  const options=active.map(t=>({id:getTechnicianId(t),name:String(t?.name||"").trim(),status:"active"})).filter(t=>t.id);
+
+  if(currentId&&!options.some(t=>t.id===currentId)){
+    const current=findTechnician(currentId);
+    options.unshift({id:currentId,name:current?.name||currentName||"Kỹ thuật viên hiện tại",status:getTechnicianStatus(current)||"leave"});
+  }
+  options.sort((a,b)=>a.name.localeCompare(b.name,"vi"));
+  $("technicianId").innerHTML='<option value="">Chưa phân công</option>'+
+    options.map(t=>{
+      const suffix=t.status==="active"?"":` · ${t.status==="leave"?"Đang nghỉ":"Đã nghỉ việc"}`;
+      const disabled=t.status!=="active"?" disabled":"";
+      return `<option value="${esc(t.id)}"${disabled}>${esc(t.name||t.id)}${esc(suffix)}</option>`;
+    }).join("");
+  $("technicianId").value=currentId;
+  $("technicianId").disabled=!canManage();
+  $("assignmentReason").disabled=!canManage();
+  if(!canManage())$("assignmentReason").value="";
+}
+
+function applyRequestModeUI(){
+  const request=isTech()&&requestMode&&!editingId;
+  ["statusFieldWrap","technicianFieldWrap","assignmentReasonWrap"].forEach(id=>{
+    const el=$(id);if(el)el.style.display=request?"none":"";
+  });
+  $("requestHintWrap").style.display=request?"block":"none";
+  $("saveBtn").textContent=request?"Gửi yêu cầu":"Lưu Work Order";
+  $("modalTitle").textContent=request?"Gửi yêu cầu tạo Work Order":(editingId?$(`modalTitle`).textContent:"Tạo Work Order");
+  if(request){
+    $("statusField").value="draft";
+    $("technicianId").value="";
+  }
+}
+
+function updateWorkflowHint(){
+  const status=$("statusField").value,tech=$("technicianId").value;
+  const hints={
+    draft:"Nháp: chưa giao kỹ thuật viên.",
+    assigned:"Đã phân công: cần có kỹ thuật viên.",
+    in_progress:"Đang xử lý: cần có kỹ thuật viên.",
+    waiting_parts:"Chờ vật tư: cần có kỹ thuật viên.",
+    completed:"Hoàn thành: bắt buộc kỹ thuật viên + biện pháp xử lý + ngày hoàn thành.",
+    cancelled:"Đã hủy: Work Order dừng xử lý."
+  };
+  $("workflowHint").textContent=hints[status]||"";
+  $("completedDate").disabled=status!=="completed";
+}
+
+function applyTechnicianView(){
+  const tech=isTech();
+  const editing=Boolean(editingId);
+  const reportMode=tech&&editing;
+  const panel=$("techReportPanel");
+  if(panel) panel.style.display=reportMode?"block":"none";
+
+  // KTV không được sửa dữ liệu nguồn hoặc dữ liệu vận hành của WO.
+  // Chỉ được dùng 2 nút báo cáo ở trên.
+  const editableIds=[
+    "sourceType","sourceNote","maintenanceId","customerId","buildingId",
+    "elevatorId","contractCode","elevatorAssetCode","type","priority",
+    "issueTitle","problemDescription","statusField","technicianId",
+    "assignmentReason","openedDate","dueDate","completedDate","cause",
+    "resolution","laborCost","materialCost","totalCost","note"
+  ];
+  editableIds.forEach(id=>{
+    const el=$(id);
+    if(!el)return;
+    if(tech&&editing){
+      el.disabled=true;
+      el.readOnly=true;
+      el.classList.add("tech-readonly");
+    }else{
+      el.disabled=false;
+      el.readOnly=false;
+      el.classList.remove("tech-readonly");
+    }
+  });
+
+  $("assignmentHistory").closest(".section")?.classList.toggle("tech-hidden",tech);
+  $("saveBtn").classList.toggle("tech-hidden",reportMode);
+  $("cancelBtn").textContent=reportMode?"Đóng":"Hủy";
+}
+
+async function submitTechnicianReport(status){
+  if(!isTech()||!editingId) return;
+  const existing=workOrders.find(x=>x.id===editingId);
+  if(!existing) throw new Error("Không tìm thấy Work Order.");
+  if(String(existing.assignedTechnicianId||"")!==String(currentProfile?.technicianId||"")){
+    throw new Error("Work Order này không được phân công cho tài khoản KTV hiện tại.");
+  }
+  if(existing.status==="completed") throw new Error("Work Order đã hoàn thành và không thể báo cáo lại.");
+
+  const save=$("saveBtn");
+  save.disabled=true;
+  $("techIncompleteBtn").disabled=true;
+  $("techCompleteBtn").disabled=true;
+  $("err").className="err";
+  $("err").textContent="";
+  try{
+    const isCompleted=status==="completed";
+    if(status==="completed"){
+      await completeWorkOrderByTechnician(editingId);
+    }else{
+      await reportWorkOrderByTechnician(editingId,status);
+    }
+    close();
+    $("status").className="status ok";
+    $("status").textContent=isCompleted?"KTV đã báo cáo hoàn thành Work Order.":"KTV đã báo cáo chưa hoàn thành Work Order.";
+    void load();
+  }catch(err){
+    $("err").className="err show";
+    $("err").textContent=err?.message||String(err);
+  }finally{
+    save.disabled=false;
+    $("techIncompleteBtn").disabled=false;
+    $("techCompleteBtn").disabled=false;
+  }
+}
+
+async function resetForm(){
+  requestMode=false;editingId="";
+  window.__activeWorkOrderRequestId="";
+  $("assignmentHistory").innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';
+  $("form").reset();
+  $("openedDate").value=new Date().toISOString().slice(0,10);
+  $("statusField").value="draft";$("priority").value="normal";$("type").value="MAINTENANCE";
+  $("sourceType").value="MAINTENANCE";
+  $("laborCost").value=0;$("materialCost").value=0;$("totalCost").value=0;
+  $("completedDate").value="";
+  $("err").className="err";$("err").textContent="";
+  renderCustomers("");
+  buildings=[];elevators=[];
+  renderBuildings("");renderElevators("");
+  fillMaintenanceSelect("");
+  renderTechnicianSelect("");
+  $("sourceNote").value="";
+  $("contractCode").value="";
+  $("elevatorAssetCode").value="";
+  $("modalTitle").textContent="Tạo Work Order";
+  applySourceUI();updateWorkflowHint();applyRequestModeUI();applyTechnicianView();
+}
+
+async function openNew(){
+  await resetForm();
+  requestMode=isTech();
+  if(requestMode) $("sourceType").value="CUSTOMER_REPORT";
+  applySourceUI();applyRequestModeUI();applyTechnicianView();
+  $("modal").classList.add("show");
+}
+async function openEdit(id){
+  const w=workOrders.find(x=>x.id===id);if(!w)return;
+  requestMode=false;editingId=id;
+  $("modalTitle").textContent=`Work Order ${w.workOrderNo}`;
+
+  $("sourceType").value=w.sourceType||"OTHER";
+  $("sourceNote").value=w.sourceNote||"";
+  $("type").value=w.type||"REPAIR";$("priority").value=w.priority||"normal";
+  $("issueTitle").value=w.issueTitle||"";$("problemDescription").value=w.problemDescription||"";
+  $("statusField").value=w.status||"draft";
+  $("openedDate").value=w.openedDate||"";$("dueDate").value=w.dueDate||"";$("completedDate").value=w.completedDate||"";
+  $("cause").value=w.cause||"";$("resolution").value=w.resolution||"";
+  $("laborCost").value=w.laborCost||0;$("materialCost").value=w.materialCost||0;$("totalCost").value=w.totalCost||0;$("note").value=w.note||"";
+  $("contractCode").value=w.contractCode||"";
+  $("err").className="err";$("err").textContent="";
+
+  renderCustomers(w.customerId||"");
+  await onCustomerChange(w.buildingId||"");
+  await onBuildingChange(w.elevatorId||"");
+  $("elevatorAssetCode").value=w.elevatorAssetCode||"";
+
+  fillMaintenanceSelect(w.maintenanceId||"");
+  renderTechnicianSelect(w.assignedTechnicianId||"",w.assignedTechnicianName||"");
+  $("assignmentReason").value="";
+  updateWorkflowHint();
+
+  $("maintenanceFieldWrap").style.display=w.sourceType==="MAINTENANCE"?"block":"none";
+  $("maintenanceRequiredMark").style.display=w.sourceType==="MAINTENANCE"?"inline":"none";
+  $("maintenanceId").required=w.sourceType==="MAINTENANCE";
+
+  // Source and asset context are treated as immutable after creation.
+  $("sourceType").disabled=true;
+  $("maintenanceId").disabled=true;
+  $("customerId").disabled=true;$("buildingId").disabled=true;$("elevatorId").disabled=true;
+  $("contractCode").disabled=true;
+  $("elevatorAssetCode").disabled=false;
+
+  applyRequestModeUI();
+  applyTechnicianView();
+  $("modal").classList.add("show");
+  if(canManage()) loadAssignmentHistory(editingId);
+}
+
+function openRequest(requestId){
+  const r=workOrderRequests.find(x=>x.id===requestId);if(!r)return;
+  if(!canManage())return;
+
+  resetForm().then(async()=>{
+    requestMode=false;editingId="";
+    window.__activeWorkOrderRequestId=requestId;
+    $("modalTitle").textContent="Tạo Work Order từ yêu cầu";
+
+    $("sourceType").value=r.sourceType||"CUSTOMER_REPORT";
+    $("sourceNote").value=r.sourceNote||"";
+    $("type").value=r.type||"REPAIR";$("priority").value=r.priority||"normal";
+    $("issueTitle").value=r.issueTitle||"";$("problemDescription").value=r.problemDescription||"";
+    $("statusField").value="assigned";
+    $("openedDate").value=new Date().toISOString().slice(0,10);
+
+    renderCustomers(r.customerId||"");
+    await onCustomerChange(r.buildingId||"");
+    await onBuildingChange(r.elevatorId||"");
+    $("contractCode").value=r.contractCode||"";
+    $("elevatorAssetCode").value=r.elevatorAssetCode||"";
+
+    fillMaintenanceSelect(r.maintenanceId||"");
+    renderTechnicianSelect(r.requestedByTechnicianId||"",r.requestedByTechnicianName||"");
+    $("assignmentReason").value=`Từ yêu cầu của ${r.requestedByTechnicianName||r.requestedByTechnicianId||"KTV"}`;
+    updateWorkflowHint();
+
+    $("sourceType").disabled=true;
+    $("maintenanceId").disabled=true;
+    $("customerId").disabled=true;$("buildingId").disabled=true;$("elevatorId").disabled=true;
+    $("contractCode").disabled=true;
+
+    applyRequestModeUI();
+    $("modal").classList.add("show");
+  });
+}
+
+function close(){
+  $("modal").classList.remove("show");
+  if($("techReportPanel")) $("techReportPanel").style.display="none";
+  requestMode=false;window.__activeWorkOrderRequestId="";
+}
+
+async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
+  await addDoc(collection(db,"auditLogs"),{
+    action:fromTechnicianId?"TECHNICIAN_REASSIGNED":"TECHNICIAN_ASSIGNED",
+    entityType,entityId,
+    fromTechnicianId:fromTechnicianId||"",fromTechnicianName:fromTechnicianName||"",
+    toTechnicianId:toTechnicianId||"",toTechnicianName:toTechnicianName||"",
+    reason:String(reason||"").trim()||"Phân công ban đầu",
+    performedByUid:authUser?.uid||"",performedByName:currentActorName(),
+    createdAt:serverTimestamp()
+  });
+}
+function formatAuditTime(value){return formatTime(value);}
+async function loadAssignmentHistory(entityId){
+  const box=$("assignmentHistory");if(!box)return;
+  if(!entityId||!canManage()){box.innerHTML='<div class="audit-empty">Lịch sử phân công chỉ hiển thị cho quản lý.</div>';return;}
+  box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
+  try{
+    const snap=await getDocs(query(collection(db,"auditLogs"),where("entityType","==","workOrder"),where("entityId","==",String(entityId))));
+    const items=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)).slice(0,10);
+    if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return;}
+    box.innerHTML=items.map(x=>{
+      const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
+      return `<div class="audit-item"><div class="audit-top"><div class="audit-action">${esc(action)}</div><div class="audit-time">${esc(formatAuditTime(x.createdAt))}</div></div><div class="audit-meta"><span>Từ:</span> ${esc(x.fromTechnicianName||"Chưa phân công")}<br><span>Sang:</span> ${esc(x.toTechnicianName||"Chưa phân công")}<br><span>Người thực hiện:</span> ${esc(x.performedByName||x.performedByUid||"—")}<br><span>Lý do:</span> ${esc(x.reason||"—")}</div></div>`;
+    }).join("");
+  }catch(err){console.error(err);box.innerHTML='<div class="audit-empty">Không thể tải lịch sử phân công.</div>';}
+}
+
+function renderRequests(){
+  const panel=$("requestPanel");if(!panel)return;
+  const visible=canManage();
+  panel.style.display=visible?"block":"none";
+  if(!visible)return;
+
+  const pending=workOrderRequests.filter(r=>String(r.status||"").toUpperCase()==="PENDING");
+  $("requestCount").textContent=`${pending.length} chờ xử lý`;
+  $("requestEmpty").style.display=pending.length?"none":"block";
+  $("requestRows").innerHTML=pending.length?pending.map(r=>`<tr>
+    <td>${esc(formatTime(r.requestedAt||r.createdAt))}</td>
+    <td><strong>${esc(r.maintenanceTicketNo||"—")}</strong><div>${esc(r.customerName||"—")}</div><div class="muted">${esc(r.buildingName||"")}</div></td>
+    <td><strong>${esc(r.elevatorName||"—")}</strong><div class="muted">${esc(r.elevatorAssetCode||"")}</div></td>
+    <td><strong>${esc(r.issueTitle||"—")}</strong><div class="muted">${esc(r.problemDescription||"").slice(0,120)}</div></td>
+    <td>${badgePriority(r.priority||"normal")}</td>
+    <td>${esc(r.requestedByTechnicianName||r.requestedByName||r.requestedByTechnicianId||"—")}</td>
+    <td><span class="badge gold">Chờ xử lý</span></td>
+    <td><button class="btn" data-request-open="${esc(r.id)}">Xem / tạo WO</button></td>
+  </tr>`).join(""):"";
+  root.querySelectorAll("[data-request-open]").forEach(b=>b.onclick=()=>openRequest(b.dataset.requestOpen));
+}
+
+async function loadWorkOrderRequests(){
+  if(!canManage()){workOrderRequests=[];renderRequests();return;}
+  try{
+    const snap=await getDocs(collection(db,"workOrderRequests"));
+    workOrderRequests=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(r=>String(r.status||"").toUpperCase()==="PENDING")
+      .sort((a,b)=>(b.requestedAt?.toMillis?.()||b.createdAt?.toMillis?.()||0)-(a.requestedAt?.toMillis?.()||a.createdAt?.toMillis?.()||0));
+  }catch(err){console.error("WORK ORDER REQUEST LOAD ERROR:",err);workOrderRequests=[];}
+  renderRequests();
+}
+
+async function createWorkOrderRequest(){
+  const sourceType=$("sourceType").value;
+  const customer=selectedCustomer(),building=selectedBuilding(),elevator=selectedElevator();
+  if(!customer||!building||!elevator)throw new Error("Khách hàng, tòa nhà và thang máy là bắt buộc.");
+
+  const maintenanceId=sourceType==="MAINTENANCE"?$("maintenanceId").value:"";
+  if(sourceType==="MAINTENANCE"&&!maintenanceId)throw new Error("Nguồn Phiếu bảo trì bắt buộc chọn phiếu bảo trì.");
+
+  const title=$("issueTitle").value.trim(),description=$("problemDescription").value.trim();
+  if(!title)throw new Error("Tiêu đề công việc là bắt buộc.");
+  if(!description)throw new Error("Mô tả vấn đề là bắt buộc.");
+
+  const technicianId=String(currentProfile?.technicianId||"").trim();
+  if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+
+  const maintenance=maintenances.find(x=>String(x.id)===String(maintenanceId));
+  await addDoc(collection(db,"workOrderRequests"),{
+    requestNo:`REQ-${Date.now()}`,
+    sourceType,
+    sourceNote:$("sourceNote").value.trim(),
+    customerId:customer.id,buildingId:building.id,elevatorId:elevator.id,
+    contractId:maintenance?.contractId||"",
+    maintenanceId,
+    type:$("type").value||"REPAIR",
+    priority:$("priority").value||"normal",
+    issueTitle:title,problemDescription:description,
+    requestedByUid:authUser?.uid||"",
+    requestedByName:currentActorName(),
+    requestedByTechnicianId:technicianId,
+    requestedAt:serverTimestamp(),
+    status:"PENDING",
+    createdAt:serverTimestamp(),
+    updatedAt:serverTimestamp()
+  });
+}
+
+$("newBtn").onclick=()=>openNew().catch(e=>console.error(e));
+$("techIncompleteBtn").onclick=()=>submitTechnicianReport("in_progress");
+$("techCompleteBtn").onclick=()=>submitTechnicianReport("completed");
+$("closeBtn").onclick=close;$("cancelBtn").onclick=close;
+$("sourceType").onchange=async()=>{if(!editingId){applySourceUI();if($("sourceType").value==="MAINTENANCE")await applyMaintenanceSelection();}};
+$("maintenanceId").onchange=()=>applyMaintenanceSelection().catch(e=>showError(e));
+$("customerId").onchange=()=>onCustomerChange().catch(e=>showError(e));
+$("buildingId").onchange=()=>onBuildingChange().catch(e=>showError(e));
+$("elevatorId").onchange=updateReference;
+$("statusField").onchange=updateWorkflowHint;
+$("technicianId").onchange=updateWorkflowHint;
+["search","filterStatus","filterPriority"].forEach(id=>$(id).oninput=render);
+
+function showError(err){$("err").className="err show";$("err").textContent=err?.message||String(err);}
+
+$("form").onsubmit=async e=>{
+  e.preventDefault();
+  $("saveBtn").disabled=true;$("saveBtn").textContent=requestMode?"Đang gửi…":"Đang lưu…";
+  $("err").className="err";$("err").textContent="";
+
+  try{
+    if(isTech()&&editingId){
+      throw new Error("KTV chỉ được báo cáo bằng nút Chưa hoàn thành hoặc Đã hoàn thành.");
+    }
+    if(isTech()&&requestMode&&!editingId){
+      await createWorkOrderRequest();
+      close();
+      $("status").className="status ok";
+      $("status").textContent="Đã gửi yêu cầu tạo Work Order cho ADMIN/MANAGER.";
+      void load();
+      return;
+    }
+
+    const existing=editingId?workOrders.find(x=>x.id===editingId):null;
+    const selectedTech=findTechnician($("technicianId").value);
+    const newTechnicianId=$("technicianId").value||"";
+    const newTechnicianName=selectedTech?.name||"";
+    const oldTechnicianId=existing?.assignedTechnicianId||"";
+    const oldTechnicianName=existing?.assignedTechnicianName||"";
+
+    if(!canManage()&&editingId&&newTechnicianId!==String(oldTechnicianId||"")){
+      throw new Error("Bạn không có quyền phân công hoặc thay đổi kỹ thuật viên.");
+    }
+    if(isTech()&&!editingId)throw new Error("Kỹ thuật viên không được tạo Work Order trực tiếp.");
+
+    const assignmentChanged=newTechnicianId!==String(oldTechnicianId||"");
+    const assignmentReason=$("assignmentReason").value.trim();
+    if(assignmentChanged&&editingId&&!assignmentReason)throw new Error("Khi thay đổi kỹ thuật viên phải nhập lý do.");
+
+    const customer=selectedCustomer(),building=selectedBuilding(),elevator=selectedElevator();
+    const sourceType=existing?.sourceType||$("sourceType").value;
+
+    if(!existing&&(!customer||!building||!elevator))throw new Error("Khách hàng, tòa nhà và thang máy là bắt buộc.");
+    if(sourceType==="MAINTENANCE"&&!$("maintenanceId").value)throw new Error("Nguồn Phiếu bảo trì bắt buộc chọn phiếu bảo trì.");
+
+    const data={
+      sourceType,
+      sourceNote:$("sourceNote").value,
+      maintenanceId:$("maintenanceId").value,
+      maintenanceTicketNo:maintenances.find(m=>String(m.id)===String($("maintenanceId").value))?.ticketNo||existing?.maintenanceTicketNo||"",
+      customerId:existing?.customerId||customer?.id||"",
+      customerName:existing?.customerName||customer?.name||customer?.customerName||"",
+      buildingId:existing?.buildingId||building?.id||"",
+      buildingName:existing?.buildingName||building?.name||building?.buildingName||"",
+      elevatorId:existing?.elevatorId||elevator?.id||"",
+      elevatorName:existing?.elevatorName||elevator?.name||elevator?.elevatorName||"",
+      elevatorAssetCode:existing?.elevatorAssetCode||elevator?.assetCode||elevator?.elevatorAssetCode||"",
+      contractId:existing?.contractId||"",
+      contractCode:$("contractCode").value,
+      type:$("type").value,priority:$("priority").value,status:$("statusField").value,
+      issueTitle:$("issueTitle").value,problemDescription:$("problemDescription").value,
+      assignedTechnicianId:newTechnicianId,assignedTechnicianName:newTechnicianName,
+      openedDate:$("openedDate").value,dueDate:$("dueDate").value,completedDate:$("completedDate").value,
+      cause:$("cause").value,resolution:$("resolution").value,
+      laborCost:Number($("laborCost").value||0),materialCost:Number($("materialCost").value||0),
+      totalCost:Number($("totalCost").value||0),note:$("note").value,
+      createdByUid:authUser?.uid||"",createdByName:currentActorName()
+    };
+
+    if(!data.issueTitle.trim())throw new Error("Tiêu đề công việc là bắt buộc.");
+    if(!data.problemDescription.trim())throw new Error("Mô tả vấn đề là bắt buộc.");
+    if(["assigned","in_progress","waiting_parts","completed"].includes(data.status)&&!data.assignedTechnicianId)throw new Error("Trạng thái này bắt buộc phải có kỹ thuật viên.");
+    if(data.status==="completed"&&!data.resolution.trim())throw new Error("Muốn hoàn thành phải nhập Biện pháp xử lý.");
+    if(data.status==="completed"&&!data.completedDate)throw new Error("Muốn hoàn thành phải có Ngày hoàn thành.");
+
+    let created=null;
+    if(editingId){
+      await updateWorkOrder(editingId,data);
+    }else{
+      created=await createWorkOrder(data);
+    }
+
+    // Các ghi log / cập nhật request không nên làm người dùng phải chờ
+    // toàn bộ danh sách Work Order tải lại trước khi thấy kết quả lưu.
+    const postSaveTasks=[];
+    const activeRequestId=window.__activeWorkOrderRequestId||"";
+    if(activeRequestId&&created?.id){
+      postSaveTasks.push(
+        updateDoc(doc(db,"workOrderRequests",activeRequestId),{
+          status:"CONVERTED",createdWorkOrderId:created.id,createdWorkOrderNo:created.workOrderNo||"",
+          processedByUid:authUser?.uid||"",processedAt:serverTimestamp(),updatedAt:serverTimestamp()
+        })
+      );
+    }
+    if(assignmentChanged&&(created?.id||editingId)){
+      postSaveTasks.push(
+        writeTechnicianAssignmentAudit({
+          entityType:"workOrder",entityId:created?.id||editingId,
+          fromTechnicianId:editingId?oldTechnicianId:"",fromTechnicianName:editingId?oldTechnicianName:"",
+          toTechnicianId:newTechnicianId,toTechnicianName:newTechnicianName,
+          reason:assignmentReason
+        })
+      );
+    }
+    if(postSaveTasks.length) await Promise.all(postSaveTasks);
+    window.__activeWorkOrderRequestId="";
+
+    close();
+    $("status").className="status ok";
+    $("status").textContent="Đã lưu Work Order.";
+    // Tải lại danh sách ở background, không giữ nút Lưu ở trạng thái chờ.
+    void load();
+  }catch(err){
+    $("err").className="err show";$("err").textContent=err?.message||String(err);
+  }finally{
+    $("saveBtn").disabled=false;$("saveBtn").textContent=requestMode?"Gửi yêu cầu":"Lưu Work Order";
+  }
+};
+
+async function load(){
+  $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
+  try{
+    if(isTech()){
+      const technicianId=String(currentProfile?.technicianId||"").trim();
+      if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
+      const ownPromise=getTechnician(technicianId);
+      const dataPromise=Promise.all([
+        getCustomers(),
+        getMaintenances({technicianId}),
+        getWorkOrders({technicianId})
+      ]);
+      const [own,[customerData,maintenanceData,workOrderData]]=await Promise.all([ownPromise,dataPromise]);
+      if(!own)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
+      customers=customerData;maintenances=maintenanceData;workOrders=workOrderData;technicians=[own];
+    }else{
+      [customers,maintenances,workOrders,technicians]=await Promise.all([
+        getCustomers(),getMaintenances(),getWorkOrders(),getTechnicians()
+      ]);
+    }
+
+    maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
+    workOrders.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+    render();
+    void loadWorkOrderRequests();
+    $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${customers.length} khách hàng`;
+  }catch(err){
+    $("status").className="status error";$("status").textContent=err?.message||String(err);
+  }
+}
+
+  // Dashboard App Shell đã xác thực Firebase trước khi mount module.
+  authUser = auth?.currentUser || null;
+  if (!authUser) {
+    const status = $("status");
+    if (status) {
+      status.className = "status error";
+      status.textContent = "Chưa đăng nhập Firebase.";
+    }
+    return;
+  }
+
+  try {
+    currentProfile = null;
+    const snap = await getDoc(doc(db, "users", authUser.uid));
+    currentProfile = snap.exists() ? snap.data() : null;
+    if (!currentProfile) throw new Error("Không tồn tại users/{uid}.");
+
+    const tech = isTech();
+    $("newBtn").textContent = tech ? "＋ Gửi yêu cầu tạo Work Order" : "＋ Tạo Work Order";
+    await load();
+  } catch (err) {
+    console.error("WORK ORDER MODULE LOAD ERROR:", err);
+    const status = $("status");
+    if (status) {
+      status.className = "status error";
+      status.textContent = err?.message || "Không tải được dữ liệu.";
+    }
+  }
+
+  root.__workOrderCleanup = () => {
+    // Module hiện không đăng ký auth listener toàn cục.
+    // Giữ hook để App Shell có thể cleanup khi chuyển module.
+  };
+}
