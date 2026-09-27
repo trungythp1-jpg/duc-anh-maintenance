@@ -1,5 +1,5 @@
-/* ĐỨC ANH MAINTENANCE — MAINTENANCE MODULE V1.0
- * Source of truth: maintenance-v1.26-ktv-create-maintenance
+/* ĐỨC ANH MAINTENANCE — MAINTENANCE MODULE V1.1
+ * Source of truth: current maintenance-module-v1.0.js; App Shell architecture lock
  * App Shell mount only. No standalone navigation/sidebar.
  */
 
@@ -157,28 +157,6 @@ maintenanceStyle.textContent = `
 #maintenance-module-root .statusline.error{color:#ff8176!important}
 #maintenance-module-root .statusline.ok{color:#75dda5!important}
 
-#maintenance-module-root .permission-panel{
-  display:none;
-  margin:0 14px 14px;
-  padding:14px;
-  border:1px solid #6c302c!important;
-  background:#17100f!important;
-  border-radius:12px;
-  color:var(--da-text)!important
-}
-#maintenance-module-root .permission-panel.show{display:block}
-#maintenance-module-root .permission-panel h3{margin:0 0 8px;color:#ff9a90!important}
-#maintenance-module-root .diag-user{margin-bottom:10px;color:var(--da-muted)!important;word-break:break-word}
-#maintenance-module-root .permission-list{display:grid;gap:7px}
-#maintenance-module-root .permission-row{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:8px 10px;background:#11110f!important;
-  border:1px solid #302c25!important;border-radius:8px;font-size:13px
-}
-#maintenance-module-root .permission-row .ok{color:#75dda5!important;font-weight:700}
-#maintenance-module-root .permission-row .fail{color:#ff8176!important;font-weight:700}
-#maintenance-module-root .permission-row .detail{font-size:11px;color:var(--da-muted)!important;text-align:right;max-width:60%;word-break:break-word}
-
 #maintenance-module-root .modal{
   position:fixed;inset:0;
   background:rgba(0,0,0,.76)!important;
@@ -328,9 +306,11 @@ select, #maintenance-module-root input, #maintenance-module-root textarea{color-
 }
 `;
 
-import { auth } from "../core/firebase.js?v=20260927-maintenance-auth-shared";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw,getTechnician,getTechnicians,updateMaintenanceByTechnician } from "../core/firestore-v1-maintenance-runtime-v1.2.js?v=20260927-maintenance-runtime-v12";
+import { doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { auth, db } from "../core/firebase.js";
+import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry } from "../core/firestore-v1.js?v=5";
+import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
 
 export async function mountMaintenanceModule(root) {
   if (!root) throw new Error("MAINTENANCE_MODULE_ROOT_MISSING");
@@ -359,11 +339,6 @@ export async function mountMaintenanceModule(root) {
 
   <div class="card">
     <div class="statusline" id="pageStatus">Đang tải… · Danh sách sắp xếp theo số phiếu PBM mới nhất</div>
-    <div class="permission-panel" id="permissionPanel">
-      <h3>Kiểm tra đăng nhập & quyền Firestore</h3>
-      <div class="diag-user" id="diagUser">Đang kiểm tra…</div>
-      <div class="permission-list" id="permissionList"></div>
-    </div>
     <div class="table-wrap" style="border-top:1px solid #302b23"><table class="data-table"><thead><tr><th>Phiếu / KTV</th><th>Khách hàng / Tòa nhà</th><th>Thang máy / Mã thang</th><th>Hợp đồng / Kỳ</th><th>Ngày dự kiến</th><th>Trạng thái</th><th>Kết quả</th><th>Work Order</th><th>Thao tác</th></tr></thead><tbody id="rows"></tbody></table></div>
     <div class="pagination" id="pagination" style="display:none"><div class="pagination-info" id="paginationInfo">—</div><div class="pagination-actions"><button class="btn" id="prevPage" type="button">‹ Trước</button><button class="btn" id="nextPage" type="button">Sau ›</button></div></div>
     <div class="empty" id="empty">Chưa có phiếu bảo trì.</div>
@@ -562,7 +537,7 @@ function applyTechnicianScopeUI(){
   }
 }
 async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicianId,fromTechnicianName,toTechnicianId,toTechnicianName,reason}){
-  await createAuditLog({
+  await addDoc(collection(db,"auditLogs"),{
     action:fromTechnicianId?"TECHNICIAN_REASSIGNED":"TECHNICIAN_ASSIGNED",
     entityType,
     entityId,
@@ -572,7 +547,8 @@ async function writeTechnicianAssignmentAudit({entityType,entityId,fromTechnicia
     toTechnicianName:toTechnicianName||"",
     reason:String(reason||"").trim()||"Phân công ban đầu",
     performedByUid:authUser?.uid||"",
-    performedByName:currentActorName()
+    performedByName:currentActorName(),
+    createdAt:serverTimestamp()
   });
 }
 
@@ -590,7 +566,11 @@ async function loadAssignmentHistory(entityId){
   if(!entityId){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
   box.innerHTML='<div class="audit-empty">Đang tải lịch sử…</div>';
   try{
-    const items=await getMaintenanceAuditHistory(entityId);
+    const snap=await getDocs(collection(db,"auditLogs"));
+    const items=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(x=>String(x.entityType||"")==="maintenance"&&String(x.entityId||"")===String(entityId))
+      .sort((a,b)=>{const aa=a.createdAt?.toMillis?.()||0,bb=b.createdAt?.toMillis?.()||0;return bb-aa})
+      .slice(0,3);
     if(!items.length){box.innerHTML='<div class="audit-empty">Chưa có lịch sử phân công.</div>';return}
     box.innerHTML=items.map(x=>{
       const action=x.action==="TECHNICIAN_REASSIGNED"?"Đổi kỹ thuật viên":"Phân công kỹ thuật viên";
@@ -859,9 +839,10 @@ if(editingId){
       condition:payload.condition,
       result:payload.result,
       issueFound:payload.issueFound,
-      note:payload.note
+      note:payload.note,
+      updatedAt:serverTimestamp()
     };
-    await updateMaintenanceByTechnician(editingId,technicianPayload);
+    await updateDoc(doc(db,"maintenance",editingId),technicianPayload);
   }else{
     await updateMaintenance(editingId,payload);
   }
@@ -882,44 +863,12 @@ if(assignmentChanged && (newTechnicianId || oldTechnicianId) && savedMaintenance
 }
 const wasEditing=Boolean(editingId);await loadData();closeModal();setStatus(wasEditing?"Đã cập nhật phiếu bảo trì.":"Đã tạo phiếu bảo trì.","ok")}catch(err){console.error(err);setError(err?.message||"Không thể lưu phiếu bảo trì.")}finally{btn.disabled=false;btn.textContent="Lưu phiếu"}});
 
-async function runPermissionDiagnostics(user){
-  const panel=$("permissionPanel"), list=$("permissionList"), userEl=$("diagUser");
-  panel.classList.remove("show");
-  list.innerHTML="";
-  userEl.textContent=user?`Auth: ĐÃ ĐĂNG NHẬP · UID: ${user.uid}`:"Auth: CHƯA ĐĂNG NHẬP";
-  if(!user){panel.classList.add("show");return false}
-
-  const checks=[];
-  async function check(name,fn){
-    try{const value=await fn();checks.push({name,ok:true,detail:Array.isArray(value)?`OK · ${value.length} bản ghi`:"OK"});return value}
-    catch(err){const code=err?.code||"unknown";const msg=err?.message||String(err);checks.push({name,ok:false,detail:`${code}: ${msg}`});return null}
-  }
-
-  const profile=await check("users/{uid} · role",async()=>{const profileData=await getUserProfile(user.uid);if(!profileData)throw new Error("Không tồn tại users/{uid}");const role=profileData?.role||"(trống)";userEl.textContent+=` · Firestore role: ${role}`;currentProfile=profileData;return profileData});
-  const c=await check("customers",getCustomers);
-  const b=await check("buildings",getBuildings);
-  const e=await check("elevators",getElevators);
-  const ct=await check("contracts",getContracts);
-  const m=await check("maintenance",async()=>{
-    if(currentRole()==="TECHNICIAN") {
-      const technicianId=String(currentProfile?.technicianId||"").trim();
-      if(!technicianId) throw new Error("Tài khoản TECHNICIAN chưa có technicianId.");
-      return getMaintenances({ technicianId });
-    }
-    return getMaintenances();
-  });
-
-  list.innerHTML=checks.map(x=>`<div class="permission-row"><span>${esc(x.name)}</span><span class="${x.ok?"ok":"fail"}">${x.ok?"✓ OK":"✕ LỖI"}</span><span class="detail">${esc(x.detail)}</span></div>`).join("");
-  const failed=checks.some(x=>!x.ok);
-  if(failed)panel.classList.add("show");
-  return {profile,customers:c,buildings:b,elevators:e,contracts:ct,maintenances:m,failed};
-}
 
 async function loadData(){
   setStatus("Đang tải dữ liệu…");
-  const profileData=await getUserProfile(authUser.uid);
-  if(!profileData) throw new Error("Không tồn tại users/{uid}.");
-  currentProfile=profileData||{};
+  const profileSnap=await getDoc(doc(db,"users",authUser.uid));
+  if(!profileSnap.exists()) throw new Error("Không tồn tại users/{uid}.");
+  currentProfile=profileSnap.data()||{};
 
   const role=currentRole();
   const technicianId=String(currentProfile?.technicianId||"").trim();
@@ -956,39 +905,22 @@ async function loadData(){
   setStatus(`Đã tải ${maintenances.length} phiếu · ${contracts.filter(contractEnabled).length} hợp đồng có bảo trì · ${technicians.filter(x=>String(x.status||"active")==="active").length} KTV đang làm`,"");
 }
 
-  /*
-   * AUTH CHẠY NỀN — KHÔNG HIỂN THỊ AUTH GATE.
-   * Dùng đúng auth instance của /js/core/firebase.js để Firestore Rules
-   * nhận cùng phiên đăng nhập của App Shell/Dashboard.
-   */
-  authUser=auth?.currentUser||null;
-  currentProfile=null;
+  // App Shell đã xác thực Firebase/Auth trước khi mount module.
+  // Module chỉ sử dụng session hiện tại, không tự tạo auth listener/gate riêng.
+  authUser = auth?.currentUser || null;
+  renderChecklist();
 
-  const loadForUser=async(user)=>{
-    authUser=user||null;
-    if(!user){
-      setStatus("Chưa có phiên đăng nhập Firebase — dữ liệu chưa được tải.","error");
-      return;
-    }
-    try{
+  if (!authUser) {
+    setStatus("Chưa có phiên đăng nhập Firebase.","error");
+  } else {
+    try {
       await loadData();
-    }catch(err){
-      console.error("MAINTENANCE DATA LOAD ERROR:",err);
-      setStatus(err?.message||"Không tải được dữ liệu Firebase.","error");
+    } catch (err) {
+      console.error("MAINTENANCE LOAD ERROR:", err);
+      setStatus(err?.message || "Không tải được dữ liệu Firebase.","error");
     }
-  };
-
-  try{
-    if(typeof auth?.authStateReady==="function") await auth.authStateReady();
-    await loadForUser(auth?.currentUser||null);
-    const unsubscribe=onAuthStateChanged(auth,user=>{ void loadForUser(user); });
-    cleanup.push(unsubscribe);
-  }catch(err){
-    console.error("MAINTENANCE AUTH BACKGROUND ERROR:",err);
-    setStatus(err?.message||"Không thể khởi tạo phiên Firebase.","error");
   }
 
-  renderChecklist();
   root.__maintenanceCleanup = () => {
     cleanup.forEach(fn => { try { if (typeof fn === "function") fn(); } catch {} });
     if (document.body) document.body.style.overflow="";
