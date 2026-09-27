@@ -348,7 +348,7 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </style>
 
 </head>
-<body data-maintenance-build="v1.30-unified-data-layer">
+<body data-maintenance-build="v1.31-bootstrap-fix">
 <div class="auth-gate" id="authGate"><div class="auth-box"><h2>Đức Anh Maintenance</h2><div class="muted">Đang xác thực phiên đăng nhập Firebase…</div></div></div>
 <header class="app-header"><div class="brand">Đức Anh Maintenance</div></header>
 <main class="page">
@@ -423,8 +423,38 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--da-gold)}
 </div>
 
 <script type="module">
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { auth } from "./js/core/firebase.js";
+import {
+  initializeApp as initializeFirebaseApp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+async function loadMaintenanceFirebaseConfig(){
+  const response = await fetch("./js/core/firebase.js?v=20260927-maintenance-auth", {cache:"no-store"});
+  if(!response.ok){
+    throw new Error(`Không đọc được /js/core/firebase.js (HTTP ${response.status}).`);
+  }
+  const source = await response.text();
+  let match = source.match(/(?:export\s+)?const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
+  if(!match){
+    match = source.match(/initializeApp\s*\(\s*(\{[\s\S]*?\})\s*\)/);
+  }
+  if(!match) throw new Error("Không tìm thấy firebaseConfig trong /js/core/firebase.js.");
+  let config;
+  try{
+    config=Function(`"use strict"; return (${match[1]});`)();
+  }catch(error){
+    throw new Error("firebaseConfig không hợp lệ: " + (error?.message || error));
+  }
+  const required=["apiKey","authDomain","projectId","appId"];
+  const missing=required.filter(key=>!config?.[key]);
+  if(missing.length) throw new Error("firebaseConfig thiếu: " + missing.join(", "));
+  return config;
+}
+
+let auth=null;
 import { getCustomers,getBuildings,getElevators,getContracts,getMaintenances,createMaintenance,updateMaintenance,reportMaintenanceCompletion,confirmMaintenanceByCSKH,confirmMaintenanceAfterExpiry,getUserProfile,createAuditLog,getMaintenanceAuditHistory,updateMaintenanceRecordRaw } from "./js/core/firestore-v1.js?v=20260927-maintenance-unified-data";
 import { getTechnician, getTechnicians } from "./js/core/firestore-v1-technician-v1.js";
 
@@ -1007,10 +1037,13 @@ async function handleAuthUser(user){
 async function bootstrapAuth(){
   try{
     /*
-     * Firebase Auth cần hoàn tất việc khôi phục phiên trước khi đọc currentUser.
-     * authStateReady() tránh trường hợp trang đứng mãi ở "Đang xác thực phiên..."
-     * dù phiên đăng nhập Firebase đã tồn tại.
+     * Không phụ thuộc export auth từ ./js/core/firebase.js.
+     * Khởi tạo Auth từ cùng firebaseConfig bằng chính Firebase Auth SDK.
      */
+    const config=await loadMaintenanceFirebaseConfig();
+    const app=initializeFirebaseApp(config,"duc-anh-maintenance-page-v1");
+    auth=getAuth(app);
+
     if(typeof auth?.authStateReady==="function"){
       await auth.authStateReady();
     }
