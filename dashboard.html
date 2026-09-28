@@ -212,7 +212,7 @@ body.dashboard-auth-pending::before{
         ▤ <span>Hợp đồng</span>
       </a>
 
-      <a class="nav-item" href="maintenance.html">
+      <a class="nav-item" href="#maintenance" data-app-module="maintenance">
         ◷ <span>Bảo trì</span>
       </a>
 
@@ -600,7 +600,7 @@ body.dashboard-auth-pending::before{
           <button
             class="text-button"
             type="button"
-            data-href="buildings.html">
+            data-app-module="buildings">
             Xem tất cả →
           </button>
 
@@ -1109,7 +1109,7 @@ function renderBuildings() {
         <button
           class="text-button"
           type="button"
-          data-href="buildings.html">
+          data-app-module="buildings">
           Mở
         </button>
 
@@ -1165,7 +1165,7 @@ function renderLatestElevators() {
       elevatorStatusLabel(elevator.status);
 
     return `
-      <div class="work-row" role="button" tabindex="0" data-href="elevators.html?id=${encodeURIComponent(elevator.id)}" title="Mở hồ sơ thang máy">
+      <div class="work-row" role="button" tabindex="0" data-app-module="elevators" title="Mở danh sách thang máy">
 
         <time>↕</time>
         <i></i>
@@ -1744,8 +1744,6 @@ document.addEventListener("keydown", event => {
 
 const pendingModules = [
 
-  "contracts",
-  "maintenance",
   "work-orders",
   "technicians",
   "kpi",
@@ -1775,10 +1773,12 @@ document.querySelectorAll(
 
       alert(
         "Module này đang trong quá trình xây dựng.\n\n" +
-        "Dashboard hiện đã liên kết:\n" +
+        "Dashboard hiện đã liên kết App Shell:\n" +
         "• Khách hàng\n" +
         "• Tòa nhà\n" +
-        "• Thang máy"
+        "• Thang máy\n" +
+        "• Hợp đồng\n" +
+        "• Bảo trì"
       );
 
     }
@@ -1825,6 +1825,9 @@ import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
+import { mountMaintenanceModule } from "./js/modules/maintenance-module-v1.0.js";
+import { auth } from "./js/core/firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -2015,6 +2018,70 @@ async function showContracts() {
   }
 }
 
+async function waitForFirebaseUser() {
+  if (auth?.currentUser) return auth.currentUser;
+
+  if (!auth) return null;
+
+  return await new Promise(resolve => {
+    let settled = false;
+    let unsubscribe = null;
+
+    const finish = user => {
+      if (settled) return;
+      settled = true;
+      try { unsubscribe?.(); } catch {}
+      resolve(user || null);
+    };
+
+    unsubscribe = onAuthStateChanged(auth, finish);
+  });
+}
+
+async function showMaintenance() {
+  if (!appContent || !dashboardHome) return;
+
+  // App Shell có thể route rất sớm, trước khi Firebase Auth hoàn tất.
+  // Chờ session hiện tại rồi mới mount Maintenance để module nhận đúng auth.currentUser.
+  await waitForFirebaseUser();
+
+  currentModule = "maintenance";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("maintenance");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Bảo trì...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountMaintenanceModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL MAINTENANCE MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Bảo trì</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -2030,6 +2097,8 @@ async function route() {
       await showElevators();
     } else if (hash === "contracts") {
       await showContracts();
+    } else if (hash === "maintenance") {
+      await showMaintenance();
     } else {
       showDashboard();
     }
@@ -2047,7 +2116,8 @@ document.addEventListener("click", event => {
     moduleName !== "customers" &&
     moduleName !== "buildings" &&
     moduleName !== "elevators" &&
-    moduleName !== "contracts"
+    moduleName !== "contracts" &&
+    moduleName !== "maintenance"
   ) return;
 
   event.preventDefault();
