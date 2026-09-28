@@ -1870,8 +1870,6 @@ import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
-import { mountTechnicianModule } from "./js/modules/technician-module-v1.0.js";
-import { mountKpiModule } from "./js/modules/kpi-module-v1.0.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -2173,6 +2171,7 @@ async function showTechnicians() {
   `;
 
   try {
+    const { mountTechnicianModule } = await import("./js/modules/technician-module-v1.0.js");
     await mountTechnicianModule(appContent);
   } catch (error) {
     console.error("APP SHELL TECHNICIAN MODULE ERROR:", error);
@@ -2213,6 +2212,7 @@ async function showKpi() {
   `;
 
   try {
+    const { mountKpiModule } = await import("./js/modules/kpi-module-v1.0.js");
     await mountKpiModule(appContent);
   } catch (error) {
     console.error("APP SHELL KPI MODULE ERROR:", error);
