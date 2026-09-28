@@ -1,5 +1,5 @@
-/* ĐỨC ANH MAINTENANCE — WORK ORDER MODULE V1.15
- * Source of truth: current work-orders-v1.14-auth-core-fix
+/* ĐỨC ANH MAINTENANCE — WORK ORDER MODULE V1.17
+ * Source of truth: current Work Order DEBUG V1.17 supplied by user
  * App Shell mount only. Dashboard owns Auth/route.
  */
 
@@ -15,7 +15,7 @@ import {
   updateWorkOrder,
   reportWorkOrderByTechnician,
   completeWorkOrderByTechnician
-} from "../core/firestore-v1.js?v=wo2.2";
+} from "../core/firestore-v1.js?v=wo2.2-debug-1.17";
 import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
 
 export async function mountWorkOrderModule(root) {
@@ -97,7 +97,7 @@ export async function mountWorkOrderModule(root) {
   <div class="head">
     <div>
       <h1>Phiếu công việc</h1>
-      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.</div>
+      <div class="sub">Quản lý Work Order độc lập theo từng nguồn công việc.<div style="font-size:11px;color:#d6a84f;margin-top:4px">BUILD DEBUG V1.17 — DYNAMIC IMPORT TRACE</div></div>
     </div>
     <button class="btn primary" id="newBtn">＋ Tạo Work Order</button>
   </div>
@@ -901,41 +901,82 @@ $("form").onsubmit=async e=>{
   }
 };
 
+function withTimeout(promise,label,ms=12000){
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error(`${label}: không phản hồi sau ${Math.round(ms/1000)} giây.`)),ms))
+  ]);
+}
+
 async function load(){
-  $("status").className="status";$("status").textContent="Đang tải dữ liệu…";
+  $("status").className="status";
+  $("status").textContent="DEBUG V1.17 — bắt đầu tải dữ liệu…";
+
+  const step=(message,cls="status")=>{
+    const el=$("status");
+    if(el){el.className=cls;el.textContent=message;}
+    console.log("[WO DEBUG]",message);
+  };
+
   try{
     if(isTech()){
       const technicianId=String(currentProfile?.technicianId||"").trim();
-      if(!technicianId)throw new Error("Tài khoản TECHNICIAN chưa được liên kết technicianId trong users/{uid}.");
-      const ownPromise=getTechnician(technicianId);
-      const dataPromise=Promise.all([
-        getCustomers(),
-        getMaintenances({technicianId}),
-        getWorkOrders({technicianId})
-      ]);
-      const [own,[customerData,maintenanceData,workOrderData]]=await Promise.all([ownPromise,dataPromise]);
-      if(!own)throw new Error(`Không tìm thấy hồ sơ kỹ thuật viên ${technicianId}.`);
-      customers=customerData;maintenances=maintenanceData;workOrders=workOrderData;technicians=[own];
+      if(!technicianId)throw new Error("BƯỚC PROFILE: users/{uid} không có technicianId.");
+
+      step(`DEBUG 1/4 — KTV: đang đọc technicians/${technicianId}…`);
+      const own=await withTimeout(getTechnician(technicianId),"KTV",10000);
+      if(!own)throw new Error(`DEBUG 1/4 — Không tìm thấy technicians/${technicianId}.`);
+      technicians=[own];
+      step(`DEBUG 1/4 — KTV: OK (${technicianId})`,"status ok");
+
+      step("DEBUG 2/4 — Khách hàng: đang đọc customers…");
+      customers=await withTimeout(getCustomers(),"Khách hàng",10000);
+      step(`DEBUG 2/4 — Khách hàng: OK (${customers.length})`,"status ok");
+
+      step(`DEBUG 3/4 — Phiếu bảo trì: đang đọc theo technicianId=${technicianId}…`);
+      maintenances=await withTimeout(getMaintenances({technicianId}),"Phiếu bảo trì",10000);
+      step(`DEBUG 3/4 — Phiếu bảo trì: OK (${maintenances.length})`,"status ok");
+
+      step(`DEBUG 4/4 — Work Order: đang đọc theo technicianId=${technicianId}…`);
+      workOrders=await withTimeout(getWorkOrders({technicianId}),"Work Order",10000);
+      step(`DEBUG 4/4 — Work Order: OK (${workOrders.length})`,"status ok");
     }else{
-      [customers,maintenances,workOrders,technicians]=await Promise.all([
-        getCustomers(),getMaintenances(),getWorkOrders(),getTechnicians()
-      ]);
+      step("DEBUG 1/4 — Quản lý: đang đọc Khách hàng…");
+      customers=await withTimeout(getCustomers(),"Khách hàng",10000);
+      step(`DEBUG 1/4 — Khách hàng: OK (${customers.length})`,"status ok");
+
+      step("DEBUG 2/4 — Phiếu bảo trì: đang đọc…");
+      maintenances=await withTimeout(getMaintenances(),"Phiếu bảo trì",10000);
+      step(`DEBUG 2/4 — Phiếu bảo trì: OK (${maintenances.length})`,"status ok");
+
+      step("DEBUG 3/4 — Work Order: đang đọc…");
+      workOrders=await withTimeout(getWorkOrders(),"Work Order",10000);
+      step(`DEBUG 3/4 — Work Order: OK (${workOrders.length})`,"status ok");
+
+      step("DEBUG 4/4 — Kỹ thuật viên: đang đọc…");
+      technicians=await withTimeout(getTechnicians(),"Kỹ thuật viên",10000);
+      step(`DEBUG 4/4 — Kỹ thuật viên: OK (${technicians.length})`,"status ok");
     }
 
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+
+    step("DEBUG — Đang render giao diện…");
     render();
     await loadWorkOrderRequests();
+
     const pendingRequestId=String(window.__dashboardPendingWorkOrderRequestId||"").trim();
     if(pendingRequestId){
       window.__dashboardPendingWorkOrderRequestId="";
-      if(workOrderRequests.some(item=>String(item.id)===pendingRequestId)){
-        openRequest(pendingRequestId);
-      }
+      if(workOrderRequests.some(item=>String(item.id)===pendingRequestId))openRequest(pendingRequestId);
     }
-    $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${customers.length} khách hàng`;
+
+    $("status").className="status ok";
+    $("status").textContent=`DEBUG HOÀN TẤT — ${workOrders.length} Work Order · ${customers.length} khách hàng`;
   }catch(err){
-    $("status").className="status error";$("status").textContent=err?.message||String(err);
+    console.error("WORK ORDER DEBUG ERROR:",err);
+    $("status").className="status error";
+    $("status").textContent=`❌ ${err?.message||String(err)}`;
   }
 }
 
