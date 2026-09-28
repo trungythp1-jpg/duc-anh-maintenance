@@ -1,4 +1,4 @@
-/* ĐỨC ANH MAINTENANCE — WORK ORDER MODULE V1.17
+/* ĐỨC ANH MAINTENANCE — WORK ORDER MODULE V1.18
  * Source of truth: current Work Order DEBUG V1.17 supplied by user
  * App Shell mount only. Dashboard owns Auth/route.
  */
@@ -13,10 +13,18 @@ import {
   getWorkOrders,
   createWorkOrder,
   updateWorkOrder,
-  reportWorkOrderByTechnician,
-  completeWorkOrderByTechnician
+  reportWorkOrderByTechnician
 } from "../core/firestore-v1.js?v=wo2.2-debug-1.17";
 import { getTechnician, getTechnicians } from "../core/firestore-v1-technician-v1.js";
+
+/**
+ * Compatibility layer for the current firestore-v1.js core.
+ * Current core exports reportWorkOrderByTechnician(), but does not export
+ * completeWorkOrderByTechnician(). Do not modify the shared core here.
+ */
+async function completeWorkOrderByTechnicianCompat(workOrderId){
+  return reportWorkOrderByTechnician(workOrderId,"completed");
+}
 
 export async function mountWorkOrderModule(root) {
   if (!root) throw new Error("WORK_ORDER_ROOT_MISSING");
@@ -542,7 +550,7 @@ async function submitTechnicianReport(status){
   try{
     const isCompleted=status==="completed";
     if(status==="completed"){
-      await completeWorkOrderByTechnician(editingId);
+      await completeWorkOrderByTechnicianCompat(editingId);
     }else{
       await reportWorkOrderByTechnician(editingId,status);
     }
