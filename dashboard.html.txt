@@ -1,0 +1,2221 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0b">
+  <title>Đức Anh Maintenance — ADMIN ONLY</title>
+
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <style>
+/* DASHBOARD ACTION CENTER */
+.dashboard-action-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.dashboard-action-card {
+  background:#151512;
+  border:1px solid #343028;
+  border-radius:12px;
+  padding:14px;
+  min-width:0;
+}
+.dashboard-action-card-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.dashboard-action-card-head h3 {
+  margin:4px 0 0;
+  font-size:16px;
+  line-height:1.35;
+}
+.dashboard-action-card-head > strong {
+  min-width:42px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #5b4921;
+  border-radius:10px;
+  color:#f0ca76;
+  font-size:22px;
+}
+.dashboard-action-list .work-row {
+  min-height:64px;
+}
+@media (max-width:700px) {
+  .dashboard-action-grid { grid-template-columns:1fr !important; }
+}
+
+@media (max-width: 700px) {
+  #cskhAdminKpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+.da-nav-item[data-module="import-center"],
+.da-nav-item[data-module="documents"],
+.da-nav-item[data-module="settings"]{
+  opacity:.72;
+}
+.da-nav-item[data-module="import-center"]::after,
+.da-nav-item[data-module="documents"]::after,
+.da-nav-item[data-module="settings"]::after{
+  content:"ĐANG XÂY DỰNG";
+  margin-left:auto;
+  font-size:9px;
+  letter-spacing:.08em;
+  color:#8f8f8f;
+}
+@media(max-width:700px){
+  .da-nav-item[data-module="import-center"]::after,
+  .da-nav-item[data-module="documents"]::after,
+  .da-nav-item[data-module="settings"]::after{
+    display:none;
+  }
+}
+
+
+/* DASHBOARD AUTH GATE — ADMIN ONLY */
+body.dashboard-auth-pending .app-shell{
+  visibility:hidden;
+}
+body.dashboard-auth-pending::before{
+  content:"Đang xác thực quyền quản trị…";
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0b0b0b;
+  color:#f5c400;
+  font:600 14px/1.4 Arial,sans-serif;
+  letter-spacing:.04em;
+}
+
+
+/* APP SHELL V1 */
+#appContent {
+  width: 100%;
+  min-width: 0;
+}
+#dashboardHome {
+  width: 100%;
+  min-width: 0;
+}
+
+
+.dashboard-action-center + .dashboard-grid .work-row[role="button"]{cursor:pointer}
+.dashboard-action-center + .dashboard-grid .work-row[role="button"]:hover{border-color:#6a5520;background:#181712}
+/* DASHBOARD ACTION CENTER V2.5 — COMPACT + CLICKABLE */
+.dashboard-action-compact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dashboard-action-group{background:#151512;border:1px solid #343028;border-radius:12px;padding:12px;min-width:0}
+.dashboard-action-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.dashboard-action-group-head .eyebrow{margin:0 0 3px}
+.dashboard-action-group-head strong{display:block;font-size:14px;line-height:1.35}
+.dashboard-action-group-head>b{min-width:34px;height:34px;border-radius:9px;border:1px solid #5b4921;display:flex;align-items:center;justify-content:center;color:#f0ca76;font-size:17px}
+.dashboard-action-list{display:flex;flex-direction:column;gap:6px}
+.dashboard-action-row{width:100%;border:1px solid #2d2b27;background:#10100e;color:inherit;border-radius:9px;padding:9px 10px;display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:9px;text-align:left;cursor:pointer;transition:.15s ease}
+.dashboard-action-row:hover{border-color:#6a5520;background:#181712}
+.dashboard-action-row:active{transform:scale(.995)}
+.dashboard-action-row .row-icon{font-size:11px;color:#d8ae3d;text-align:center}
+.dashboard-action-row .row-main{min-width:0}
+.dashboard-action-row .row-main strong{display:block;font-size:13px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboard-action-row .row-main span{display:block;margin-top:2px;font-size:11px;color:#8f8f8f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboard-action-row .row-status{font-size:9px;font-weight:700;letter-spacing:.04em;color:#f0ca76;border:1px solid #5b4921;border-radius:999px;padding:4px 7px;white-space:nowrap}
+.dashboard-action-empty{padding:10px 4px;color:#777;font-size:12px}
+.dashboard-action-modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:18px}
+.dashboard-action-modal.show{display:flex}
+.dashboard-action-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}
+.dashboard-action-modal-card{position:relative;width:min(620px,100%);max-height:min(82vh,760px);overflow:auto;background:#151512;border:1px solid #4a3c20;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.dashboard-action-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid #302e29}
+.dashboard-action-modal-head h3{margin:4px 0 0;font-size:19px}
+.dashboard-action-modal-body{padding:18px}
+.dashboard-action-modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #302e29;flex-wrap:wrap}
+.action-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.action-detail-item{padding:10px;border:1px solid #2f2d28;border-radius:9px;background:#10100e;min-width:0}
+.action-detail-item small{display:block;color:#777;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.action-detail-item strong{display:block;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.action-detail-note{margin-top:10px;padding:11px;border:1px solid #2f2d28;border-radius:9px;color:#aaa;font-size:12px;line-height:1.5}
+.action-btn{border:1px solid #5b4921;background:#d8ae3d;color:#111;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer}
+.action-btn.secondary{background:transparent;color:#f0ca76}
+.action-btn.danger{background:transparent;color:#d99b8e;border-color:#634039}
+.action-btn:disabled{opacity:.5;cursor:not-allowed}
+
+.action-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.action-form-section{margin-bottom:14px;padding:12px;border:1px solid #2f2d28;border-radius:10px;background:#10100e}
+.action-form-section h4{margin:0 0 9px;font-size:13px;color:#f0ca76}
+.action-form-field{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+.action-form-field:last-child{margin-bottom:0}
+.action-form-field label{font-size:10px;color:#8f8f8f;text-transform:uppercase;letter-spacing:.06em}
+.action-form-field input,.action-form-field textarea{width:100%;box-sizing:border-box;border:1px solid #38352f;border-radius:8px;background:#151512;color:#f4f4f4;padding:9px 10px;font:inherit;font-size:13px;outline:none}
+.action-form-field textarea{min-height:72px;resize:vertical}
+.action-form-field input:focus,.action-form-field textarea:focus{border-color:#6a5520}
+.action-form-note{font-size:11px;color:#8f8f8f;line-height:1.45;margin-top:8px}
+.action-workflow-step{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#aaa;font-size:11px}
+.action-workflow-step b{display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;border:1px solid #5b4921;color:#f0ca76;font-size:11px}
+.action-created-summary{padding:12px;border:1px solid #355a3b;background:#101510;border-radius:10px;color:#b9d6bd;font-size:12px;line-height:1.55}
+@media(max-width:700px){.action-form-grid{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .dashboard-action-compact{grid-template-columns:1fr}
+  .dashboard-action-row{grid-template-columns:34px minmax(0,1fr) auto}
+  .action-detail-grid{grid-template-columns:1fr}
+  .dashboard-action-modal{padding:10px}
+  .dashboard-action-modal-card{max-height:88vh;border-radius:13px}
+}
+</style>
+</head>
+
+<body class="dashboard-auth-pending">
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand-block">
+      <div class="brand-mark">DA</div>
+      <div>
+        <div class="brand-name">ĐỨC ANH</div>
+        <div class="brand-sub">MAINTENANCE</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+
+      <div class="nav-label">TỔNG QUAN</div>
+
+      <a class="nav-item active" href="dashboard.html" data-app-home>
+        ⌂ <span>Quản trị hệ thống</span>
+      </a>
+
+      <div class="nav-label">VẬN HÀNH</div>
+
+
+      <a class="nav-item" href="#customers" data-app-module="customers">
+        ♙ <span>Khách hàng</span>
+      </a>
+
+      <a class="nav-item" href="#buildings" data-app-module="buildings">
+        ⌂ <span>Tòa nhà</span>
+      </a>
+
+      <a class="nav-item" href="#elevators" data-app-module="elevators">
+        ↕ <span>Thang máy</span>
+      </a>
+
+      <a class="nav-item" href="#contracts" data-app-module="contracts">
+        ▤ <span>Hợp đồng</span>
+      </a>
+
+      <a class="nav-item" href="#maintenance" data-app-module="maintenance">
+        ◷ <span>Bảo trì</span>
+      </a>
+
+      <a class="nav-item" href="#work-orders" data-app-module="work-orders">
+        ✓ <span>Work Order</span>
+      </a>
+
+      <div class="nav-label">NHÂN SỰ</div>
+
+      <a class="nav-item" href="technicians.html">
+        ♟ <span>Kỹ thuật viên</span>
+      </a>
+
+      <a class="nav-item" href="kpi.html">
+        ▥ <span>KPI</span>
+      </a>
+
+      <div class="nav-label">HỆ THỐNG</div>
+
+      <a class="nav-item" href="#" data-module="import-center">
+        ⇧ <span>Import Center</span>
+      </a>
+
+      <a class="nav-item" href="#" data-module="documents">
+        ▧ <span>Documents</span>
+      </a>
+
+      <a class="nav-item" href="#" data-module="settings">
+        ⚙ <span>Cài đặt</span>
+      </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <i></i>
+      <div>
+        <strong>DEV V1.5</strong>
+        <small>System Admin · ADMIN ONLY</small>
+      </div>
+    </div>
+
+  </aside>
+
+
+  <!-- MAIN AREA -->
+  <div class="main-area">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+
+      <button
+        class="icon-button menu-button"
+        id="menuButton"
+        type="button"
+        aria-label="Mở menu">
+        ☰
+      </button>
+
+      <div class="breadcrumb">
+        <span>Đức Anh Maintenance</span>
+        <b>/</b>
+        <span>Quản trị hệ thống</span>
+      </div>
+
+      <div class="top-actions">
+
+        <button
+          class="icon-button"
+          id="refreshTop"
+          type="button"
+          aria-label="Làm mới dữ liệu">
+          ↻
+        </button>
+
+        <div class="user-chip" id="currentUserChip">
+          <div class="avatar" id="currentUserAvatar">DA</div>
+          <div class="user-text">
+            <strong id="currentUserName">Đang tải...</strong>
+            <small id="currentUserRole">...</small>
+          </div>
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- DASHBOARD CONTENT -->
+    <main class="content">
+
+      <!-- APP SHELL CONTENT -->
+      <div id="appContent" style="display:none;"></div>
+
+      <!-- DASHBOARD HOME -->
+      <div id="dashboardHome">
+
+      <section class="page-heading">
+
+        <div>
+          <p class="eyebrow">TỔNG QUAN HỆ THỐNG</p>
+
+          <h1>Dashboard</h1>
+
+          <p class="muted">
+            Trung tâm quản trị hệ thống Đức Anh · Dữ liệu vận hành trực tiếp từ Firebase.
+          </p>
+
+          <div id="firebaseStatus" class="muted" style="margin-top:8px;">
+            Đang kết nối Firebase...
+          </div>
+        </div>
+
+        <button
+          class="primary-button"
+          id="refreshButton"
+          type="button">
+          ↻ Làm mới dữ liệu
+        </button>
+
+      </section>
+
+
+      <!-- STATS -->
+      <section class="stats-grid">
+
+        <article class="stat-card accent" data-app-module="customers" role="button" tabindex="0">
+          <div class="stat-top">
+            TỔNG KHÁCH HÀNG
+            <span>♙</span>
+          </div>
+
+          <div class="stat-value" id="statCustomers">0</div>
+
+          <div class="stat-foot">
+            Khách hàng trong hệ thống
+          </div>
+        </article>
+
+
+        <article class="stat-card" data-app-module="buildings" role="button" tabindex="0">
+
+          <div class="stat-top">
+            TỔNG TÒA NHÀ
+            <span>⌂</span>
+          </div>
+
+          <div class="stat-value" id="statBuildings">0</div>
+
+          <div class="stat-foot">
+            Tòa nhà đang quản lý
+          </div>
+
+        </article>
+
+
+        <article class="stat-card" data-app-module="elevators" role="button" tabindex="0">
+
+          <div class="stat-top">
+            TỔNG THANG MÁY
+            <span>↕</span>
+          </div>
+
+          <div class="stat-value" id="statElevators">0</div>
+
+          <div class="stat-foot">
+            Tài sản thang máy
+          </div>
+
+        </article>
+
+
+        <article class="stat-card" data-app-module="elevators" role="button" tabindex="0">
+
+          <div class="stat-top">
+            ĐANG HOẠT ĐỘNG
+            <span>●</span>
+          </div>
+
+          <div class="stat-value" id="statActive">0</div>
+
+          <div class="stat-foot">
+            <em id="statActivePercent">0%</em> tổng thang máy
+          </div>
+
+        </article>
+
+
+      </section>
+
+
+      <!-- DASHBOARD ACTION CENTER -->
+      <section class="panel dashboard-action-center" id="dashboardActionCenter" style="margin-top:18px;">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">CẦN XỬ LÝ</p>
+            <h2>Phiếu chờ quản trị</h2>
+            <div class="muted" style="margin-top:6px;">Hiển thị 3 loại phiếu Admin cần xử lý.</div>
+          </div>
+          <button class="text-button" type="button" id="dashboardActionRefresh">↻ Làm mới</button>
+        </div>
+
+        <div class="dashboard-action-compact">
+          <div class="dashboard-action-group">
+            <div class="dashboard-action-group-head">
+              <div>
+                <p class="eyebrow">KHÁCH HÀNG MỚI</p>
+                <strong>Phiếu yêu cầu tạo khách hàng ngoài hệ thống</strong>
+              </div>
+              <b id="newCustomerRequestCount">0</b>
+            </div>
+            <div id="newCustomerRequestList" class="dashboard-action-list">
+              <div class="dashboard-action-empty">Đang tải...</div>
+            </div>
+          </div>
+
+          <div class="dashboard-action-group">
+            <div class="dashboard-action-group-head">
+              <div>
+                <p class="eyebrow">BẢO TRÌ</p>
+                <strong>Phiếu bảo trì quá 18 giờ chờ xác nhận</strong>
+              </div>
+              <b id="overdueMaintenanceCount">0</b>
+            </div>
+            <div id="overdueMaintenanceList" class="dashboard-action-list">
+              <div class="dashboard-action-empty">Đang tải...</div>
+            </div>
+          </div>
+
+          <div class="dashboard-action-group">
+            <div class="dashboard-action-group-head">
+              <div>
+                <p class="eyebrow">WORK ORDER</p>
+                <strong>Phiếu đề nghị WO từ KTV</strong>
+              </div>
+              <b id="workOrderRequestCount">0</b>
+            </div>
+            <div id="workOrderRequestList" class="dashboard-action-list">
+              <div class="dashboard-action-empty">Đang tải...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACTION DETAIL MODAL -->
+      <div class="dashboard-action-modal" id="dashboardActionModal" aria-hidden="true">
+        <div class="dashboard-action-modal-backdrop" data-action-close></div>
+        <div class="dashboard-action-modal-card" role="dialog" aria-modal="true" aria-labelledby="dashboardActionModalTitle">
+          <div class="dashboard-action-modal-head">
+            <div>
+              <p class="eyebrow" id="dashboardActionModalEyebrow">CHI TIẾT PHIẾU</p>
+              <h3 id="dashboardActionModalTitle">Chi tiết</h3>
+            </div>
+            <button type="button" class="icon-button" data-action-close aria-label="Đóng">×</button>
+          </div>
+          <div class="dashboard-action-modal-body" id="dashboardActionModalBody"></div>
+          <div class="dashboard-action-modal-foot" id="dashboardActionModalFoot"></div>
+        </div>
+      </div>
+
+
+      <!-- DATA STATUS -->
+      <section class="dashboard-grid">
+
+        <article class="panel">
+
+          <div class="panel-heading">
+
+            <div>
+              <p class="eyebrow">THANG MÁY</p>
+              <h2>Tình trạng hiện tại</h2>
+            </div>
+
+            <button
+              class="text-button"
+              type="button"
+              data-app-module="elevators">
+              Mở danh sách →
+            </button>
+
+          </div>
+
+
+          <div class="work-list">
+
+            <div class="work-row">
+              <time>●</time>
+              <i></i>
+
+              <div>
+                <strong>Đang hoạt động</strong>
+                <span>Thang máy vận hành bình thường</span>
+              </div>
+
+              <label class="success" id="statusActive">0</label>
+            </div>
+
+
+            <div class="work-row">
+              <time>◷</time>
+              <i></i>
+
+              <div>
+                <strong>Đang bảo trì</strong>
+                <span>Trạng thái tài sản đang bảo trì</span>
+              </div>
+
+              <label class="primary" id="statusMaint">0</label>
+            </div>
+
+
+            <div class="work-row">
+              <time>!</time>
+              <i></i>
+
+              <div>
+                <strong>Cần xử lý</strong>
+                <span>Thang máy cần kiểm tra / liên hệ</span>
+              </div>
+
+              <label class="warning" id="statusCare">0</label>
+            </div>
+
+
+            <div class="work-row">
+              <time>×</time>
+              <i></i>
+
+              <div>
+                <strong>Ngừng hoạt động</strong>
+                <span>Tài sản đang ở trạng thái inactive</span>
+              </div>
+
+              <label id="statusInactive">0</label>
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <article class="panel">
+
+          <div class="panel-heading">
+
+            <div>
+              <p class="eyebrow">LIÊN KẾT DỮ LIỆU</p>
+              <h2>Khách hàng → Tòa nhà → Thang máy</h2>
+            </div>
+
+          </div>
+
+
+          <div class="alerts">
+
+            <div>
+              ♙
+              <span>
+                <strong id="linkCustomers">0 khách hàng</strong>
+                <small>Dữ liệu từ collection customers</small>
+              </span>
+            </div>
+
+
+            <div>
+              ⌂
+              <span>
+                <strong id="linkBuildings">0 tòa nhà</strong>
+                <small>Tòa nhà được liên kết bằng customerId</small>
+              </span>
+            </div>
+
+
+            <div>
+              ↕
+              <span>
+                <strong id="linkElevators">0 thang máy</strong>
+                <small>Thang máy liên kết customerId + buildingId</small>
+              </span>
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- BUILDINGS -->
+      <section class="panel">
+
+        <div class="panel-heading">
+
+          <div>
+            <p class="eyebrow">TÒA NHÀ</p>
+            <h2>Tòa nhà đang quản lý</h2>
+          </div>
+
+          <button
+            class="text-button"
+            type="button"
+            data-href="buildings.html">
+            Xem tất cả →
+          </button>
+
+        </div>
+
+        <div id="buildingList" class="work-list">
+          <div class="work-row">
+            <time>…</time>
+            <i></i>
+            <div>
+              <strong>Đang tải dữ liệu...</strong>
+              <span>Đang đọc Firebase</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- LATEST ELEVATORS -->
+      <section class="panel" style="margin-top:18px;">
+
+        <div class="panel-heading">
+
+          <div>
+            <p class="eyebrow">THANG MÁY</p>
+            <h2>Thang máy mới nhất</h2>
+          </div>
+
+          <button
+            class="text-button"
+            type="button"
+            data-app-module="elevators">
+            Xem tất cả →
+          </button>
+
+        </div>
+
+        <div id="latestElevatorList" class="work-list">
+          <div class="work-row">
+            <time>…</time>
+            <i></i>
+            <div>
+              <strong>Đang tải dữ liệu...</strong>
+              <span>Đang đọc Firebase</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- AUDIT / CURRENT LIMIT -->
+      <section class="panel activity">
+
+        <div class="panel-heading">
+
+          <div>
+            <p class="eyebrow">HỆ THỐNG</p>
+            <h2>Phạm vi Dashboard V1.1</h2>
+          </div>
+
+        </div>
+
+        <div class="activity-row">
+          <span>01</span>
+          <span>Khách hàng</span>
+          <span>Đã liên kết dữ liệu Firebase</span>
+          <label class="success">LIVE</label>
+        </div>
+
+        <div class="activity-row">
+          <span>02</span>
+          <span>Tòa nhà</span>
+          <span>Đã liên kết dữ liệu Firebase</span>
+          <label class="success">LIVE</label>
+        </div>
+
+        <div class="activity-row">
+          <span>03</span>
+          <span>Thang máy</span>
+          <span>Đã liên kết dữ liệu Firebase</span>
+          <label class="success">LIVE</label>
+        </div>
+
+        <div class="activity-row">
+          <span>04</span>
+          <span>Work Order / Bảo trì</span>
+          <span>Chưa triển khai collection nghiệp vụ</span>
+          <label>CHƯA CÓ</label>
+        </div>
+
+      </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+</div>
+
+
+
+<!-- MOBILE OVERLAY -->
+<div class="overlay" id="overlay"></div>
+
+
+<!-- UI CORE -->
+<script src="js/ui/app.js"></script>
+
+
+<!-- DASHBOARD FIREBASE -->
+<script type="module">
+
+import {
+  getCustomers,
+  getBuildings,
+  getElevators,
+  getMaintenances,
+  confirmMaintenanceAfterExpiry
+} from "./js/core/firestore-v1.js";
+
+import { auth, db } from "./js/core/firebase.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  writeBatch,
+  Timestamp,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+
+const $ = id => document.getElementById(id);
+
+let customers = [];
+let buildings = [];
+let elevators = [];
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+async function loadCurrentUserProfile() {
+
+  const nameElement = $("currentUserName");
+  const roleElement = $("currentUserRole");
+  const avatarElement = $("currentUserAvatar");
+
+  try {
+    if (!auth?.currentUser) {
+      if (nameElement) nameElement.textContent = "Chưa đăng nhập";
+      if (roleElement) roleElement.textContent = "";
+      if (avatarElement) avatarElement.textContent = "DA";
+      return;
+    }
+
+    const user = auth.currentUser;
+    const snapshot = await getDoc(doc(db, "users", user.uid));
+
+    if (!snapshot.exists()) {
+      throw new Error("Không tồn tại hồ sơ users/{uid}.");
+    }
+
+    const profile = snapshot.data() || {};
+    currentAdminProfile = profile;
+    const rawRole = String(profile.role || "").trim();
+    const normalizedRole = rawRole.toUpperCase();
+
+    const roleMap = {
+      ADMIN: { name: "Administrator", label: "ADMIN" },
+      MANAGER: { name: "Quản lý", label: "MANAGER" },
+      DIRECTOR: { name: "Giám đốc", label: "DIRECTOR" },
+      CSKH: { name: "CSKH", label: "CSKH" },
+      CUSTOMER_SERVICE: { name: "CSKH", label: "CSKH" },
+      TECHNICIAN: { name: "Kỹ thuật viên", label: "TECHNICIAN" },
+      WAREHOUSE: { name: "Kho", label: "WAREHOUSE" }
+    };
+
+    const roleInfo = roleMap[normalizedRole] || {
+      name: rawRole || "Nhân sự",
+      label: rawRole || "USER"
+    };
+
+    const displayName = String(
+      profile.name ||
+      user.displayName ||
+      user.email ||
+      "Người dùng"
+    ).trim();
+
+    /*
+     * CSKH được hiển thị theo role nghiệp vụ từ Firestore.
+     * Không dùng giá trị mặc định Administrator cho tài khoản CSKH.
+     */
+    if (nameElement) {
+      nameElement.textContent =
+        normalizedRole === "CSKH" || normalizedRole === "CUSTOMER_SERVICE"
+          ? roleInfo.name
+          : displayName;
+    }
+
+    if (roleElement) {
+      roleElement.textContent = roleInfo.label;
+    }
+
+
+    if (avatarElement) {
+      const initials = displayName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map(part => part.charAt(0).toUpperCase())
+        .join("") || "DA";
+      avatarElement.textContent = initials;
+    }
+
+  } catch (error) {
+    console.error("DASHBOARD USER PROFILE ERROR:", error);
+    if (nameElement) nameElement.textContent = "Lỗi tài khoản";
+    if (roleElement) roleElement.textContent = "";
+    if (avatarElement) avatarElement.textContent = "!";
+  }
+}
+
+
+function redirectToAdminLogin(reason) {
+  const target = `login.html?reason=${encodeURIComponent(reason || "ADMIN_ONLY")}`;
+  window.location.replace(target);
+}
+
+function watchCurrentUserProfile() {
+  if (!auth) {
+    redirectToAdminLogin("AUTH_NOT_CONFIGURED");
+    return;
+  }
+
+  onAuthStateChanged(auth, async user => {
+    try {
+      // Không có Firebase Auth session -> không được ở Dashboard.
+      if (!user) {
+        redirectToAdminLogin("LOGIN_REQUIRED");
+        return;
+      }
+
+      const snapshot = await getDoc(doc(db, "users", user.uid));
+
+      if (!snapshot.exists()) {
+        redirectToAdminLogin("PROFILE_NOT_FOUND");
+        return;
+      }
+
+      const profile = snapshot.data() || {};
+      const role = String(profile.role || "").trim().toUpperCase();
+
+      // QUY TẮC DASHBOARD:
+      // Chỉ duy nhất ADMIN được phép truy cập.
+      if (role !== "ADMIN") {
+        console.warn("DASHBOARD ADMIN ONLY: access denied", {
+          uid: user.uid,
+          role
+        });
+        redirectToAdminLogin("ADMIN_ONLY");
+        return;
+      }
+
+      // Chỉ sau khi xác thực đúng ADMIN mới hiển thị Dashboard
+      // và mới tải dữ liệu Dashboard.
+      document.body.classList.remove("dashboard-auth-pending");
+
+      await loadCurrentUserProfile();
+      await loadDashboardData();
+
+    } catch (error) {
+      console.error("DASHBOARD ADMIN AUTH ERROR:", error);
+      redirectToAdminLogin("AUTH_ERROR");
+    }
+  });
+}
+
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+function safeDate(value) {
+
+  if (!value) return 0;
+
+  if (typeof value?.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  if (typeof value?.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  const time = new Date(value).getTime();
+
+  return Number.isFinite(time) ? time : 0;
+}
+
+
+function customerName(customerId) {
+
+  return customers.find(
+    item => String(item.id) === String(customerId)
+  )?.name || "Không xác định";
+}
+
+
+function buildingName(buildingId) {
+
+  return buildings.find(
+    item => String(item.id) === String(buildingId)
+  )?.name || "Không xác định";
+}
+
+
+function elevatorStatusLabel(status) {
+
+  const map = {
+    active: ["Đang hoạt động", "success"],
+    maint: ["Đang bảo trì", "primary"],
+    care: ["Cần xử lý", "warning"],
+    inactive: ["Ngừng hoạt động", ""]
+  };
+
+  return map[status] || ["Chưa xác định", ""];
+}
+
+
+/* =========================================================
+   FIREBASE MESSAGE
+========================================================= */
+
+function setFirebaseStatus(message, type = "") {
+
+  const element = $("firebaseStatus");
+
+  if (!element) return;
+
+  element.textContent = message;
+
+  element.style.color =
+    type === "error"
+      ? "#d9534f"
+      : type === "success"
+        ? "#5c8f68"
+        : "";
+}
+
+
+/* =========================================================
+   KPI
+========================================================= */
+
+function renderStats() {
+
+  const totalCustomers = customers.length;
+  const totalBuildings = buildings.length;
+  const totalElevators = elevators.length;
+
+  const active = elevators.filter(
+    item => item.status === "active"
+  ).length;
+
+  const maint = elevators.filter(
+    item => item.status === "maint"
+  ).length;
+
+  const care = elevators.filter(
+    item => item.status === "care"
+  ).length;
+
+  const inactive = elevators.filter(
+    item => item.status === "inactive"
+  ).length;
+
+  const activePercent =
+    totalElevators > 0
+      ? Math.round((active / totalElevators) * 100)
+      : 0;
+
+
+  $("statCustomers").textContent = totalCustomers;
+  $("statBuildings").textContent = totalBuildings;
+  $("statElevators").textContent = totalElevators;
+  $("statActive").textContent = active;
+
+  $("statActivePercent").textContent =
+    `${activePercent}%`;
+
+
+  $("statusActive").textContent = active;
+  $("statusMaint").textContent = maint;
+  $("statusCare").textContent = care;
+  $("statusInactive").textContent = inactive;
+
+
+  $("linkCustomers").textContent =
+    `${totalCustomers} khách hàng`;
+
+  $("linkBuildings").textContent =
+    `${totalBuildings} tòa nhà`;
+
+  $("linkElevators").textContent =
+    `${totalElevators} thang máy`;
+}
+
+
+/* =========================================================
+   BUILDING LIST
+========================================================= */
+
+function renderBuildings() {
+
+  const container = $("buildingList");
+
+  if (!container) return;
+
+
+  if (!buildings.length) {
+
+    container.innerHTML = `
+      <div class="work-row">
+        <time>—</time>
+        <i></i>
+        <div>
+          <strong>Chưa có tòa nhà</strong>
+          <span>Hãy tạo tòa nhà trong module Tòa nhà.</span>
+        </div>
+        <label>0</label>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const rows = buildings
+    .map(building => {
+
+      const relatedElevators = elevators.filter(
+        elevator =>
+          String(elevator.buildingId) ===
+          String(building.id)
+      );
+
+      const activeCount = relatedElevators.filter(
+        elevator => elevator.status === "active"
+      ).length;
+
+      return {
+        building,
+        relatedElevators,
+        activeCount
+      };
+
+    })
+    .sort(
+      (a, b) =>
+        b.relatedElevators.length -
+        a.relatedElevators.length
+    )
+    .slice(0, 8);
+
+
+  container.innerHTML = rows.map(item => {
+
+    const building = item.building;
+
+    return `
+      <div class="work-row">
+
+        <time>⌂</time>
+        <i></i>
+
+        <div>
+          <strong>
+            ${escapeHtml(building.name || "Tòa nhà")}
+          </strong>
+
+          <span>
+            ${escapeHtml(customerName(building.customerId))}
+            · ${item.relatedElevators.length} thang máy
+            · ${item.activeCount} đang hoạt động
+          </span>
+        </div>
+
+        <button
+          class="text-button"
+          type="button"
+          data-href="buildings.html">
+          Mở
+        </button>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
+
+/* =========================================================
+   LATEST ELEVATORS
+========================================================= */
+
+function renderLatestElevators() {
+
+  const container = $("latestElevatorList");
+
+  if (!container) return;
+
+
+  if (!elevators.length) {
+
+    container.innerHTML = `
+      <div class="work-row">
+        <time>—</time>
+        <i></i>
+        <div>
+          <strong>Chưa có thang máy</strong>
+          <span>Hãy tạo thang máy trong module Thang máy.</span>
+        </div>
+        <label>0</label>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  const latest = elevators
+    .slice()
+    .sort(
+      (a, b) =>
+        safeDate(b.createdAt) -
+        safeDate(a.createdAt)
+    )
+    .slice(0, 8);
+
+
+  container.innerHTML = latest.map(elevator => {
+
+    const status =
+      elevatorStatusLabel(elevator.status);
+
+    return `
+      <div class="work-row" role="button" tabindex="0" data-href="elevators.html?id=${encodeURIComponent(elevator.id)}" title="Mở hồ sơ thang máy">
+
+        <time>↕</time>
+        <i></i>
+
+        <div>
+          <strong>
+            ${escapeHtml(
+              elevator.assetCode ||
+              elevator.name ||
+              elevator.id ||
+              "Thang máy"
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(elevator.name || "Thang máy")}
+            ·
+            ${escapeHtml(
+              buildingName(elevator.buildingId)
+            )}
+            ·
+            ${escapeHtml(
+              customerName(elevator.customerId)
+            )}
+          </span>
+        </div>
+
+        <label class="${status[1]}">
+          ${status[0]}
+        </label>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
+
+
+/* =========================================================
+   DASHBOARD ACTION CENTER V2.5
+   - compact list
+   - click row -> detail modal
+   - ADMIN can receive / request info on CSKH request
+   - ADMIN can confirm overdue maintenance
+========================================================= */
+
+let dashboardRequests = [];
+let dashboardMaintenances = [];
+let dashboardWorkOrderRequests = [];
+let currentDashboardAction = null;
+let currentAdminProfile = null;
+
+function dashboardRequestCustomerName(request) {
+  return request.externalCustomer?.name ||
+    customers.find(item => item.id === request.customerId)?.name ||
+    "Khách hàng mới";
+}
+function dashboardRequestPhone(request) {
+  return request.externalCustomer?.phone || "—";
+}
+function dashboardRequestEmail(request) {
+  return request.externalCustomer?.email || "—";
+}
+function dashboardRequestAddress(request) {
+  return request.externalCustomer?.address || "—";
+}
+function dashboardRequestBuildingName(request) {
+  return request.externalBuilding?.name ||
+    buildings.find(item => item.id === request.buildingId)?.name || "—";
+}
+function dashboardRequestBuildingAddress(request) {
+  const address = request.externalBuilding?.address;
+  if (typeof address === "string") return address || "—";
+  if (address && typeof address === "object") return [address.detail,address.district,address.province].filter(Boolean).join(", ") || "—";
+  return "—";
+}
+function dashboardRequestElevatorName(request) {
+  return request.externalElevator?.name ||
+    elevators.find(item => item.id === request.elevatorId)?.name || "—";
+}
+function dashboardMaintenanceDeadline(value) {
+  const timestamp = safeDate(value);
+  if (!timestamp) return "Không có thời hạn";
+  return new Date(timestamp).toLocaleString("vi-VN", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+function dashboardStatusLabel(status) {
+  const map={SUBMITTED:"ĐÃ GỬI",ADMIN_REVIEW:"ĐANG XỬ LÝ",NEED_INFO:"CẦN BỔ SUNG",APPROVED:"ĐÃ DUYỆT",CREATED:"ĐÃ TẠO"};
+  return map[String(status||"")] || String(status||"—");
+}
+
+function openDashboardWorkOrderRequest(requestId){
+  if(!requestId)return;
+  // Ghi nhớ đúng phiếu KTV vừa chọn để Work Order module mở trực tiếp phiếu đó.
+  window.__dashboardPendingWorkOrderRequestId=String(requestId);
+  if(location.hash!=="#work-orders") location.hash="work-orders";
+  else route();
+}
+
+function closeDashboardActionModal(){
+  const modal=$("dashboardActionModal");
+  if(!modal)return;
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden","true");
+  currentDashboardAction=null;
+}
+function openDashboardActionModal(){
+  const modal=$("dashboardActionModal");
+  if(!modal)return;
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden","false");
+}
+
+function renderCustomerRequestDetail(request){
+  const body=$("dashboardActionModalBody");
+  const foot=$("dashboardActionModalFoot");
+  if(!body||!foot)return;
+  const status=String(request.status||"");
+  const c=request.externalCustomer||{};
+  const b=request.externalBuilding||{};
+  const e=request.externalElevator||{};
+  $("dashboardActionModalEyebrow").textContent="PHIẾU YÊU CẦU TẠO KHÁCH HÀNG";
+  $("dashboardActionModalTitle").textContent=dashboardRequestCustomerName(request);
+  const canReceive=status==="SUBMITTED" && !request.assignedAdminUid && !request.processedAt;
+  const canNeedInfo=["SUBMITTED","ADMIN_REVIEW"].includes(status) && !request.processedAt;
+  const canCreate=status==="ADMIN_REVIEW" && request.assignedAdminUid===auth.currentUser?.uid && !request.processedAt;
+  body.innerHTML=`
+    <div class="action-detail-grid">
+      <div class="action-detail-item"><small>Trạng thái</small><strong>${escapeHtml(dashboardStatusLabel(status))}</strong></div>
+      <div class="action-detail-item"><small>Mã phiếu</small><strong>${escapeHtml(request.id||"—")}</strong></div>
+      <div class="action-detail-item"><small>Điện thoại</small><strong>${escapeHtml(dashboardRequestPhone(request))}</strong></div>
+      <div class="action-detail-item"><small>Email</small><strong>${escapeHtml(dashboardRequestEmail(request))}</strong></div>
+      <div class="action-detail-item"><small>Tòa nhà</small><strong>${escapeHtml(dashboardRequestBuildingName(request))}</strong></div>
+      <div class="action-detail-item"><small>Thang máy</small><strong>${escapeHtml(dashboardRequestElevatorName(request))}</strong></div>
+      <div class="action-detail-item"><small>Địa chỉ khách hàng</small><strong>${escapeHtml(dashboardRequestAddress(request))}</strong></div>
+      <div class="action-detail-item"><small>Địa chỉ tòa nhà</small><strong>${escapeHtml(dashboardRequestBuildingAddress(request))}</strong></div>
+    </div>
+    <div class="action-detail-note"><strong>Nội dung:</strong> ${escapeHtml(request.description||request.note||"Không có ghi chú.")}</div>
+    ${status==="ADMIN_REVIEW" ? `<div class="action-workflow-step"><b>1</b> Admin đã tiếp nhận <span>→</span> <b>2</b> Tạo Khách hàng → Tòa nhà → Thang máy</div>` : ""}`;
+
+  foot.innerHTML=`
+    <button type="button" class="action-btn secondary" data-action-close>Đóng</button>
+    ${canNeedInfo?'<button type="button" class="action-btn danger" id="dashboardNeedInfoBtn">Yêu cầu bổ sung</button>':''}
+    ${canReceive?'<button type="button" class="action-btn" id="dashboardReceiveBtn">Tiếp nhận xử lý</button>':''}
+    ${canCreate?'<button type="button" class="action-btn" id="dashboardCreateCustomerBtn">Tạo hồ sơ khách hàng</button>':''}`;
+
+  $("dashboardReceiveBtn")?.addEventListener("click",()=>adminReceiveRequest(request),{once:true});
+  $("dashboardNeedInfoBtn")?.addEventListener("click",()=>adminRequestMoreInfo(request),{once:true});
+  $("dashboardCreateCustomerBtn")?.addEventListener("click",()=>renderCreateCustomerWorkflow(request),{once:true});
+  openDashboardActionModal();
+}
+
+function renderCreateCustomerWorkflow(request){
+  const body=$("dashboardActionModalBody");
+  const foot=$("dashboardActionModalFoot");
+  if(!body||!foot)return;
+  const c=request.externalCustomer||{};
+  const b=request.externalBuilding||{};
+  const e=request.externalElevator||{};
+  $("dashboardActionModalEyebrow").textContent="TẠO HỒ SƠ TỪ PHIẾU CSKH";
+  $("dashboardActionModalTitle").textContent="Khách hàng → Tòa nhà → Thang máy";
+  body.innerHTML=`
+    <form id="dashboardCreateProfileForm">
+      <div class="action-form-section">
+        <h4>1. KHÁCH HÀNG</h4>
+        <div class="action-form-grid">
+          <div class="action-form-field"><label>Tên khách hàng *</label><input id="adminCustomerName" required value="${escapeHtml(c.name||"")}"></div>
+          <div class="action-form-field"><label>Số điện thoại *</label><input id="adminCustomerPhone" required value="${escapeHtml(c.phone||"")}"></div>
+          <div class="action-form-field"><label>Email</label><input id="adminCustomerEmail" value="${escapeHtml(c.email||"")}"></div>
+          <div class="action-form-field"><label>Mã số thuế</label><input id="adminCustomerTax" value="${escapeHtml(c.taxCode||"")}"></div>
+        </div>
+        <div class="action-form-field"><label>Địa chỉ</label><textarea id="adminCustomerAddress">${escapeHtml(c.address||"")}</textarea></div>
+      </div>
+      <div class="action-form-section">
+        <h4>2. TÒA NHÀ</h4>
+        <div class="action-form-grid">
+          <div class="action-form-field"><label>Tên tòa nhà *</label><input id="adminBuildingName" required value="${escapeHtml(b.name||"")}"></div>
+          <div class="action-form-field"><label>Người quản lý</label><input id="adminBuildingManager" value="${escapeHtml(b.manager?.name||"")}"></div>
+          <div class="action-form-field"><label>Số điện thoại quản lý</label><input id="adminBuildingManagerPhone" value="${escapeHtml(b.manager?.phone||"")}"></div>
+          <div class="action-form-field"><label>Địa chỉ tòa nhà</label><input id="adminBuildingAddress" value="${escapeHtml(typeof b.address==="string"?b.address:(b.address?.detail||""))}"></div>
+        </div>
+      </div>
+      <div class="action-form-section">
+        <h4>3. THANG MÁY</h4>
+        <div class="action-form-grid">
+          <div class="action-form-field"><label>Tên thang máy *</label><input id="adminElevatorName" required value="${escapeHtml(e.name||"")}"></div>
+          <div class="action-form-field"><label>Mã thang cũ (nếu có)</label><input id="adminElevatorExistingCode" value="${escapeHtml(e.existingCode||"")}"></div>
+          <div class="action-form-field"><label>Tải trọng (kg)</label><input id="adminElevatorCapacity" type="number" min="0" value="${escapeHtml(e.technical?.capacityKg??"")}"></div>
+          <div class="action-form-field"><label>Hãng sản xuất</label><input id="adminElevatorManufacturer" value="${escapeHtml(e.manufacturer||e.technical?.machine?.brand||"")}"></div>
+        </div>
+        <div class="action-form-note">Mã thang hệ thống không nhập thủ công tại đây. Mã cũ do khách hàng cung cấp chỉ được lưu làm thông tin tham chiếu.</div>
+      </div>
+    </form>`;
+  foot.innerHTML=`
+    <button type="button" class="action-btn secondary" data-action-close>Hủy</button>
+    <button type="button" class="action-btn" id="dashboardCreateProfileBtn">Tạo 3 hồ sơ và hoàn tất phiếu</button>`;
+  $("dashboardCreateProfileBtn")?.addEventListener("click",()=>adminCreateCustomerBuildingElevator(request));
+}
+
+async function adminCreateCustomerBuildingElevator(request){
+  const btn=$("dashboardCreateProfileBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang tạo hồ sơ…";}
+  try{
+    const user=auth.currentUser;
+    if(!user)throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    if(String(request.status||"")!=="ADMIN_REVIEW" || request.assignedAdminUid!==user.uid || request.processedAt)throw new Error("Phiếu không còn ở trạng thái Admin đang xử lý.");
+    const customerName=$("adminCustomerName")?.value.trim();
+    const customerPhone=$("adminCustomerPhone")?.value.trim();
+    const customerEmail=$("adminCustomerEmail")?.value.trim()||"";
+    const customerTax=$("adminCustomerTax")?.value.trim()||"";
+    const customerAddress=$("adminCustomerAddress")?.value.trim()||"";
+    const buildingName=$("adminBuildingName")?.value.trim();
+    const buildingAddress=$("adminBuildingAddress")?.value.trim()||"";
+    const managerName=$("adminBuildingManager")?.value.trim()||"";
+    const managerPhone=$("adminBuildingManagerPhone")?.value.trim()||"";
+    const elevatorName=$("adminElevatorName")?.value.trim();
+    const existingCode=$("adminElevatorExistingCode")?.value.trim()||"";
+    const capacity=Number($("adminElevatorCapacity")?.value)||null;
+    const manufacturer=$("adminElevatorManufacturer")?.value.trim()||"";
+    if(!customerName||!customerPhone)throw new Error("Tên khách hàng và số điện thoại là bắt buộc.");
+    if(!buildingName)throw new Error("Tên tòa nhà là bắt buộc.");
+    if(!elevatorName)throw new Error("Tên thang máy là bắt buộc.");
+
+    const normalizedPhone=customerPhone.replace(/\D/g,"");
+    const normalizedTax=customerTax.replace(/\D/g,"");
+    const duplicate=customers.find(x=>(normalizedPhone && String(x.phone||"").replace(/\D/g,"")===normalizedPhone)||(normalizedTax && String(x.taxCode||"").replace(/\D/g,"")===normalizedTax));
+    if(duplicate)throw new Error(`Đã tồn tại khách hàng trùng thông tin: ${duplicate.name||duplicate.id}. Hãy kiểm tra danh sách Khách hàng trước khi tạo.`);
+
+    const batch=writeBatch(db);
+    const customerRef=doc(collection(db,"customers"));
+    const buildingRef=doc(collection(db,"buildings"));
+    const elevatorRef=doc(collection(db,"elevators"));
+    const now=serverTimestamp();
+    batch.set(customerRef,{name:customerName,type:"business",phone:customerPhone,email:customerEmail,taxCode:customerTax,address:customerAddress,contactPerson:{name:managerName,phone:managerPhone},status:"active",createdAt:now,updatedAt:now});
+    batch.set(buildingRef,{name:buildingName,customerId:customerRef.id,address:{province:"",district:"",detail:buildingAddress},location:null,type:"other",manager:{name:managerName,phone:managerPhone},status:"active",createdAt:now,updatedAt:now});
+    batch.set(elevatorRef,{name:elevatorName,buildingId:buildingRef.id,customerId:customerRef.id,assetCode:"",existingCode:existingCode,status:"active",technical:{capacityKg:capacity,speed:null,stops:null,machine:{brand:manufacturer,model:""},controller:{brand:"",model:""},installationYear:null},service:{maintenanceStatus:"active"},createdAt:now,updatedAt:now});
+    const history=Array.isArray(request.history)?[...request.history]:[];
+    history.push({action:"ADMIN_CREATED_MASTER_DATA",byUid:user.uid,byName:currentAdminProfile?.name||user.displayName||user.email||"ADMIN",fromStatus:"ADMIN_REVIEW",toStatus:"CREATED",note:"ADMIN đã tạo Khách hàng, Tòa nhà và Thang máy từ phiếu CSKH.",metadata:{customerId:customerRef.id,buildingId:buildingRef.id,elevatorId:elevatorRef.id},createdAt:Timestamp.now()});
+    batch.update(doc(db,"cskhRequests",request.id),{status:"CREATED",customerId:customerRef.id,buildingId:buildingRef.id,elevatorId:elevatorRef.id,processedAt:Timestamp.now(),resultNote:"Đã tạo Khách hàng, Tòa nhà và Thang máy.",updatedAt:now,history});
+    await batch.commit();
+    customers.push({id:customerRef.id,name:customerName,phone:customerPhone,email:customerEmail,taxCode:customerTax,address:customerAddress,status:"active"});
+    buildings.push({id:buildingRef.id,name:buildingName,customerId:customerRef.id,status:"active"});
+    elevators.push({id:elevatorRef.id,name:elevatorName,buildingId:buildingRef.id,customerId:customerRef.id,status:"active"});
+    closeDashboardActionModal();
+    await loadDashboardData();
+    await loadDashboardActionCenter();
+    alert("Đã tạo Khách hàng → Tòa nhà → Thang máy và hoàn tất phiếu.");
+  }catch(error){
+    console.error("ADMIN CREATE MASTER DATA ERROR",error);
+    alert(error?.message||"Không thể tạo hồ sơ.");
+    if(btn){btn.disabled=false;btn.textContent="Tạo 3 hồ sơ và hoàn tất phiếu";}
+  }
+}
+
+function renderMaintenanceDetail(item){
+  const body=$("dashboardActionModalBody");
+  const foot=$("dashboardActionModalFoot");
+  if(!body||!foot)return;
+  $("dashboardActionModalEyebrow").textContent="PHIẾU BẢO TRÌ QUÁ 18 GIỜ";
+  $("dashboardActionModalTitle").textContent=item.ticketNo||item.id||"Phiếu bảo trì";
+  body.innerHTML=`
+    <div class="action-detail-grid">
+      <div class="action-detail-item"><small>Khách hàng</small><strong>${escapeHtml(item.customerName||"—")}</strong></div>
+      <div class="action-detail-item"><small>Thang máy</small><strong>${escapeHtml(item.elevatorName||"—")}</strong></div>
+      <div class="action-detail-item"><small>Trạng thái</small><strong>Chờ xác nhận</strong></div>
+      <div class="action-detail-item"><small>Quá hạn từ</small><strong>${escapeHtml(dashboardMaintenanceDeadline(item.customerConfirmationDeadline))}</strong></div>
+    </div>
+    <div class="action-detail-note">Phiếu đã quá thời hạn 18 giờ và vẫn chưa được CSKH xác nhận. ADMIN có thể xác nhận hoàn thành theo quy tắc quá hạn.</div>`;
+  foot.innerHTML=`
+    <button type="button" class="action-btn secondary" data-action-close>Đóng</button>
+    <button type="button" class="action-btn" id="dashboardConfirmMaintenanceBtn">Xác nhận hoàn thành</button>`;
+  $("dashboardConfirmMaintenanceBtn")?.addEventListener("click",()=>adminConfirmOverdueMaintenance(item),{once:true});
+  openDashboardActionModal();
+}
+
+async function adminReceiveRequest(request){
+  const btn=$("dashboardReceiveBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang tiếp nhận…";}
+  try{
+    if(String(request.status||"")!=="SUBMITTED" || request.assignedAdminUid || request.processedAt) throw new Error("Phiếu này không còn ở trạng thái có thể tiếp nhận.");
+    const user=auth.currentUser;
+    if(!user) throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    const now=Timestamp.now();
+    const adminName=currentAdminProfile?.name || user.displayName || user.email || "ADMIN";
+    const history=Array.isArray(request.history)?request.history:[];
+    history.push({action:"ADMIN_RECEIVED",byUid:user.uid,byName:adminName,fromStatus:"SUBMITTED",toStatus:"ADMIN_REVIEW",note:"ADMIN đã tiếp nhận phiếu xử lý.",metadata:{},createdAt:now});
+    await updateDoc(doc(db,"cskhRequests",request.id),{
+      status:"ADMIN_REVIEW",
+      assignedAdminUid:user.uid,
+      assignedAdminName:adminName,
+      updatedAt:now,
+      history
+    });
+    closeDashboardActionModal();
+    await loadDashboardActionCenter();
+  }catch(error){
+    console.error("ADMIN RECEIVE CSKH ERROR",error);
+    alert(error?.message||"Không thể tiếp nhận phiếu.");
+    if(btn){btn.disabled=false;btn.textContent="Tiếp nhận xử lý";}
+  }
+}
+
+async function adminRequestMoreInfo(request){
+  const note=window.prompt("Nhập nội dung cần CSKH bổ sung:",request.resultNote||"");
+  if(note===null)return;
+  const clean=String(note).trim();
+  if(!clean){alert("Vui lòng nhập nội dung cần bổ sung.");return;}
+  const btn=$("dashboardNeedInfoBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang lưu…";}
+  try{
+    const user=auth.currentUser;
+    if(!user) throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    if(!["SUBMITTED","ADMIN_REVIEW"].includes(String(request.status||"")) || request.processedAt) throw new Error("Phiếu này không còn ở trạng thái có thể yêu cầu bổ sung.");
+    const now=Timestamp.now();
+    const adminName=currentAdminProfile?.name || user.displayName || user.email || "ADMIN";
+    const history=Array.isArray(request.history)?request.history:[];
+    history.push({action:"ADMIN_NEED_INFO",byUid:user.uid,byName:adminName,fromStatus:request.status,toStatus:"NEED_INFO",note:clean,metadata:{},createdAt:now});
+    await updateDoc(doc(db,"cskhRequests",request.id),{
+      status:"NEED_INFO",
+      assignedAdminUid:user.uid,
+      assignedAdminName:adminName,
+      resultNote:clean,
+      updatedAt:now,
+      history
+    });
+    closeDashboardActionModal();
+    await loadDashboardActionCenter();
+  }catch(error){
+    console.error("ADMIN NEED INFO ERROR",error);
+    alert(error?.message||"Không thể yêu cầu bổ sung.");
+    if(btn){btn.disabled=false;btn.textContent="Yêu cầu bổ sung";}
+  }
+}
+
+async function adminConfirmOverdueMaintenance(item){
+  const btn=$("dashboardConfirmMaintenanceBtn");
+  if(btn){btn.disabled=true;btn.textContent="Đang xác nhận…";}
+  try{
+    if(String(item.status||"")!=="waiting_confirmation" || String(item.customerConfirmationStatus||"")!=="pending") throw new Error("Phiếu này không còn ở trạng thái chờ xác nhận.");
+    if(safeDate(item.customerConfirmationDeadline)>Date.now()) throw new Error("Phiếu chưa quá 18 giờ.");
+    const user=auth.currentUser;
+    if(!user) throw new Error("Phiên đăng nhập ADMIN đã hết.");
+    const adminName=currentAdminProfile?.name || user.displayName || user.email || "ADMIN";
+    await confirmMaintenanceAfterExpiry(item.id,{confirmedBy:adminName,note:"ADMIN xác nhận sau khi phiếu quá thời hạn 18 giờ."});
+    closeDashboardActionModal();
+    await loadDashboardActionCenter();
+  }catch(error){
+    console.error("ADMIN CONFIRM MAINTENANCE ERROR",error);
+    alert(error?.message||"Không thể xác nhận phiếu bảo trì.");
+    if(btn){btn.disabled=false;btn.textContent="Xác nhận hoàn thành";}
+  }
+}
+
+function dashboardRenderActionCenter(){
+  const requestList=$("newCustomerRequestList");
+  const maintenanceList=$("overdueMaintenanceList");
+  const workOrderRequestList=$("workOrderRequestList");
+  if(!requestList||!maintenanceList||!workOrderRequestList)return;
+
+  const newCustomerRequests=dashboardRequests
+    .filter(request=>String(request.requestSource||"")==="EXTERNAL_CUSTOMER" && String(request.requestType||"")==="CONTRACT_REQUEST" && ["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(request.status||"")))
+    .sort((a,b)=>safeDate(b.updatedAt||b.createdAt)-safeDate(a.updatedAt||a.createdAt));
+
+  const overdueMaintenance=dashboardMaintenances
+    .filter(item=>String(item.status||"")==="waiting_confirmation" && String(item.customerConfirmationStatus||"")==="pending" && safeDate(item.customerConfirmationDeadline)>0 && safeDate(item.customerConfirmationDeadline)<=Date.now())
+    .sort((a,b)=>safeDate(a.customerConfirmationDeadline)-safeDate(b.customerConfirmationDeadline));
+
+  const pendingWorkOrderRequests=dashboardWorkOrderRequests
+    .filter(item=>String(item.status||"").toUpperCase()==="PENDING")
+    .sort((a,b)=>safeDate(b.requestedAt||b.createdAt)-safeDate(a.requestedAt||a.createdAt));
+
+  $("newCustomerRequestCount").textContent=String(newCustomerRequests.length);
+  $("overdueMaintenanceCount").textContent=String(overdueMaintenance.length);
+  $("workOrderRequestCount").textContent=String(pendingWorkOrderRequests.length);
+
+  requestList.innerHTML=newCustomerRequests.length?newCustomerRequests.slice(0,8).map(request=>`
+    <button type="button" class="dashboard-action-row" data-action-type="customer-request" data-action-id="${escapeHtml(request.id)}">
+      <span class="row-icon">KH</span>
+      <span class="row-main"><strong>${escapeHtml(dashboardRequestCustomerName(request))}</strong><span>${escapeHtml(dashboardRequestBuildingName(request))} · ${escapeHtml(dashboardRequestElevatorName(request))}</span></span>
+      <span class="row-status">${escapeHtml(dashboardStatusLabel(request.status))}</span>
+    </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu chờ.</div>';
+
+  maintenanceList.innerHTML=overdueMaintenance.length?overdueMaintenance.slice(0,8).map(item=>`
+    <button type="button" class="dashboard-action-row" data-action-type="maintenance" data-action-id="${escapeHtml(item.id)}">
+      <span class="row-icon">18h+</span>
+      <span class="row-main"><strong>${escapeHtml(item.ticketNo||item.id||"Phiếu bảo trì")}</strong><span>${escapeHtml(item.customerName||"—")} · ${escapeHtml(item.elevatorName||"—")}</span></span>
+      <span class="row-status">QUÁ HẠN</span>
+    </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu quá hạn.</div>';
+
+  workOrderRequestList.innerHTML=pendingWorkOrderRequests.length?pendingWorkOrderRequests.slice(0,8).map(item=>`
+    <button type="button" class="dashboard-action-row" data-action-type="work-order-request" data-action-id="${escapeHtml(item.id)}">
+      <span class="row-icon">WO</span>
+      <span class="row-main"><strong>${escapeHtml(item.issueTitle||item.requestNo||item.id||"Phiếu đề nghị WO")}</strong><span>${escapeHtml(item.customerName||"—")} · ${escapeHtml(item.elevatorName||"—")} · ${escapeHtml(item.requestedByTechnicianName||item.requestedByName||"KTV")}</span></span>
+      <span class="row-status">CHỜ XỬ LÝ</span>
+    </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu đề nghị WO.</div>';
+}
+
+function handleDashboardActionClick(event){
+  const row=event.target.closest("[data-action-type]");
+  if(!row)return;
+  const id=row.dataset.actionId;
+  const type=row.dataset.actionType;
+  if(type==="customer-request"){
+    const request=dashboardRequests.find(item=>String(item.id)===String(id));
+    if(request){currentDashboardAction={type,id};renderCustomerRequestDetail(request);}
+  }else if(type==="maintenance"){
+    const item=dashboardMaintenances.find(value=>String(value.id)===String(id));
+    if(item){currentDashboardAction={type,id};renderMaintenanceDetail(item);}
+  }else if(type==="work-order-request"){
+    const item=dashboardWorkOrderRequests.find(value=>String(value.id)===String(id));
+    if(item){openDashboardWorkOrderRequest(item.id);}
+  }
+}
+
+document.addEventListener("click",event=>{
+  if(event.target.closest("[data-action-close]"))closeDashboardActionModal();
+  else handleDashboardActionClick(event);
+});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")closeDashboardActionModal();});
+
+async function loadDashboardActionCenter(){
+  try{
+    const [requestSnapshot,maintenanceRows,workOrderRequestSnapshot]=await Promise.all([
+      getDocs(collection(db,"cskhRequests")),
+      getMaintenances(),
+      getDocs(collection(db,"workOrderRequests"))
+    ]);
+    dashboardRequests=requestSnapshot.docs.map(item=>({id:item.id,...item.data()}));
+    dashboardMaintenances=Array.isArray(maintenanceRows)?maintenanceRows:[];
+    dashboardWorkOrderRequests=workOrderRequestSnapshot.docs.map(item=>({id:item.id,...item.data()}));
+    dashboardRenderActionCenter();
+  }catch(error){
+    console.error("DASHBOARD ACTION CENTER ERROR:",error);
+    const message=escapeHtml(error?.message||"Lỗi Firebase");
+    const requestList=$("newCustomerRequestList");
+    const maintenanceList=$("overdueMaintenanceList");
+    const workOrderRequestList=$("workOrderRequestList");
+    if(requestList)requestList.innerHTML=`<div class="dashboard-action-empty">Không tải được phiếu: ${message}</div>`;
+    if(maintenanceList)maintenanceList.innerHTML=`<div class="dashboard-action-empty">Không tải được dữ liệu: ${message}</div>`;
+    if(workOrderRequestList)workOrderRequestList.innerHTML=`<div class="dashboard-action-empty">Không tải được phiếu WO: ${message}</div>`;
+  }
+}
+$("dashboardActionRefresh")?.addEventListener("click",loadDashboardActionCenter);
+
+
+/* =========================================================
+   LOAD FIREBASE
+========================================================= */
+
+async function loadDashboardData() {
+
+  setFirebaseStatus(
+    "Đang tải dữ liệu từ Firebase..."
+  );
+
+
+  try {
+
+    /*
+     * Promise.allSettled được dùng để một collection lỗi
+     * không làm toàn bộ Dashboard trắng.
+     */
+    const results = await Promise.allSettled([
+
+      getCustomers(),
+      getBuildings(),
+      getElevators()
+
+    ]);
+
+
+    const customerResult = results[0];
+    const buildingResult = results[1];
+    const elevatorResult = results[2];
+
+
+    customers =
+      customerResult.status === "fulfilled"
+        ? customerResult.value || []
+        : [];
+
+
+    buildings =
+      buildingResult.status === "fulfilled"
+        ? buildingResult.value || []
+        : [];
+
+
+    elevators =
+      elevatorResult.status === "fulfilled"
+        ? elevatorResult.value || []
+        : [];
+
+
+    renderStats();
+    renderBuildings();
+    renderLatestElevators();
+    await loadDashboardActionCenter();
+
+
+    const errors = results
+      .filter(result => result.status === "rejected")
+      .map(
+        result =>
+          result.reason?.message ||
+          "Lỗi Firebase không xác định"
+      );
+
+
+    if (errors.length) {
+
+      console.error(
+        "DASHBOARD FIRESTORE ERRORS:",
+        errors
+      );
+
+      setFirebaseStatus(
+        `Đã tải một phần dữ liệu. ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy. ${errors.join(" | ")}`,
+        "error"
+      );
+
+    } else {
+
+      setFirebaseStatus(
+        `Đã kết nối Firebase · ${customers.length} khách hàng · ${buildings.length} tòa nhà · ${elevators.length} thang máy`,
+        "success"
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "DASHBOARD FIREBASE ERROR:",
+      error
+    );
+
+    customers = [];
+    buildings = [];
+    elevators = [];
+
+    renderStats();
+    renderBuildings();
+    renderLatestElevators();
+
+    setFirebaseStatus(
+      `Không thể tải dữ liệu Firebase: ${error?.message || "UNKNOWN_ERROR"}`,
+      "error"
+    );
+  }
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function navigateTo(href) {
+
+  if (!href) return;
+
+  window.location.href = href;
+}
+
+
+document.addEventListener("click", event => {
+
+  const element =
+    event.target.closest("[data-href]");
+
+  if (!element) return;
+
+  event.preventDefault();
+
+  navigateTo(
+    element.dataset.href
+  );
+
+});
+
+
+document.addEventListener("keydown", event => {
+
+  if (
+    event.key !== "Enter" &&
+    event.key !== " "
+  ) {
+    return;
+  }
+
+  const element =
+    event.target.closest("[data-href]");
+
+  if (!element) return;
+
+  event.preventDefault();
+
+  navigateTo(
+    element.dataset.href
+  );
+
+});
+
+
+/* =========================================================
+   MODULES CHƯA TRIỂN KHAI
+========================================================= */
+
+const pendingModules = [
+
+  "work-orders",
+  "technicians",
+  "kpi",
+  "import-center",
+  "documents",
+  "settings"
+
+];
+
+
+document.querySelectorAll(
+  "[data-module]"
+).forEach(button => {
+
+  button.addEventListener(
+    "click",
+    event => {
+
+      const module =
+        button.dataset.module;
+
+      if (!pendingModules.includes(module)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      alert(
+        "Module này đang trong quá trình xây dựng.\n\n" +
+        "Dashboard hiện đã liên kết App Shell:\n" +
+        "• Khách hàng\n" +
+        "• Tòa nhà\n" +
+        "• Thang máy\n" +
+        "• Hợp đồng\n" +
+        "• Bảo trì"
+      );
+
+    }
+  );
+
+});
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+$("refreshButton")
+  ?.addEventListener(
+    "click",
+    loadDashboardData
+  );
+
+
+$("refreshTop")
+  ?.addEventListener(
+    "click",
+    loadDashboardData
+  );
+
+
+/* =========================================================
+   START
+========================================================= */
+
+// ADMIN ONLY:
+// watchCurrentUserProfile() chịu trách nhiệm xác thực Firebase Auth,
+// đọc users/{uid}, kiểm tra role === ADMIN và chỉ sau đó mới load Dashboard.
+watchCurrentUserProfile();
+
+</script>
+
+
+
+
+<!-- APP SHELL ROUTER -->
+<script type="module">
+import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
+import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
+import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
+import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
+
+const appContent = document.getElementById("appContent");
+const dashboardHome = document.getElementById("dashboardHome");
+
+let currentModule = null;
+let routing = false;
+
+function setActiveModule(moduleName = "") {
+  document.querySelectorAll("[data-app-module]").forEach(item => {
+    item.classList.toggle(
+      "active",
+      String(item.dataset.appModule || "") === moduleName
+    );
+  });
+
+  document.querySelectorAll("[data-app-home]").forEach(item => {
+    item.classList.toggle("active", !moduleName);
+  });
+}
+
+function showDashboard() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = null;
+  appContent.style.display = "none";
+  appContent.innerHTML = "";
+  dashboardHome.style.display = "";
+  setActiveModule("");
+}
+
+async function showCustomers() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "customers";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("customers");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Khách hàng...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountCustomerModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL CUSTOMER MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Khách hàng</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showBuildings() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "buildings";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("buildings");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Tòa nhà...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountBuildingModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL BUILDING MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Tòa nhà</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showElevators() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "elevators";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("elevators");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Thang máy...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountElevatorModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL ELEVATOR MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Thang máy</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showContracts() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "contracts";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("contracts");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Hợp đồng...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountContractModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL CONTRACT MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Hợp đồng</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showWorkOrders() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "work-orders";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("work-orders");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Work Order...</strong>
+          <span>Đang tải Work Order V1.17 trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const module = await import("./js/modules/work-order-module-v1.15.js?v=app-shell-1.15");
+    if (typeof module.mountWorkOrderModule !== "function") {
+      throw new Error("MODULE_EXPORT_MISSING: mountWorkOrderModule");
+    }
+    await module.mountWorkOrderModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL WORK ORDER MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Work Order</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showMaintenance() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "maintenance";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("maintenance");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Bảo trì...</strong>
+          <span>Đang tải module nghiệp vụ trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const module = await import("./js/modules/maintenance-module-v1.0.js?v=app-shell");
+    if (typeof module.mountMaintenanceModule !== "function") {
+      throw new Error("MODULE_EXPORT_MISSING: mountMaintenanceModule");
+    }
+    await module.mountMaintenanceModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL MAINTENANCE MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Bảo trì</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function route() {
+  if (routing) return;
+  routing = true;
+
+  try {
+    const hash = String(location.hash || "").replace(/^#/, "").trim();
+
+    if (hash === "customers") {
+      await showCustomers();
+    } else if (hash === "buildings") {
+      await showBuildings();
+    } else if (hash === "elevators") {
+      await showElevators();
+    } else if (hash === "contracts") {
+      await showContracts();
+    } else if (hash === "maintenance") {
+      await showMaintenance();
+    } else if (hash === "work-orders") {
+      await showWorkOrders();
+    } else {
+      showDashboard();
+    }
+  } finally {
+    routing = false;
+  }
+}
+
+document.addEventListener("click", event => {
+  const target = event.target.closest("[data-app-module]");
+  if (!target) return;
+
+  const moduleName = String(target.dataset.appModule || "").trim();
+  if (
+    moduleName !== "customers" &&
+    moduleName !== "buildings" &&
+    moduleName !== "elevators" &&
+    moduleName !== "contracts" &&
+    moduleName !== "maintenance" &&
+    moduleName !== "work-orders"
+  ) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const nextHash = `#${moduleName}`;
+  if (location.hash !== nextHash) {
+    location.hash = moduleName;
+  } else {
+    route();
+  }
+});
+
+document.querySelector("[data-app-home]")?.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (location.hash) {
+    history.pushState(null, "", "dashboard.html");
+  }
+
+  showDashboard();
+});
+
+window.addEventListener("hashchange", route);
+window.addEventListener("popstate", route);
+
+route();
+</script>
+
+</body>
+</html>
