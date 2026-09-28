@@ -112,7 +112,7 @@ body.dashboard-auth-pending::before{
 .dashboard-action-center + .dashboard-grid .work-row[role="button"]{cursor:pointer}
 .dashboard-action-center + .dashboard-grid .work-row[role="button"]:hover{border-color:#6a5520;background:#181712}
 /* DASHBOARD ACTION CENTER V2.5 — COMPACT + CLICKABLE */
-.dashboard-action-compact{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dashboard-action-compact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .dashboard-action-group{background:#151512;border:1px solid #343028;border-radius:12px;padding:12px;min-width:0}
 .dashboard-action-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .dashboard-action-group-head .eyebrow{margin:0 0 3px}
@@ -409,7 +409,7 @@ body.dashboard-auth-pending::before{
           <div>
             <p class="eyebrow">CẦN XỬ LÝ</p>
             <h2>Phiếu chờ quản trị</h2>
-            <div class="muted" style="margin-top:6px;">Chỉ hiển thị 2 loại phiếu Admin cần xử lý.</div>
+            <div class="muted" style="margin-top:6px;">Hiển thị 3 loại phiếu Admin cần xử lý.</div>
           </div>
           <button class="text-button" type="button" id="dashboardActionRefresh">↻ Làm mới</button>
         </div>
@@ -437,6 +437,19 @@ body.dashboard-auth-pending::before{
               <b id="overdueMaintenanceCount">0</b>
             </div>
             <div id="overdueMaintenanceList" class="dashboard-action-list">
+              <div class="dashboard-action-empty">Đang tải...</div>
+            </div>
+          </div>
+
+          <div class="dashboard-action-group">
+            <div class="dashboard-action-group-head">
+              <div>
+                <p class="eyebrow">WORK ORDER</p>
+                <strong>Phiếu đề nghị WO từ KTV</strong>
+              </div>
+              <b id="workOrderRequestCount">0</b>
+            </div>
+            <div id="workOrderRequestList" class="dashboard-action-list">
               <div class="dashboard-action-empty">Đang tải...</div>
             </div>
           </div>
@@ -1215,6 +1228,7 @@ function renderLatestElevators() {
 
 let dashboardRequests = [];
 let dashboardMaintenances = [];
+let dashboardWorkOrderRequests = [];
 let currentDashboardAction = null;
 let currentAdminProfile = null;
 
@@ -1254,6 +1268,13 @@ function dashboardMaintenanceDeadline(value) {
 function dashboardStatusLabel(status) {
   const map={SUBMITTED:"ĐÃ GỬI",ADMIN_REVIEW:"ĐANG XỬ LÝ",NEED_INFO:"CẦN BỔ SUNG",APPROVED:"ĐÃ DUYỆT",CREATED:"ĐÃ TẠO"};
   return map[String(status||"")] || String(status||"—");
+}
+
+function openDashboardWorkOrderRequest(requestId){
+  if(!requestId)return;
+  // Dashboard chỉ hiển thị phiếu. ADMIN xử lý/tạo WO trong module Work Order hiện tại.
+  if(location.hash!=="#work-orders") location.hash="work-orders";
+  else route();
 }
 
 function closeDashboardActionModal(){
@@ -1513,7 +1534,8 @@ async function adminConfirmOverdueMaintenance(item){
 function dashboardRenderActionCenter(){
   const requestList=$("newCustomerRequestList");
   const maintenanceList=$("overdueMaintenanceList");
-  if(!requestList||!maintenanceList)return;
+  const workOrderRequestList=$("workOrderRequestList");
+  if(!requestList||!maintenanceList||!workOrderRequestList)return;
 
   const newCustomerRequests=dashboardRequests
     .filter(request=>String(request.requestSource||"")==="EXTERNAL_CUSTOMER" && String(request.requestType||"")==="CONTRACT_REQUEST" && ["SUBMITTED","ADMIN_REVIEW","NEED_INFO"].includes(String(request.status||"")))
@@ -1523,8 +1545,13 @@ function dashboardRenderActionCenter(){
     .filter(item=>String(item.status||"")==="waiting_confirmation" && String(item.customerConfirmationStatus||"")==="pending" && safeDate(item.customerConfirmationDeadline)>0 && safeDate(item.customerConfirmationDeadline)<=Date.now())
     .sort((a,b)=>safeDate(a.customerConfirmationDeadline)-safeDate(b.customerConfirmationDeadline));
 
+  const pendingWorkOrderRequests=dashboardWorkOrderRequests
+    .filter(item=>String(item.status||"").toUpperCase()==="PENDING")
+    .sort((a,b)=>safeDate(b.requestedAt||b.createdAt)-safeDate(a.requestedAt||a.createdAt));
+
   $("newCustomerRequestCount").textContent=String(newCustomerRequests.length);
   $("overdueMaintenanceCount").textContent=String(overdueMaintenance.length);
+  $("workOrderRequestCount").textContent=String(pendingWorkOrderRequests.length);
 
   requestList.innerHTML=newCustomerRequests.length?newCustomerRequests.slice(0,8).map(request=>`
     <button type="button" class="dashboard-action-row" data-action-type="customer-request" data-action-id="${escapeHtml(request.id)}">
@@ -1539,6 +1566,13 @@ function dashboardRenderActionCenter(){
       <span class="row-main"><strong>${escapeHtml(item.ticketNo||item.id||"Phiếu bảo trì")}</strong><span>${escapeHtml(item.customerName||"—")} · ${escapeHtml(item.elevatorName||"—")}</span></span>
       <span class="row-status">QUÁ HẠN</span>
     </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu quá hạn.</div>';
+
+  workOrderRequestList.innerHTML=pendingWorkOrderRequests.length?pendingWorkOrderRequests.slice(0,8).map(item=>`
+    <button type="button" class="dashboard-action-row" data-action-type="work-order-request" data-action-id="${escapeHtml(item.id)}">
+      <span class="row-icon">WO</span>
+      <span class="row-main"><strong>${escapeHtml(item.issueTitle||item.requestNo||item.id||"Phiếu đề nghị WO")}</strong><span>${escapeHtml(item.customerName||"—")} · ${escapeHtml(item.elevatorName||"—")} · ${escapeHtml(item.requestedByTechnicianName||item.requestedByName||"KTV")}</span></span>
+      <span class="row-status">CHỜ XỬ LÝ</span>
+    </button>`).join(""):'<div class="dashboard-action-empty">Không có phiếu đề nghị WO.</div>';
 }
 
 function handleDashboardActionClick(event){
@@ -1552,6 +1586,9 @@ function handleDashboardActionClick(event){
   }else if(type==="maintenance"){
     const item=dashboardMaintenances.find(value=>String(value.id)===String(id));
     if(item){currentDashboardAction={type,id};renderMaintenanceDetail(item);}
+  }else if(type==="work-order-request"){
+    const item=dashboardWorkOrderRequests.find(value=>String(value.id)===String(id));
+    if(item){openDashboardWorkOrderRequest(item.id);}
   }
 }
 
@@ -1563,17 +1600,24 @@ document.addEventListener("keydown",event=>{if(event.key==="Escape")closeDashboa
 
 async function loadDashboardActionCenter(){
   try{
-    const [requestSnapshot,maintenanceRows]=await Promise.all([getDocs(collection(db,"cskhRequests")),getMaintenances()]);
+    const [requestSnapshot,maintenanceRows,workOrderRequestSnapshot]=await Promise.all([
+      getDocs(collection(db,"cskhRequests")),
+      getMaintenances(),
+      getDocs(collection(db,"workOrderRequests"))
+    ]);
     dashboardRequests=requestSnapshot.docs.map(item=>({id:item.id,...item.data()}));
     dashboardMaintenances=Array.isArray(maintenanceRows)?maintenanceRows:[];
+    dashboardWorkOrderRequests=workOrderRequestSnapshot.docs.map(item=>({id:item.id,...item.data()}));
     dashboardRenderActionCenter();
   }catch(error){
     console.error("DASHBOARD ACTION CENTER ERROR:",error);
     const message=escapeHtml(error?.message||"Lỗi Firebase");
     const requestList=$("newCustomerRequestList");
     const maintenanceList=$("overdueMaintenanceList");
+    const workOrderRequestList=$("workOrderRequestList");
     if(requestList)requestList.innerHTML=`<div class="dashboard-action-empty">Không tải được phiếu: ${message}</div>`;
     if(maintenanceList)maintenanceList.innerHTML=`<div class="dashboard-action-empty">Không tải được dữ liệu: ${message}</div>`;
+    if(workOrderRequestList)workOrderRequestList.innerHTML=`<div class="dashboard-action-empty">Không tải được phiếu WO: ${message}</div>`;
   }
 }
 $("dashboardActionRefresh")?.addEventListener("click",loadDashboardActionCenter);
@@ -2037,7 +2081,7 @@ async function showMaintenance() {
   `;
 
   try {
-    const module = await import("./js/modules/maintenance-module-v1.0.js?v=app-shell-maintenance-v11");
+    const module = await import("./js/modules/maintenance-module-v1.0.js?v=app-shell");
     if (typeof module.mountMaintenanceModule !== "function") {
       throw new Error("MODULE_EXPORT_MISSING: mountMaintenanceModule");
     }
