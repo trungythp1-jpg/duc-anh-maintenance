@@ -2037,7 +2037,7 @@ async function showMaintenance() {
   `;
 
   try {
-    const module = await import("./js/modules/maintenance-module-v1.0.js?v=app-shell");
+    const module = await import("./js/modules/maintenance-module-v1.0.js?v=app-shell-maintenance-v11");
     if (typeof module.mountMaintenanceModule !== "function") {
       throw new Error("MODULE_EXPORT_MISSING: mountMaintenanceModule");
     }
