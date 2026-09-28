@@ -216,7 +216,7 @@ body.dashboard-auth-pending::before{
         ◷ <span>Bảo trì</span>
       </a>
 
-      <a class="nav-item" href="work-orders.html">
+      <a class="nav-item" href="#work-orders" data-app-module="work-orders">
         ✓ <span>Work Order</span>
       </a>
 
@@ -2060,6 +2060,50 @@ async function showContracts() {
   }
 }
 
+async function showWorkOrders() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "work-orders";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("work-orders");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Work Order...</strong>
+          <span>Đang tải Work Order V1.17 trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const module = await import("./js/modules/work-order-module-v1.17.js?v=app-shell-1.17");
+    if (typeof module.mountWorkOrderModule !== "function") {
+      throw new Error("MODULE_EXPORT_MISSING: mountWorkOrderModule");
+    }
+    await module.mountWorkOrderModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL WORK ORDER MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Work Order</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function showMaintenance() {
   if (!appContent || !dashboardHome) return;
 
@@ -2121,6 +2165,8 @@ async function route() {
       await showContracts();
     } else if (hash === "maintenance") {
       await showMaintenance();
+    } else if (hash === "work-orders") {
+      await showWorkOrders();
     } else {
       showDashboard();
     }
@@ -2139,7 +2185,8 @@ document.addEventListener("click", event => {
     moduleName !== "buildings" &&
     moduleName !== "elevators" &&
     moduleName !== "contracts" &&
-    moduleName !== "maintenance"
+    moduleName !== "maintenance" &&
+    moduleName !== "work-orders"
   ) return;
 
   event.preventDefault();
