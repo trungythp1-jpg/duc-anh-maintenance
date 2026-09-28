@@ -2082,7 +2082,7 @@ async function showWorkOrders() {
   `;
 
   try {
-    const module = await import("./js/modules/work-order-module-v1.17.js?v=app-shell-1.17");
+    const module = await import("./js/modules/work-order-module-v1.15.js?v=app-shell-1.15");
     if (typeof module.mountWorkOrderModule !== "function") {
       throw new Error("MODULE_EXPORT_MISSING: mountWorkOrderModule");
     }
