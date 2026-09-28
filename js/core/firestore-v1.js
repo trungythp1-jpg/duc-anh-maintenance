@@ -930,6 +930,64 @@ export async function updateMaintenance(maintenanceId, data){
 
 
 /*
+ * Trong 18 giờ sau khi KTV báo hoàn thành, chỉ CSKH được xác nhận.
+ * API này giữ nguyên workflow hiện tại của module Maintenance.
+ */
+export async function confirmMaintenanceByCSKH(
+  maintenanceId,
+  data = {}
+){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(existing.status !== "waiting_confirmation"){
+    throw new Error("Phiếu không ở trạng thái chờ CSKH xác nhận.");
+  }
+
+  if(existing.customerConfirmationStatus !== "pending"){
+    throw new Error("Phiếu không còn ở trạng thái chờ CSKH xác nhận.");
+  }
+
+  if(existing.customerConfirmationDeadline){
+    const deadline = existing.customerConfirmationDeadline?.toDate
+      ? existing.customerConfirmationDeadline.toDate()
+      : new Date(existing.customerConfirmationDeadline);
+
+    if(!Number.isNaN(deadline.getTime()) && Date.now() > deadline.getTime()){
+      throw new Error("Đã quá 18 giờ. Phiếu này phải do cấp quản lý xác nhận.");
+    }
+  }
+
+  const confirmedBy =
+    String(data.confirmedBy || data.confirmedByName || "").trim();
+
+  if(!confirmedBy){
+    throw new Error("Người xác nhận CSKH là bắt buộc.");
+  }
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    {
+      status: "completed",
+      customerConfirmationStatus: "confirmed",
+      customerConfirmedBy: confirmedBy,
+      customerConfirmedAt: serverTimestamp(),
+      customerConfirmationNote:
+        String(data.note || "").trim(),
+      updatedAt: serverTimestamp()
+    }
+  );
+
+  return getMaintenance(maintenanceId);
+}
+
+
+/*
  * Sau 18 giờ, chỉ cấp quản lý được xác nhận.
  * CSKH không sử dụng API này.
  */
