@@ -222,11 +222,11 @@ body.dashboard-auth-pending::before{
 
       <div class="nav-label">NHÂN SỰ</div>
 
-      <a class="nav-item" href="technicians.html">
+      <a class="nav-item" href="#technicians" data-app-module="technicians">
         ♟ <span>Kỹ thuật viên</span>
       </a>
 
-      <a class="nav-item" href="kpi.html">
+      <a class="nav-item" href="#kpi" data-app-module="kpi">
         ▥ <span>KPI</span>
       </a>
 
@@ -1870,6 +1870,8 @@ import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
+import { mountTechnicianModule } from "./js/modules/technician-module-v1.0.js";
+import { mountKpiModule } from "./js/modules/kpi-module-v1.0.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -2082,7 +2084,7 @@ async function showWorkOrders() {
   `;
 
   try {
-    const module = await import("./js/modules/work-order-module-v1.15.js?v=app-shell-1.15");
+    const module = await import("./js/modules/work-order-module-v1.17.js?v=app-shell-1.17");
     if (typeof module.mountWorkOrderModule !== "function") {
       throw new Error("MODULE_EXPORT_MISSING: mountWorkOrderModule");
     }
@@ -2148,6 +2150,87 @@ async function showMaintenance() {
   }
 }
 
+
+async function showTechnicians() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "technicians";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("technicians");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở Kỹ thuật viên...</strong>
+          <span>Đang tải module Kỹ thuật viên trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountTechnicianModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL TECHNICIAN MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module Kỹ thuật viên</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function showKpi() {
+  if (!appContent || !dashboardHome) return;
+
+  currentModule = "kpi";
+  dashboardHome.style.display = "none";
+  appContent.style.display = "";
+  setActiveModule("kpi");
+
+  appContent.innerHTML = `
+    <div class="panel" style="margin-top:18px;">
+      <div class="work-row">
+        <time>…</time>
+        <i></i>
+        <div>
+          <strong>Đang mở KPI...</strong>
+          <span>Đang tải module KPI trong App Shell.</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    await mountKpiModule(appContent);
+  } catch (error) {
+    console.error("APP SHELL KPI MODULE ERROR:", error);
+    appContent.innerHTML = `
+      <div class="panel" style="margin-top:18px;">
+        <div class="work-row">
+          <time>!</time>
+          <i></i>
+          <div>
+            <strong>Không thể mở module KPI</strong>
+            <span>${String(error?.message || "MODULE_LOAD_ERROR")}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 async function route() {
   if (routing) return;
   routing = true;
@@ -2167,6 +2250,10 @@ async function route() {
       await showMaintenance();
     } else if (hash === "work-orders") {
       await showWorkOrders();
+    } else if (hash === "technicians") {
+      await showTechnicians();
+    } else if (hash === "kpi") {
+      await showKpi();
     } else {
       showDashboard();
     }
@@ -2186,7 +2273,9 @@ document.addEventListener("click", event => {
     moduleName !== "elevators" &&
     moduleName !== "contracts" &&
     moduleName !== "maintenance" &&
-    moduleName !== "work-orders"
+    moduleName !== "work-orders" &&
+    moduleName !== "technicians" &&
+    moduleName !== "kpi"
   ) return;
 
   event.preventDefault();
