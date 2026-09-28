@@ -1272,7 +1272,8 @@ function dashboardStatusLabel(status) {
 
 function openDashboardWorkOrderRequest(requestId){
   if(!requestId)return;
-  // Dashboard chỉ hiển thị phiếu. ADMIN xử lý/tạo WO trong module Work Order hiện tại.
+  // Ghi nhớ đúng phiếu KTV vừa chọn để Work Order module mở trực tiếp phiếu đó.
+  window.__dashboardPendingWorkOrderRequestId=String(requestId);
   if(location.hash!=="#work-orders") location.hash="work-orders";
   else route();
 }
