@@ -925,7 +925,14 @@ async function load(){
     maintenances.sort((a,b)=>String(b.scheduledDate||"").localeCompare(String(a.scheduledDate||"")));
     workOrders.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
     render();
-    void loadWorkOrderRequests();
+    await loadWorkOrderRequests();
+    const pendingRequestId=String(window.__dashboardPendingWorkOrderRequestId||"").trim();
+    if(pendingRequestId){
+      window.__dashboardPendingWorkOrderRequestId="";
+      if(workOrderRequests.some(item=>String(item.id)===pendingRequestId)){
+        openRequest(pendingRequestId);
+      }
+    }
     $("status").textContent=`Đã tải ${workOrders.length} Work Order · ${customers.length} khách hàng`;
   }catch(err){
     $("status").className="status error";$("status").textContent=err?.message||String(err);
