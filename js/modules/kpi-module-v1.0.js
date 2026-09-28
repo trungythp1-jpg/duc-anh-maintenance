@@ -1,0 +1,947 @@
+/* ĐỨC ANH MAINTENANCE — KPI V4.10 APP SHELL ADAPTER
+ * UI/calculation/Data Layer preserved; only bootstrap and mount boundary adapted.
+ */
+export async function mountKpiModule(root){
+  if(!root) throw new Error("KPI_ROOT_MISSING");
+  root.innerHTML = `<style>
+:root{
+  --da-bg:#090909;--da-panel:#11110f;--da-panel-2:#171714;--da-gold:#d6a84f;
+  --da-gold-light:#f0ca76;--da-gold-soft:#9e7a37;--da-ivory:#f5f1e7;
+  --da-text:#eee9df;--da-muted:#aaa49a;--da-border:#3a3428;
+}
+*{box-sizing:border-box}
+html,body{background:var(--da-bg);color:var(--da-text)}
+body{margin:0;background:radial-gradient(circle at 82% -10%,rgba(214,168,79,.09),transparent 30%),linear-gradient(180deg,#0b0b0a 0%,#080808 100%)}
+.app-header{background:#090909!important;border-bottom:1px solid var(--da-gold-soft)!important}
+.app-header .brand{color:var(--da-gold-light)!important;font-weight:700}
+.page{max-width:1500px;margin:0 auto;padding:24px 18px 60px}
+.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+.page-head h1{margin:0 0 6px;font-size:30px;color:var(--da-gold-light)!important}
+.muted{color:var(--da-muted)!important}
+.btn{border:1px solid var(--da-gold-soft)!important;background:#151512!important;color:var(--da-ivory)!important;border-radius:10px;padding:10px 14px;cursor:pointer;font:inherit}
+.btn.primary{background:linear-gradient(180deg,#e0b65c,#bd8e34)!important;color:#111!important;border-color:var(--da-gold)!important;font-weight:700}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.toolbar{background:#11110f!important;border:1px solid var(--da-border)!important;border-radius:14px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1.3fr 1.2fr 1.7fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600;color:var(--da-gold-light)!important}
+.field input,.field select{width:100%;border:1px solid #4a4438!important;border-radius:9px;padding:10px 11px;background:#171714!important;color:var(--da-text)!important;font:inherit;outline:none}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:linear-gradient(180deg,#151512,#10100e)!important;border:1px solid var(--da-border)!important;border-radius:14px;padding:14px}
+.kpi .label{font-size:12px;color:var(--da-gold-light)!important}
+.kpi .value{font-size:25px;font-weight:700;margin-top:5px;color:var(--da-ivory)!important}
+.kpi .sub{font-size:11px;color:var(--da-muted)!important;margin-top:4px}
+.card{background:#11110f!important;border:1px solid var(--da-border)!important;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--da-border)}
+.card-head h2{margin:0;color:var(--da-gold-light)!important;font-size:18px}
+.statusline{padding:10px 14px;font-size:13px;color:var(--da-muted)!important}
+.statusline.error{color:#ff8176!important}.statusline.ok{color:#75dda5!important}
+.table-wrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.data-table{width:100%;border-collapse:collapse;min-width:1100px}
+.tech-table-wrap{position:relative}
+.tech-table-wrap .data-table th:first-child,.tech-table-wrap .data-table td:first-child{position:sticky;left:0;z-index:2;background:#11110f!important;box-shadow:8px 0 12px rgba(0,0,0,.22)}
+.tech-table-wrap .data-table th:first-child{background:#171714!important;z-index:3}
+.data-table th,.data-table td{padding:11px 12px;border-bottom:1px solid #292722!important;text-align:left;vertical-align:top;font-size:13px}
+.data-table th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--da-gold-light)!important;background:#171714!important}
+.data-table tr:hover td{background:#161613!important}
+.badge{display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;box-sizing:border-box!important;position:relative!important;width:auto!important;height:auto!important;min-width:0!important;min-height:28px!important;max-width:100%!important;overflow:visible!important;border-radius:999px!important;padding:5px 10px!important;font-size:12px!important;line-height:1.25!important;font-weight:600!important;white-space:normal!important;background:#25231e!important;color:var(--da-ivory)!important}
+.badge.done{background:rgba(95,202,145,.14)!important;color:#75dda5!important}
+.badge.progress{background:rgba(122,167,255,.14)!important;color:#8fb8ff!important}
+.badge.late{background:rgba(227,91,79,.14)!important;color:#ff8176!important}
+.badge.warn{background:rgba(214,168,79,.15)!important;color:var(--da-gold-light)!important}
+.badge.sales{background:rgba(180,130,220,.14)!important;color:#d4a9ef!important}
+.link{color:var(--da-gold-light);cursor:pointer;text-decoration:none}
+.empty{padding:38px;text-align:center;color:var(--da-muted)!important}
+.detail-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:14px 16px}
+.detail-box{background:#171714;border:1px solid #302c25;border-radius:10px;padding:12px}
+.detail-box small{display:block;color:var(--da-muted);margin-bottom:4px}
+.detail-box strong{font-size:17px;color:var(--da-ivory)}
+
+/* KPI V4.9: Chi tiết Bảo trì / Work Order thu gọn, chỉ bung khi người dùng bấm vào tiêu đề. */
+.kpi-collapsible-card{overflow:hidden!important}
+.kpi-collapsible-head{
+  width:100%!important;
+  border:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  cursor:pointer!important;
+  text-align:left!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  padding:15px 16px!important;
+}
+.kpi-collapsible-head:focus-visible{outline:2px solid var(--da-gold-light)!important;outline-offset:-2px!important}
+.kpi-collapsible-title{color:var(--da-gold-light)!important;font-size:18px!important;font-weight:700!important}
+.kpi-collapsible-title span{font-weight:500!important;color:var(--da-muted)!important;font-size:14px!important}
+.kpi-collapsible-right{display:flex!important;align-items:center!important;gap:10px!important;flex-shrink:0!important}
+.kpi-collapsible-icon{width:28px!important;height:28px!important;border:1px solid var(--da-gold-soft)!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;color:var(--da-gold-light)!important;font-size:20px!important;line-height:1!important;font-weight:700!important}
+.kpi-collapsible-head[aria-expanded="true"] .kpi-collapsible-icon{background:rgba(214,168,79,.10)!important}
+.kpi-collapsible-body{border-top:1px solid var(--da-border)!important}
+.kpi-collapsible-body[hidden]{display:none!important}
+@media(max-width:700px){
+  .kpi-collapsible-title{font-size:17px!important}
+  .kpi-collapsible-title span{font-size:13px!important}
+  .kpi-collapsible-right .muted{font-size:12px!important}
+  .kpi-collapsible-head{padding:14px!important}
+}
+
+/* KPI V4.9: khi chọn "Tất cả KTV", chỉ hiển thị dòng tóm tắt; bấm từng KTV mới mở KPI chi tiết. */
+.kpi-tech-compact-list{display:none;padding:10px 12px}
+.kpi-tech-compact-item{
+  border:1px solid #302c25!important;
+  border-radius:12px!important;
+  background:#11110f!important;
+  margin:0 0 8px!important;
+  overflow:hidden!important;
+}
+.kpi-tech-compact-item:last-child{margin-bottom:0!important}
+.kpi-tech-compact-summary{
+  list-style:none!important;
+  cursor:pointer!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto 24px!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:12px 14px!important;
+  min-height:58px!important;
+}
+.kpi-tech-compact-summary::-webkit-details-marker{display:none!important}
+.kpi-tech-compact-summary::after{
+  content:"+"!important;
+  color:var(--da-gold-light)!important;
+  font-size:20px!important;
+  font-weight:700!important;
+  text-align:center!important;
+}
+.kpi-tech-compact-item[open]>.kpi-tech-compact-summary::after{content:"−"!important}
+.kpi-tech-compact-name{
+  color:var(--da-ivory)!important;
+  font-weight:700!important;
+  font-size:15px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.kpi-tech-compact-sub{
+  color:var(--da-muted)!important;
+  font-size:12px!important;
+  margin-top:3px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.kpi-tech-compact-rate{
+  color:var(--da-gold-light)!important;
+  font-size:13px!important;
+  font-weight:700!important;
+  white-space:nowrap!important;
+}
+.kpi-tech-compact-body{
+  border-top:1px solid #292722!important;
+  padding:10px 12px 12px!important;
+  background:#10100e!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.kpi-tech-metric{
+  min-width:0!important;
+  padding:8px 9px!important;
+  border:1px solid #292722!important;
+  border-radius:8px!important;
+  background:#171714!important;
+}
+.kpi-tech-metric small{
+  display:block!important;
+  color:var(--da-gold-light)!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  text-transform:uppercase!important;
+  margin-bottom:3px!important;
+}
+.kpi-tech-metric div{color:var(--da-text)!important;overflow-wrap:anywhere!important}
+@media(max-width:650px){
+  .kpi-tech-compact-body{grid-template-columns:1fr 1fr!important}
+  .kpi-tech-compact-summary{grid-template-columns:minmax(0,1fr) auto 22px!important;padding:11px 12px!important}
+}
+.kpi-detail-list{padding:10px 12px}
+.kpi-detail-item{
+  border:1px solid #302c25!important;
+  border-radius:12px!important;
+  background:#11110f!important;
+  margin:0 0 8px!important;
+  overflow:hidden!important;
+}
+.kpi-detail-item:last-child{margin-bottom:0!important}
+.kpi-detail-summary{
+  list-style:none!important;
+  cursor:pointer!important;
+  display:grid!important;
+  grid-template-columns:minmax(125px,1.1fr) minmax(150px,1.5fr) minmax(120px,1.2fr) auto 24px!important;
+  gap:10px!important;
+  align-items:center!important;
+  padding:12px 14px!important;
+  min-height:50px!important;
+}
+.kpi-detail-summary::-webkit-details-marker{display:none!important}
+.kpi-detail-summary::after{
+  content:"+"!important;
+  color:var(--da-gold-light)!important;
+  font-size:20px!important;
+  font-weight:700!important;
+  text-align:center!important;
+}
+.kpi-detail-item[open] .kpi-detail-summary::after{content:"−"!important}
+.kpi-detail-main{min-width:0!important}
+.kpi-detail-id{font-weight:700;color:var(--da-ivory)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-detail-sub{font-size:12px;color:var(--da-muted)!important;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-detail-summary .badge{justify-self:start!important}
+.kpi-detail-body{
+  border-top:1px solid #292722!important;
+  padding:10px 14px 14px!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.kpi-detail-field{
+  min-width:0!important;
+  padding:9px 10px!important;
+  border:1px solid #292722!important;
+  border-radius:9px!important;
+  background:#171714!important;
+}
+.kpi-detail-field small{
+  display:block!important;
+  color:var(--da-gold-light)!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  text-transform:uppercase!important;
+  margin-bottom:3px!important;
+}
+.kpi-detail-field div{
+  color:var(--da-text)!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+}
+.kpi-detail-empty{padding:30px 16px;text-align:center;color:var(--da-muted)}
+.kpi-nested-list{border-top:1px solid #292722!important;padding:10px 12px 12px!important;background:#0f0f0d!important}
+.kpi-nested-item{border:1px solid #302c25!important;border-radius:10px!important;background:#141310!important;margin:0 0 7px!important;overflow:hidden!important}
+.kpi-nested-item:last-child{margin-bottom:0!important}
+.kpi-nested-summary{list-style:none!important;cursor:pointer!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:10px 12px!important;min-height:46px!important}
+.kpi-nested-summary::-webkit-details-marker{display:none!important}
+.kpi-nested-summary::after{content:"+"!important;color:var(--da-gold-light)!important;font-size:18px!important;font-weight:700!important;flex:0 0 20px;text-align:center}
+.kpi-nested-item[open]>.kpi-nested-summary::after{content:"−"!important}
+.kpi-nested-title{font-weight:700;color:var(--da-ivory)!important;min-width:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi-nested-sub{font-size:11px;color:var(--da-muted)!important;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi-final-detail{border-top:1px solid #292722!important;padding:10px 12px 12px!important;background:#10100e!important}
+.kpi-final-title{font-size:12px!important;font-weight:700!important;color:var(--da-gold-light)!important;text-transform:uppercase!important;letter-spacing:.03em!important;margin:2px 0 8px!important}
+.kpi-project-block{margin-top:10px!important;padding-top:10px!important;border-top:1px solid #292722!important}
+.kpi-project-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+.kpi-project-field{min-width:0!important;padding:8px 9px!important;border:1px solid #292722!important;border-radius:8px!important;background:#171714!important}
+.kpi-project-field small{display:block!important;color:var(--da-gold-light)!important;font-size:10px!important;font-weight:700!important;text-transform:uppercase!important;margin-bottom:3px!important}
+.kpi-project-field div{color:var(--da-text)!important;overflow-wrap:anywhere!important;word-break:break-word!important}
+@media(max-width:900px){.kpi-project-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:650px){
+  .kpi-detail-summary{grid-template-columns:minmax(0,1fr) auto!important}
+  .kpi-detail-summary .kpi-detail-main:nth-child(2){display:none!important}
+  .kpi-detail-body{grid-template-columns:1fr!important}
+  .kpi-project-grid{grid-template-columns:1fr!important}
+}
+
+.auth-gate{position:fixed;inset:0;background:#090909;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-box{max-width:420px;width:100%;padding:28px;border:1px solid var(--da-gold-soft);border-radius:16px;background:#11110f;text-align:center}
+.auth-box h2{color:var(--da-gold-light);margin-top:0}
+.auth-gate.hidden{display:none}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* Mobile KPI tables: render as readable cards instead of a 1100px-wide table. */
+@media(max-width:650px){
+ .table-wrap{overflow:visible!important}
+ .data-table{display:block!important;min-width:0!important;width:100%!important;border-collapse:separate!important}
+ .data-table thead{display:none!important}
+ .data-table tbody{display:block!important;width:100%!important}
+ .data-table tr{
+   display:block!important;
+   width:100%!important;
+   margin:0 0 10px!important;
+   padding:8px 10px!important;
+   border:1px solid #302c25!important;
+   border-radius:12px!important;
+   background:#11110f!important;
+ }
+ .data-table td{
+   display:grid!important;
+   grid-template-columns:minmax(108px,42%) minmax(0,1fr)!important;
+   gap:10px!important;
+   width:100%!important;
+   min-width:0!important;
+   padding:8px 4px!important;
+   border-bottom:1px solid #292722!important;
+   text-align:left!important;
+   vertical-align:middle!important;
+   overflow-wrap:anywhere!important;
+   word-break:break-word!important;
+ }
+ .data-table td:last-child{border-bottom:0!important}
+ .data-table td::before{
+   content:attr(data-label)!important;
+   color:var(--da-gold-light)!important;
+   font-size:11px!important;
+   font-weight:700!important;
+   text-transform:uppercase!important;
+   line-height:1.25!important;
+   min-width:0!important;
+ }
+ .data-table td > *{min-width:0!important;max-width:100%!important}
+ .data-table .badge{
+   justify-self:start!important;
+   width:max-content!important;
+   max-width:100%!important;
+   min-height:28px!important;
+   line-height:1.2!important;
+ }
+ .tech-table-wrap .data-table th:first-child,
+ .tech-table-wrap .data-table td:first-child{
+   position:static!important;
+   min-width:0!important;
+   box-shadow:none!important;
+   background:transparent!important;
+ }
+ .tech-table-wrap .data-table{min-width:0!important}
+ .tech-table-wrap{margin:0!important}
+}
+@media(max-width:650px){
+ .page{padding:16px 12px 45px}.page-head{flex-direction:column}.page-head .btn{width:100%}
+ .toolbar{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:1fr 1fr}
+ .card-head{align-items:flex-start;flex-direction:column}
+ .card-head h2{font-size:17px;line-height:1.3}
+ .table-wrap:not(.tech-table-wrap){scrollbar-width:thin}
+}
+</style><div id="kpi-module-root"><main class="page">
+  <div class="page-head">
+    <div>
+      <h1>KPI vận hành</h1>
+      <div class="muted">
+        Theo dõi khối lượng Bảo trì và toàn bộ Work Order được phân công.
+        KPI V4.9 là số liệu vận hành, không chấm điểm hay xếp hạng nhân sự.
+      </div>
+    </div>
+    <button class="btn primary" id="refreshBtn" type="button">↻ Cập nhật</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="field"><label for="periodType">Loại kỳ</label>
+      <select id="periodType"><option value="month">Theo tháng</option><option value="quarter">Theo quý</option></select>
+    </div>
+    <div class="field"><label for="periodValue">Kỳ KPI</label><select id="periodValue"></select></div>
+    <div class="field"><label for="technicianFilter">Kỹ thuật viên</label><select id="technicianFilter"><option value="">Tất cả KTV</option></select></div>
+    <div class="field"><label for="search">Tìm trong chi tiết</label><input id="search" placeholder="WO, phiếu bảo trì, khách hàng, tòa nhà, thang…"></div>
+  </div>
+
+  <div class="card">
+    <div class="statusline" id="pageStatus">Đang tải…</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">BẢO TRÌ KẾ HOẠCH</div><div class="value" id="kPlan">0</div><div class="sub">Số lượt trong kỳ</div></div>
+    <div class="kpi"><div class="label">ĐÃ BẢO TRÌ</div><div class="value" id="kMaintDone">0</div><div class="sub" id="kMaintDoneSub">0%</div></div>
+    <div class="kpi"><div class="label">BẢO TRÌ CÒN LẠI</div><div class="value" id="kMaintRemain">0</div><div class="sub">Chưa hoàn thành</div></div>
+    <div class="kpi"><div class="label">TỔNG WORK ORDER</div><div class="value" id="kWoTotal">0</div><div class="sub">Trong kỳ</div></div>
+    <div class="kpi"><div class="label">WO HOÀN THÀNH</div><div class="value" id="kWoDone">0</div><div class="sub" id="kWoDoneSub">0%</div></div>
+    <div class="kpi"><div class="label">WO ĐANG XỬ LÝ</div><div class="value" id="kWoActive">0</div><div class="sub" id="kWoExtraSub">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Nguồn Work Order</h2>
+      <span class="muted">Theo sourceType của Work Order V2</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-box"><small>Bảo trì</small><strong id="kSourceMaintenance">0</strong></div>
+      <div class="detail-box"><small>Khách hàng báo</small><strong id="kSourceCustomer">0</strong></div>
+      <div class="detail-box"><small>Sự cố</small><strong id="kSourceIncident">0</strong></div>
+      <div class="detail-box"><small>Kinh doanh</small><strong id="kSourceSales">0</strong></div>
+      <div class="detail-box"><small>Quản lý</small><strong id="kSourceManagement">0</strong></div>
+      <div class="detail-box"><small>Khác</small><strong id="kSourceOther">0</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Tổng hợp Bảo trì + Work Order theo kỹ thuật viên</h2>
+      <span class="muted" id="periodLabel">—</span>
+    </div>
+    <div class="table-wrap tech-table-wrap" id="technicianTableWrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Kỹ thuật viên</th>
+            <th>KH bảo trì</th>
+            <th>Đã BT</th>
+            <th>Còn lại</th>
+            <th>% BT</th>
+            <th>Tổng WO</th>
+            <th>WO hoàn thành</th>
+            <th>WO đang xử lý</th>
+            <th>WO quá hạn</th>
+            <th>WO đúng hạn</th>
+            <th>TB xử lý</th>
+            <th>Chi phí WO</th>
+          </tr>
+        </thead>
+        <tbody id="technicianRows"></tbody>
+      </table>
+    </div>
+    <div id="technicianCompactRows" class="kpi-tech-compact-list"></div>
+    <div class="empty" id="technicianEmpty">Chưa có dữ liệu KPI.</div>
+  </div>
+
+  <div class="card kpi-collapsible-card">
+    <button type="button" class="card-head kpi-collapsible-head" id="maintenanceToggle" aria-expanded="false" aria-controls="maintenanceDetailBody">
+      <span class="kpi-collapsible-title">Chi tiết Bảo trì <span id="maintenanceProjectCount">(0 lượt)</span></span>
+      <span class="kpi-collapsible-icon" aria-hidden="true">+</span>
+    </button>
+    <div id="maintenanceDetailBody" class="kpi-collapsible-body" hidden>
+      <div id="maintenanceRows" class="kpi-detail-list"></div>
+      <div class="kpi-detail-empty" id="maintenanceEmpty">Chưa có lượt bảo trì trong kỳ.</div>
+    </div>
+  </div>
+
+  <div class="card kpi-collapsible-card">
+    <button type="button" class="card-head kpi-collapsible-head" id="workOrderToggle" aria-expanded="false" aria-controls="workOrderDetailBody">
+      <span class="kpi-collapsible-title">Chi tiết Work Order <span id="workOrderProjectCount">(0 lượt)</span></span>
+      <span class="kpi-collapsible-icon" aria-hidden="true">+</span>
+    </button>
+    <div id="workOrderDetailBody" class="kpi-collapsible-body" hidden>
+      <div id="detailRows" class="kpi-detail-list"></div>
+      <div class="kpi-detail-empty" id="detailEmpty">Chưa có Work Order trong kỳ.</div>
+    </div>
+  </div>
+
+</main></div>`;
+
+  
+const bootGateText=document.querySelector("#authGate .muted");
+if(bootGateText) bootGateText.textContent="Đang khởi động KPI V4.9…";
+
+const $=id=>root.querySelector("#"+id);
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+let auth=null,db=null,onAuthStateChangedFn=null,docFn=null,getDocFn=null;
+let calculateTechnicianKpiV2,getAllWorkOrdersForKpi,getWorkOrdersForTechnician,getAllMaintenancesForKpi,getMaintenancesForTechnician,createMonthlyPeriod,createQuarterPeriod;
+let getTechnicians,getTechnician;
+
+const state={user:null,profile:null,technicians:[],workOrders:[],maintenances:[],period:null,selectedTechnician:"",kpis:[]};
+
+function withTimeout(promise,ms,label){
+  return Promise.race([
+    promise,
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+" sau "+Math.round(ms/1000)+" giây.")),ms))
+  ]);
+}
+function setStatus(msg,type=""){
+  const e=$("pageStatus");
+  if(e){e.textContent=msg;e.className=`statusline ${type}`;}
+  console.log("KPI V4:",msg);
+}
+function showFatal(title,message){
+  setStatus(`${title}: ${message}`,"error");
+  console.error("KPI V4.10 FATAL:",title,message);
+}
+function role(){return String(state.profile?.role||"").trim().toUpperCase()}
+function fmt(v){
+  if(!v)return"—";
+  const d=new Date(`${String(v).slice(0,10)}T00:00:00`);
+  return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString("vi-VN");
+}
+function money(v){return new Intl.NumberFormat("vi-VN").format(Number(v)||0)+" đ"}
+function currentYear(){return new Date().getFullYear()}
+function currentMonth(){return new Date().getMonth()+1}
+function statusText(s){return({draft:"Nháp",assigned:"Đã phân công",in_progress:"Đang xử lý",waiting_parts:"Chờ vật tư",completed:"Hoàn thành",cancelled:"Đã hủy"})[s]||s||"—"}
+function statusClass(s){
+  if(s==="completed")return"done";
+  if(s==="cancelled")return"late";
+  if(["assigned","in_progress","waiting_parts"].includes(s))return"progress";
+  return"";
+}
+function sourceLabel(s){
+  return({
+    MAINTENANCE:"Bảo trì",
+    CUSTOMER_REPORT:"Khách hàng báo",
+    INCIDENT:"Sự cố",
+    SALES:"Kinh doanh",
+    MANAGEMENT:"Quản lý",
+    OTHER:"Khác"
+  })[String(s||"OTHER").toUpperCase()]||"Khác";
+}
+function sourceClass(s){
+  s=String(s||"OTHER").toUpperCase();
+  if(s==="MAINTENANCE")return"done";
+  if(s==="CUSTOMER_REPORT")return"warn";
+  if(s==="INCIDENT")return"late";
+  if(s==="SALES")return"sales";
+  if(s==="MANAGEMENT")return"progress";
+  return"";
+}
+
+async function bootstrapCore(){
+  setStatus("Đang tải Firebase core…");
+  const core=await withTimeout(import("../core/firebase.js"),8000,"Không tải được Firebase core");
+  auth=core?.auth;db=core?.db;
+  if(!auth||!db)throw new Error("firebase.js không export auth/db.");
+
+  setStatus("Firebase core OK · Đang tải Auth…");
+  const authSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js"),8000,"Không tải được Firebase Auth SDK");
+  onAuthStateChangedFn=authSdk?.onAuthStateChanged;
+  if(typeof onAuthStateChangedFn!=="function")throw new Error("Thiếu onAuthStateChanged.");
+
+  setStatus("Firebase Auth OK · Đang tải Firestore…");
+  const firestoreSdk=await withTimeout(import("https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js"),8000,"Không tải được Firestore SDK");
+  docFn=firestoreSdk?.doc;getDocFn=firestoreSdk?.getDoc;
+  if(typeof docFn!=="function"||typeof getDocFn!=="function")throw new Error("Thiếu doc/getDoc.");
+  setStatus("Firebase core + Auth + Firestore OK.");
+}
+
+async function loadModules(){
+  setStatus("Đang tải module KPI V4…");
+  const kpi=await withTimeout(import("../kpi/kpi.js"),8000,"Không tải được /js/kpi/kpi.js");
+  calculateTechnicianKpiV2=kpi.calculateTechnicianKpiV2;
+  getAllWorkOrdersForKpi=kpi.getAllWorkOrdersForKpi;
+  getWorkOrdersForTechnician=kpi.getWorkOrdersForTechnician;
+  getAllMaintenancesForKpi=kpi.getAllMaintenancesForKpi;
+  getMaintenancesForTechnician=kpi.getMaintenancesForTechnician;
+  createMonthlyPeriod=kpi.createMonthlyPeriod;
+  createQuarterPeriod=kpi.createQuarterPeriod;
+
+  for(const [name,fn] of Object.entries({calculateTechnicianKpiV2,getAllWorkOrdersForKpi,getWorkOrdersForTechnician,getAllMaintenancesForKpi,getMaintenancesForTechnician,createMonthlyPeriod,createQuarterPeriod})){
+    if(typeof fn!=="function")throw new Error(`Thiếu ${name}.`);
+  }
+  if(typeof calculateTechnicianKpiV2!=="function")throw new Error("KPI V4 không khớp với file kpi.js hiện tại.");
+
+  const tech=await withTimeout(import("../core/firestore-v1-technician-v1.js"),8000,"Không tải được technician module");
+  getTechnicians=tech.getTechnicians;getTechnician=tech.getTechnician;
+  if(typeof getTechnicians!=="function"||typeof getTechnician!=="function")throw new Error("Thiếu API kỹ thuật viên.");
+}
+
+function buildPeriodOptions(){
+  const type=$("periodType").value,sel=$("periodValue");
+  sel.innerHTML="";
+  if(type==="month"){
+    for(let y=currentYear()-2;y<=currentYear()+1;y++)for(let m=1;m<=12;m++){
+      const p=createMonthlyPeriod(y,m),o=document.createElement("option");
+      o.value=p.periodId;o.textContent=p.label;sel.appendChild(o);
+    }
+    sel.value=`${currentYear()}-${String(currentMonth()).padStart(2,"0")}`;
+  }else{
+    for(let y=currentYear()-2;y<=currentYear()+1;y++)for(let q=1;q<=4;q++){
+      const p=createQuarterPeriod(y,q),o=document.createElement("option");
+      o.value=p.periodId;o.textContent=p.label;sel.appendChild(o);
+    }
+    sel.value=`${currentYear()}-Q${Math.floor((currentMonth()-1)/3)+1}`;
+  }
+}
+function selectedPeriod(){
+  const value=$("periodValue").value;
+  if(!value)return null;
+  if($("periodType").value==="month"){
+    const [y,m]=value.split("-").map(Number);
+    return createMonthlyPeriod(y,m);
+  }
+  const [y,qRaw]=value.split("-");
+  return createQuarterPeriod(Number(y),Number(qRaw.replace("Q","")));
+}
+function fillTechnicians(){
+  const sel=$("technicianFilter"),old=state.selectedTechnician;
+  sel.innerHTML='<option value="">Tất cả KTV</option>';
+  state.technicians.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","vi")).forEach(t=>{
+    const o=document.createElement("option");
+    o.value=t.id;o.textContent=t.name||t.id;sel.appendChild(o);
+  });
+  if(old&&[...sel.options].some(o=>o.value===old))sel.value=old;
+}
+async function loadTechnicians(){
+  if(role()==="TECHNICIAN"){
+    const id=String(state.profile?.technicianId||"").trim();
+    if(!id)throw new Error("Tài khoản TECHNICIAN chưa có technicianId.");
+    const t=await getTechnician(id);
+    if(!t)throw new Error(`Không tìm thấy kỹ thuật viên ${id}.`);
+    state.technicians=[t];state.selectedTechnician=id;
+    $("technicianFilter").disabled=true;
+  }else{
+    state.technicians=await getTechnicians()||[];
+    $("technicianFilter").disabled=false;
+  }
+  fillTechnicians();
+}
+async function loadOperationalData(){
+  state.period=selectedPeriod();
+  if(!state.period)throw new Error("Không xác định được kỳ KPI.");
+  state.selectedTechnician=$("technicianFilter").value||"";
+
+  if(role()==="TECHNICIAN"){
+    state.workOrders=await getWorkOrdersForTechnician(state.selectedTechnician);
+    state.maintenances=await getMaintenancesForTechnician(state.selectedTechnician);
+  }else{
+    state.workOrders=await getAllWorkOrdersForKpi();
+    state.maintenances=await getAllMaintenancesForKpi();
+  }
+}
+async function calculate(){
+  const p=state.period;
+  const list=state.selectedTechnician
+    ? state.technicians.filter(t=>String(t.id)===String(state.selectedTechnician))
+    : state.technicians;
+
+  state.kpis=[];
+  for(const t of list){
+    const k=calculateTechnicianKpiV2({
+      technicianId:t.id,
+      technicianName:t.name||"",
+      periodId:p.periodId,
+      startDate:p.startDate,
+      endDate:p.endDate,
+      maintenances:state.maintenances,
+      workOrders:state.workOrders
+    });
+    if(k.maintenance.plannedMaintenance>0||k.workOrder.totalWorkOrders>0||state.selectedTechnician){
+      state.kpis.push(k);
+    }
+  }
+}
+function aggregate(){
+  return state.kpis.reduce((a,k)=>{
+    a.planned+=k.maintenance.plannedMaintenance;
+    a.maintDone+=k.maintenance.completedMaintenance;
+    a.maintRemain+=k.maintenance.remainingMaintenance;
+    a.woTotal+=k.workOrder.totalWorkOrders;
+    a.woDone+=k.workOrder.completedWorkOrders;
+    a.woActive+=k.workOrder.activeWorkOrders;
+    a.woOverdue+=k.workOrder.overdueWorkOrders;
+    a.woOnTime+=k.workOrder.completedOnTime;
+    a.woCost+=k.workOrder.totalCost;
+    for(const [type,count] of Object.entries(k.workOrdersBySourceType||{})){
+      a.sources[type]=(a.sources[type]||0)+count;
+    }
+    return a;
+  },{
+    planned:0,maintDone:0,maintRemain:0,woTotal:0,woDone:0,woActive:0,
+    woOverdue:0,woOnTime:0,woCost:0,sources:{}
+  });
+}
+function renderSummary(){
+  const a=aggregate();
+  $("kPlan").textContent=a.planned;
+  $("kMaintDone").textContent=a.maintDone;
+  $("kMaintRemain").textContent=a.maintRemain;
+  $("kWoTotal").textContent=a.woTotal;
+  $("kWoDone").textContent=a.woDone;
+  $("kWoActive").textContent=a.woActive;
+  $("kMaintDoneSub").textContent=(a.planned?a.maintDone/a.planned*100:0).toFixed(1)+"%";
+  $("kWoDoneSub").textContent=(a.woTotal?a.woDone/a.woTotal*100:0).toFixed(1)+"%";
+  $("kWoExtraSub").textContent=`Quá hạn ${a.woOverdue} · Đúng hạn ${a.woOnTime}`;
+  $("kSourceMaintenance").textContent=a.sources.MAINTENANCE||0;
+  $("kSourceCustomer").textContent=a.sources.CUSTOMER_REPORT||0;
+  $("kSourceIncident").textContent=a.sources.INCIDENT||0;
+  $("kSourceSales").textContent=a.sources.SALES||0;
+  $("kSourceManagement").textContent=a.sources.MANAGEMENT||0;
+  $("kSourceOther").textContent=a.sources.OTHER||0;
+  $("periodLabel").textContent=`${fmt(state.period.startDate)} → ${fmt(state.period.endDate)}`;
+}
+function renderTechRows(){
+  const rows=$("technicianRows"),compact=$("technicianCompactRows"),empty=$("technicianEmpty"),tableWrap=$("technicianTableWrap");
+  if(!state.kpis.length){
+    rows.innerHTML="";
+    compact.innerHTML="";
+    tableWrap.style.display="none";
+    compact.style.display="none";
+    empty.style.display="block";
+    return;
+  }
+  empty.style.display="none";
+
+  /* Khi xem "Tất cả KTV": không bung 12 cột cho tất cả nhân sự.
+     Chỉ hiện một dòng tóm tắt/KTV; bấm từng KTV mới xem KPI đầy đủ. */
+  if(!state.selectedTechnician){
+    tableWrap.style.display="none";
+    compact.style.display="block";
+    rows.innerHTML="";
+    compact.innerHTML=state.kpis.map(k=>{
+      const m=k.maintenance,w=k.workOrder;
+      const rate=Number(m.maintenanceCompletionRate)||0;
+      return `<details class="kpi-tech-compact-item">
+        <summary class="kpi-tech-compact-summary">
+          <div>
+            <div class="kpi-tech-compact-name">${esc(k.technicianName||k.technicianId)}</div>
+            <div class="kpi-tech-compact-sub">BT ${m.completedMaintenance}/${m.plannedMaintenance} · WO ${w.completedWorkOrders}/${w.totalWorkOrders} hoàn thành</div>
+          </div>
+          <div class="kpi-tech-compact-rate">${rate.toFixed(1)}%</div>
+        </summary>
+        <div class="kpi-tech-compact-body">
+          <div class="kpi-tech-metric"><small>KH bảo trì</small><div>${m.plannedMaintenance}</div></div>
+          <div class="kpi-tech-metric"><small>Đã BT</small><div>${m.completedMaintenance}</div></div>
+          <div class="kpi-tech-metric"><small>Còn lại</small><div>${m.remainingMaintenance}</div></div>
+          <div class="kpi-tech-metric"><small>% BT</small><div>${rate.toFixed(1)}%</div></div>
+          <div class="kpi-tech-metric"><small>Tổng WO</small><div>${w.totalWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO hoàn thành</small><div>${w.completedWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO đang xử lý</small><div>${w.activeWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO quá hạn</small><div>${w.overdueWorkOrders}</div></div>
+          <div class="kpi-tech-metric"><small>WO đúng hạn</small><div>${w.completedOnTime}</div></div>
+          <div class="kpi-tech-metric"><small>TB xử lý</small><div>${Number.isFinite(Number(w.averageProcessingDays))?Number(w.averageProcessingDays).toFixed(1)+" ngày":"—"}</div></div>
+          <div class="kpi-tech-metric"><small>Chi phí WO</small><div>${money(w.totalCost)}</div></div>
+        </div>
+      </details>`;
+    }).join("");
+    return;
+  }
+
+  /* Chọn một KTV: giữ bảng chi tiết hiện tại vì chỉ còn một người. */
+  tableWrap.style.display="block";
+  compact.style.display="none";
+  compact.innerHTML="";
+  rows.innerHTML=state.kpis.map(k=>{
+    const m=k.maintenance,w=k.workOrder;
+    return `<tr>
+      <td data-label="Kỹ thuật viên"><a class="link" data-tech="${esc(k.technicianId)}">${esc(k.technicianName||k.technicianId)}</a></td>
+      <td data-label="KH bảo trì"><strong>${m.plannedMaintenance}</strong></td>
+      <td data-label="Đã BT">${m.completedMaintenance}</td>
+      <td data-label="Còn lại">${m.remainingMaintenance}</td>
+      <td data-label="% BT">${m.maintenanceCompletionRate.toFixed(1)}%</td>
+      <td data-label="Tổng WO"><strong>${w.totalWorkOrders}</strong></td>
+      <td data-label="WO hoàn thành">${w.completedWorkOrders}</td>
+      <td data-label="WO đang xử lý">${w.activeWorkOrders}</td>
+      <td data-label="WO quá hạn">${w.overdueWorkOrders}</td>
+      <td data-label="WO đúng hạn">${w.completedOnTime}</td>
+      <td data-label="TB xử lý">${Number.isFinite(Number(w.averageProcessingDays))?Number(w.averageProcessingDays).toFixed(1)+" ngày":"—"}</td>
+      <td data-label="Chi phí WO">${money(w.totalCost)}</td>
+    </tr>`;
+  }).join("");
+}
+function projectFields(r){
+  return `<div class="kpi-project-block">
+    <div class="kpi-final-title">Chi tiết công trình</div>
+    <div class="kpi-project-grid">
+      <div class="kpi-project-field"><small>Khách hàng</small><div>${esc(r.customerName||"—")}</div></div>
+      <div class="kpi-project-field"><small>Tòa nhà / Công trình</small><div>${esc(r.buildingName||"—")}</div></div>
+      <div class="kpi-project-field"><small>Mã tòa nhà</small><div>${esc(r.buildingId||"—")}</div></div>
+      <div class="kpi-project-field"><small>Thang máy</small><div>${esc(r.elevatorName||"—")}</div></div>
+      <div class="kpi-project-field"><small>Mã thang</small><div>${esc(r.elevatorAssetCode||"—")}</div></div>
+      <div class="kpi-project-field"><small>Hợp đồng</small><div>${esc(r.contractCode||"—")}</div></div>
+    </div>
+  </div>`;
+}
+function maintenanceStatus(r){
+  const status=r.status||"";
+  if(status==="completed")return {text:"Hoàn thành",cls:"done"};
+  if(r.isOverdue)return {text:"Quá hạn",cls:"late"};
+  if(status==="assigned")return {text:"Đã phân công",cls:"progress"};
+  if(status==="in_progress")return {text:"Đang thực hiện",cls:"progress"};
+  return {text:"Chưa hoàn thành",cls:"progress"};
+}
+function renderMaintenanceEntry(r){
+  const result=r.isCompletedOnTime?'<span class="badge done">Đúng lịch</span>':
+    r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':
+    r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
+  const st=maintenanceStatus(r);
+  return `<details class="kpi-nested-item">
+    <summary class="kpi-nested-summary">
+      <div>
+        <div class="kpi-nested-title">Bảo trì ${esc(fmt(r.scheduledDate))}</div>
+        <div class="kpi-nested-sub">${esc(r.technicianName||"—")} · ${esc(r.buildingName||"—")} · ${esc(r.elevatorName||"—")}</div>
+      </div>
+      <span class="badge ${st.cls}">${esc(st.text)}</span>
+    </summary>
+    <div class="kpi-final-detail">
+      <div class="kpi-final-title">Chi tiết phiếu bảo trì</div>
+      <div class="kpi-detail-body" style="border-top:0;padding:0!important">
+        <div class="kpi-detail-field"><small>Phiếu bảo trì</small><div>${esc(r.ticketNo||r.id)}</div></div>
+        <div class="kpi-detail-field"><small>Kỹ thuật viên</small><div>${esc(r.technicianName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Lịch bảo trì</small><div>${fmt(r.scheduledDate)}</div></div>
+        <div class="kpi-detail-field"><small>Hoàn thành</small><div>${fmt(r.completedDate)}</div></div>
+        <div class="kpi-detail-field"><small>Trạng thái</small><div><span class="badge ${st.cls}">${esc(st.text)}</span></div></div>
+        <div class="kpi-detail-field"><small>Kết quả</small><div>${result}</div></div>
+      </div>
+      ${projectFields(r)}
+    </div>
+  </details>`;
+}
+function uniqueProjectCount(rows){
+  const keys=new Set();
+  rows.forEach(r=>{
+    const key=String(r.buildingId||r.buildingName||r.customerId||r.customerName||"unknown").trim();
+    if(key) keys.add(key);
+  });
+  return keys.size;
+}
+function setDetailToggle(id,bodyId,open){
+  const btn=$(id),body=$(bodyId);
+  if(!btn||!body)return;
+  btn.setAttribute("aria-expanded",open?"true":"false");
+  body.hidden=!open;
+}
+function bindDetailToggles(){
+  const pairs=[["maintenanceToggle","maintenanceDetailBody"],["workOrderToggle","workOrderDetailBody"]];
+  pairs.forEach(([btnId,bodyId])=>{
+    const btn=$(btnId);
+    if(!btn||btn.dataset.bound==="1")return;
+    btn.dataset.bound="1";
+    btn.addEventListener("click",()=>{
+      const open=btn.getAttribute("aria-expanded")==="true";
+      setDetailToggle(btnId,bodyId,!open);
+    });
+  });
+}
+function renderMaintenanceDetails(){
+  setDetailToggle("maintenanceToggle","maintenanceDetailBody",false);
+  const rows=$("maintenanceRows"),empty=$("maintenanceEmpty");
+  const q=String($("search").value||"").trim().toLowerCase();
+  const source=state.kpis.flatMap(k=>k.maintenance.maintenanceRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
+    !q||[r.ticketNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.contractCode].join(" ").toLowerCase().includes(q)
+  );
+  $("maintenanceProjectCount").textContent=`(${source.length} lượt)`;
+  if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
+  empty.style.display="none";
+  const groups=new Map();
+  source.forEach(r=>{
+    const key=String(r.ticketNo||r.id||"unknown");
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(r);
+  });
+  rows.innerHTML=[...groups.entries()].map(([ticket,items])=>{
+    const first=items[0];
+    const st=maintenanceStatus(first);
+    return `<details class="kpi-detail-item">
+      <summary class="kpi-detail-summary">
+        <div class="kpi-detail-main">
+          <div class="kpi-detail-id">${esc(ticket)}</div>
+          <div class="kpi-detail-sub">${items.length} lượt bảo trì · ${esc(first.technicianName||"—")}</div>
+        </div>
+        <div><span class="badge ${st.cls}">${esc(st.text)}</span></div>
+      </summary>
+      <div class="kpi-nested-list">
+        <div class="kpi-final-title">Danh sách bảo trì</div>
+        ${items.map(renderMaintenanceEntry).join("")}
+      </div>
+    </details>`;
+  }).join("");
+}
+function renderWorkOrderEntry(r){
+  const result=r.isCompletedOnTime?'<span class="badge done">Đúng hạn</span>':
+    r.isCompletedLate?'<span class="badge late">Hoàn thành trễ</span>':
+    r.isOverdue?'<span class="badge late">Quá hạn</span>':'<span class="badge">—</span>';
+  return `<details class="kpi-nested-item">
+    <summary class="kpi-nested-summary">
+      <div>
+        <div class="kpi-nested-title">${esc(r.workOrderNo||r.id)}</div>
+        <div class="kpi-nested-sub">${esc(r.technicianName||"—")} · ${esc(r.openedDate?fmt(r.openedDate):"—")} · ${esc(sourceLabel(r.sourceType))}</div>
+      </div>
+      <span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span>
+    </summary>
+    <div class="kpi-final-detail">
+      <div class="kpi-final-title">Chi tiết Work Order</div>
+      <div class="kpi-detail-body" style="border-top:0;padding:0!important">
+        <div class="kpi-detail-field"><small>Work Order</small><div>${esc(r.workOrderNo||r.id)}</div></div>
+        <div class="kpi-detail-field"><small>Kỹ thuật viên</small><div>${esc(r.technicianName||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Nguồn</small><div><span class="badge ${sourceClass(r.sourceType)}">${esc(sourceLabel(r.sourceType))}</span></div></div>
+        <div class="kpi-detail-field"><small>Mở ngày</small><div>${fmt(r.openedDate)}</div></div>
+        <div class="kpi-detail-field"><small>Hạn</small><div>${fmt(r.dueDate)}</div></div>
+        <div class="kpi-detail-field"><small>Hoàn thành</small><div>${fmt(r.completedDate)}</div></div>
+        <div class="kpi-detail-field"><small>Trạng thái</small><div><span class="badge ${statusClass(r.status)}">${esc(statusText(r.status))}</span></div></div>
+        <div class="kpi-detail-field"><small>Kết quả hạn</small><div>${result}</div></div>
+        <div class="kpi-detail-field"><small>Xử lý</small><div>${r.processingDays==null?"—":Number(r.processingDays).toFixed(1)+" ngày"}</div></div>
+        <div class="kpi-detail-field"><small>Hợp đồng</small><div>${esc(r.contractCode||"—")}</div></div>
+        <div class="kpi-detail-field"><small>Ghi chú nguồn</small><div>${esc(r.sourceNote||"—")}</div></div>
+      </div>
+      ${projectFields(r)}
+    </div>
+  </details>`;
+}
+function renderDetails(){
+  setDetailToggle("workOrderToggle","workOrderDetailBody",false);
+  const rows=$("detailRows"),empty=$("detailEmpty");
+  const q=String($("search").value||"").trim().toLowerCase();
+  const source=state.kpis.flatMap(k=>k.workOrderOriginRows.map(r=>({...r,technicianName:k.technicianName}))).filter(r=>
+    !q||[r.workOrderNo,r.technicianName,r.customerName,r.buildingName,r.elevatorName,r.elevatorAssetCode,r.sourceType].join(" ").toLowerCase().includes(q)
+  );
+  $("workOrderProjectCount").textContent=`(${source.length} lượt)`;
+  if(!source.length){rows.innerHTML="";empty.style.display="block";return;}
+  empty.style.display="none";
+  const groups=new Map();
+  source.forEach(r=>{
+    const key=String(r.workOrderNo||r.id||"unknown");
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(r);
+  });
+  rows.innerHTML=[...groups.entries()].map(([wo,items])=>{
+    const first=items[0];
+    return `<details class="kpi-detail-item">
+      <summary class="kpi-detail-summary">
+        <div class="kpi-detail-main">
+          <div class="kpi-detail-id">${esc(wo)}</div>
+          <div class="kpi-detail-sub">${items.length} lần xử lý · ${esc(first.technicianName||"—")}</div>
+        </div>
+        <div><span class="badge ${statusClass(first.status)}">${esc(statusText(first.status))}</span></div>
+      </summary>
+      <div class="kpi-nested-list">
+        <div class="kpi-final-title">Danh sách xử lý Work Order</div>
+        ${items.map(renderWorkOrderEntry).join("")}
+      </div>
+    </details>`;
+  }).join("");
+}
+function render(){renderSummary();renderTechRows();renderMaintenanceDetails();renderDetails()}
+async function refresh(){
+  try{
+    $("refreshBtn").disabled=true;
+    setStatus("Đang tải dữ liệu KPI…");
+    await loadOperationalData();
+    await calculate();
+    render();
+    setStatus(`Đã cập nhật KPI · ${state.maintenances.length} lượt bảo trì + ${state.workOrders.length} Work Order · Kỳ ${state.period.periodId}`,"ok");
+  }catch(e){
+    console.error(e);
+    setStatus(e?.message||"Không tải được KPI.","error");
+  }finally{$("refreshBtn").disabled=false}
+}
+async function waitForAuth(){
+  return auth?.currentUser || null;
+}
+async function start(){
+  try{
+    await bootstrapCore();
+    const user=await waitForAuth();
+    if(!user){showFatal("Chưa có phiên đăng nhập","Firebase không có phiên đăng nhập hiện tại. Hãy đăng nhập lại.");return;}
+    state.user=user;
+    const profileSnap=await getDocFn(docFn(db,"users",user.uid));
+    if(!profileSnap.exists())throw new Error("Không tồn tại users/{uid} cho tài khoản hiện tại.");
+    state.profile=profileSnap.data()||{};
+    const r=role();
+    if(!["ADMIN","MANAGER","TECHNICIAN"].includes(r))throw new Error(`Role ${r||"(trống)"} không được phép xem KPI.`);
+    if(r==="TECHNICIAN"&&!state.profile.technicianId)throw new Error("Tài khoản TECHNICIAN chưa có technicianId.");
+    await loadModules();
+    buildPeriodOptions();
+    await loadTechnicians();
+    await refresh();
+  }catch(error){
+    console.error("KPI V4 BOOT ERROR",error);
+    showFatal("KPI không thể khởi tạo",error?.message||String(error));
+  }
+}
+$("periodType").addEventListener("change",()=>{buildPeriodOptions();refresh()});
+$("periodValue").addEventListener("change",refresh);
+$("technicianFilter").addEventListener("change",refresh);
+$("search").addEventListener("input",()=>{renderMaintenanceDetails();renderDetails()});
+$("refreshBtn").addEventListener("click",refresh);
+bindDetailToggles();
+$("technicianRows").addEventListener("click",e=>{
+  const b=e.target.closest("[data-tech]");
+  if(!b)return;
+  state.selectedTechnician=b.dataset.tech;
+  $("technicianFilter").value=state.selectedTechnician;
+  refresh();
+});
+start();
+
+  root.__kpiCleanup=()=>{};
+}
