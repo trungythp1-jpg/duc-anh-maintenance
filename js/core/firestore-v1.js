@@ -933,6 +933,58 @@ export async function updateMaintenance(maintenanceId, data){
  * Trong 18 giờ sau khi KTV báo hoàn thành, chỉ CSKH được xác nhận.
  * API này giữ nguyên workflow hiện tại của module Maintenance.
  */
+export async function reportMaintenanceCompletion(maintenanceId, data = {}){
+  requireValue(maintenanceId, "maintenanceId");
+
+  const existing = await getMaintenance(maintenanceId);
+  if(!existing){
+    throw new Error("Không tìm thấy phiếu bảo trì.");
+  }
+
+  if(String(existing.status || "") === "cancelled"){
+    throw new Error("Phiếu bảo trì đã hủy.");
+  }
+
+  if(String(existing.status || "") === "waiting_confirmation"){
+    throw new Error("Phiếu đang chờ CSKH xác nhận.");
+  }
+
+  if(String(existing.status || "") === "completed"){
+    throw new Error("Phiếu bảo trì đã hoàn thành.");
+  }
+
+  const reportedAt = new Date();
+  const deadline = new Date(reportedAt.getTime() + 18 * 60 * 60 * 1000);
+  const completedDate =
+    String(data.completedDate || "").trim() ||
+    reportedAt.toISOString().slice(0,10);
+
+  const payload = {
+    status: "waiting_confirmation",
+    completedDate,
+    completedByTechnicianId:
+      String(data.completedByTechnicianId || existing.technicianId || "").trim(),
+    completedByTechnicianName:
+      String(data.completedByTechnicianName || existing.technicianName || "").trim(),
+    completionReportedAt: serverTimestamp(),
+    customerConfirmationStatus: "pending",
+    customerConfirmationDeadline: deadline,
+    customerConfirmedBy: "",
+    customerConfirmedAt: null,
+    customerConfirmationNote: "",
+    confirmationEscalatedBy: "",
+    confirmationEscalatedAt: null,
+    updatedAt: serverTimestamp()
+  };
+
+  await updateDoc(
+    doc(db, COLLECTIONS.MAINTENANCE, maintenanceId),
+    payload
+  );
+
+  return getMaintenance(maintenanceId);
+}
+
 export async function confirmMaintenanceByCSKH(
   maintenanceId,
   data = {}
