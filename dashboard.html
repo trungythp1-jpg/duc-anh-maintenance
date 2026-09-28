@@ -600,7 +600,7 @@ body.dashboard-auth-pending::before{
           <button
             class="text-button"
             type="button"
-            data-app-module="buildings">
+            data-href="buildings.html">
             Xem tất cả →
           </button>
 
@@ -1109,7 +1109,7 @@ function renderBuildings() {
         <button
           class="text-button"
           type="button"
-          data-app-module="buildings">
+          data-href="buildings.html">
           Mở
         </button>
 
@@ -1165,7 +1165,7 @@ function renderLatestElevators() {
       elevatorStatusLabel(elevator.status);
 
     return `
-      <div class="work-row" role="button" tabindex="0" data-app-module="elevators" title="Mở danh sách thang máy">
+      <div class="work-row" role="button" tabindex="0" data-href="elevators.html?id=${encodeURIComponent(elevator.id)}" title="Mở hồ sơ thang máy">
 
         <time>↕</time>
         <i></i>
@@ -1825,9 +1825,6 @@ import { mountCustomerModule } from "./js/modules/customer-module-v1.0.js";
 import { mountBuildingModule } from "./js/modules/building-module-v1.0.js";
 import { mountElevatorModule } from "./js/modules/elevator-module-v1.0.js";
 import { mountContractModule } from "./js/modules/contract-module-v1.0.js";
-import { mountMaintenanceModule } from "./js/modules/maintenance-module-v1.0.js";
-import { auth } from "./js/core/firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 const appContent = document.getElementById("appContent");
 const dashboardHome = document.getElementById("dashboardHome");
@@ -2018,32 +2015,8 @@ async function showContracts() {
   }
 }
 
-async function waitForFirebaseUser() {
-  if (auth?.currentUser) return auth.currentUser;
-
-  if (!auth) return null;
-
-  return await new Promise(resolve => {
-    let settled = false;
-    let unsubscribe = null;
-
-    const finish = user => {
-      if (settled) return;
-      settled = true;
-      try { unsubscribe?.(); } catch {}
-      resolve(user || null);
-    };
-
-    unsubscribe = onAuthStateChanged(auth, finish);
-  });
-}
-
 async function showMaintenance() {
   if (!appContent || !dashboardHome) return;
-
-  // App Shell có thể route rất sớm, trước khi Firebase Auth hoàn tất.
-  // Chờ session hiện tại rồi mới mount Maintenance để module nhận đúng auth.currentUser.
-  await waitForFirebaseUser();
 
   currentModule = "maintenance";
   dashboardHome.style.display = "none";
@@ -2064,7 +2037,11 @@ async function showMaintenance() {
   `;
 
   try {
-    await mountMaintenanceModule(appContent);
+    const module = await import("./js/modules/maintenance-module-v1.0.js?v=app-shell");
+    if (typeof module.mountMaintenanceModule !== "function") {
+      throw new Error("MODULE_EXPORT_MISSING: mountMaintenanceModule");
+    }
+    await module.mountMaintenanceModule(appContent);
   } catch (error) {
     console.error("APP SHELL MAINTENANCE MODULE ERROR:", error);
     appContent.innerHTML = `
