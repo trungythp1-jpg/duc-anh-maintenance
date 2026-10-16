@@ -1,0 +1,53 @@
+name: Firestore Rules Tests
+
+on:
+  pull_request:
+    paths:
+      - "firestore.rules"
+      - "tests/firestore.rules.test.mjs"
+      - ".github/workflows/firestore-rules-tests.yml"
+      - "firebase.json"
+  push:
+    branches:
+      - "security/cskh-history-append-only"
+    paths:
+      - "firestore.rules"
+      - "tests/firestore.rules.test.mjs"
+      - ".github/workflows/firestore-rules-tests.yml"
+      - "firebase.json"
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Java for Firestore Emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install pinned test tools
+        run: |
+          npm install --no-save --no-package-lock \
+            @firebase/rules-unit-testing@4.0.1 \
+            firebase@12.1.0 \
+            firebase-tools@14.12.1
+
+      - name: Run Firestore Rules tests in local Emulator
+        run: |
+          npx firebase-tools emulators:exec \
+            --only firestore \
+            --project demo-duc-anh-rules \
+            "node --test tests/firestore.rules.test.mjs"
