@@ -32,6 +32,14 @@ const submittedEvent = {
   at: "seed",
 };
 
+const needInfoEvent = {
+  action: "NEED_INFO",
+  byUid: "admin-a",
+  fromStatus: "SUBMITTED",
+  toStatus: "NEED_INFO",
+  at: "seed",
+};
+
 async function seedBaseData() {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
@@ -61,6 +69,19 @@ async function seedBaseData() {
       resultNote: "",
       history: [createdEvent, submittedEvent],
       description: "Submitted request",
+      updatedAt: "seed",
+    });
+    await setDoc(doc(db, "cskhRequests/request-need-info"), {
+      createdByUid: "cskh-a",
+      status: "NEED_INFO",
+      requestSource: "EXTERNAL_CUSTOMER",
+      requestType: "CUSTOMER_REGISTRATION",
+      assignedAdminUid: "admin-a",
+      assignedAdminName: "Admin A",
+      processedAt: null,
+      resultNote: "Please provide more information",
+      history: [createdEvent, submittedEvent, needInfoEvent],
+      description: "Needs additional information",
       updatedAt: "seed",
     });
   });
@@ -175,6 +196,58 @@ test("CSKH cannot update request fields without appending one history event", as
   await assertFails(
     updateDoc(doc(db, "cskhRequests/request-draft"), {
       description: "Updated without history",
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("CSKH can edit a NEED_INFO request and resubmit it to ADMIN", async () => {
+  const db = testEnv.authenticatedContext("cskh-a").firestore();
+  const requestRef = doc(db, "cskhRequests/request-need-info");
+
+  await assertSucceeds(
+    updateDoc(requestRef, {
+      description: "Additional details provided",
+      history: [
+        createdEvent,
+        submittedEvent,
+        needInfoEvent,
+        {
+          action: "EDITED",
+          byUid: "cskh-a",
+          fromStatus: "NEED_INFO",
+          toStatus: "NEED_INFO",
+          at: "client-test",
+        },
+      ],
+      updatedAt: serverTimestamp(),
+    }),
+  );
+
+  await assertSucceeds(
+    updateDoc(requestRef, {
+      status: "SUBMITTED",
+      assignedAdminUid: "",
+      assignedAdminName: "",
+      history: [
+        createdEvent,
+        submittedEvent,
+        needInfoEvent,
+        {
+          action: "EDITED",
+          byUid: "cskh-a",
+          fromStatus: "NEED_INFO",
+          toStatus: "NEED_INFO",
+          at: "client-test",
+        },
+        {
+          action: "RESUBMITTED",
+          byUid: "cskh-a",
+          fromStatus: "NEED_INFO",
+          toStatus: "SUBMITTED",
+          at: "client-test",
+        },
+      ],
       updatedAt: serverTimestamp(),
     }),
   );
