@@ -106,7 +106,7 @@ const $=id=>document.getElementById(id);
 let technicians=[],currentRole="",editingId="",previousStatus="";
 
 async function loadCurrentUser(user){
- if(!user){window.location.href="login.html";return false}
+ if(!user){window.location.href="login.html?returnTo=technicians.html";return false}
  $("userAvatar").textContent=(user.displayName||user.email||"DA").slice(0,2).toUpperCase();
  $("userName").textContent=user.displayName||user.email||"Người dùng";
  try{
