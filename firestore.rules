@@ -248,9 +248,13 @@ service cloud.firestore {
           && resource.data.createdByUid == request.auth.uid
         );
 
+      // CSKH may list only requests they created; queries must constrain createdByUid.
       allow list: if isAdmin()
         || isManager()
-        || isCSKH();
+        || (
+          isCSKH()
+          && resource.data.createdByUid == request.auth.uid
+        );
 
       allow create: if
         isCSKH()
@@ -895,7 +899,23 @@ service cloud.firestore {
         || isManager()
         || isDirector();
 
-      allow create: if isServiceStaff();
+      // Assignment history is written only by management users.
+      // Bind the audit actor to the authenticated account and restrict the schema.
+      allow create: if
+        (isAdmin() || isManager())
+        && request.resource.data.performedByUid == request.auth.uid
+        && request.resource.data.action in [
+          'TECHNICIAN_ASSIGNED',
+          'TECHNICIAN_REASSIGNED'
+        ]
+        && request.resource.data.entityType in [
+          'workOrder',
+          'maintenance'
+        ]
+        && request.resource.data.entityId is string
+        && request.resource.data.entityId.size() > 0
+        && request.resource.data.performedByName is string
+        && request.resource.data.createdAt == request.time;
 
       allow update, delete: if false;
     }
