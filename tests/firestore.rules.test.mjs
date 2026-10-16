@@ -7,10 +7,15 @@ import {
   assertFails,
 } from "@firebase/rules-unit-testing";
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
+  where,
   setDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -46,6 +51,32 @@ async function seedBaseData() {
     await setDoc(doc(db, "users/cskh-a"), { role: "CSKH" });
     await setDoc(doc(db, "users/admin-a"), { role: "ADMIN" });
     await setDoc(doc(db, "users/manager-a"), { role: "MANAGER" });
+    await setDoc(doc(db, "users/tech-a"), { role: "TECHNICIAN" });
+    await setDoc(doc(db, "users/cskh-b"), { role: "CSKH" });
+    await setDoc(doc(db, "cskhRequests/request-other-owner"), {
+      createdByUid: "cskh-b",
+      status: "SUBMITTED",
+      requestSource: "EXTERNAL_CUSTOMER",
+      requestType: "CUSTOMER_REGISTRATION",
+      assignedAdminUid: "",
+      assignedAdminName: "",
+      processedAt: null,
+      resultNote: "",
+      history: [{
+        action: "CREATED",
+        byUid: "cskh-b",
+        toStatus: "DRAFT",
+        at: "seed",
+      }, {
+        action: "SUBMITTED",
+        byUid: "cskh-b",
+        fromStatus: "DRAFT",
+        toStatus: "SUBMITTED",
+        at: "seed",
+      }],
+      description: "Other CSKH request",
+      updatedAt: "seed",
+    });
     await setDoc(doc(db, "cskhRequests/request-draft"), {
       createdByUid: "cskh-a",
       status: "DRAFT",
@@ -406,4 +437,104 @@ test("MANAGER cannot perform an ADMIN-only request transition", async () => {
 test("unauthenticated client cannot read a CSKH request", async () => {
   const db = testEnv.unauthenticatedContext().firestore();
   await assertFails(getDoc(doc(db, "cskhRequests/request-draft")));
+});
+
+
+test("CSKH can list only requests constrained to their own UID", async () => {
+  const db = testEnv.authenticatedContext("cskh-a").firestore();
+  const ownRequests = await assertSucceeds(
+    getDocs(query(collection(db, "cskhRequests"), where("createdByUid", "==", "cskh-a"))),
+  );
+  assert.ok(ownRequests.docs.length >= 1);
+  assert.ok(ownRequests.docs.every((snap) => snap.data().createdByUid === "cskh-a"));
+});
+
+test("CSKH cannot list requests without a creator filter or query another creator", async () => {
+  const db = testEnv.authenticatedContext("cskh-a").firestore();
+  await assertFails(getDocs(collection(db, "cskhRequests")));
+  await assertFails(
+    getDocs(query(collection(db, "cskhRequests"), where("createdByUid", "==", "cskh-b"))),
+  );
+});
+
+test("ADMIN and MANAGER can create valid assignment audit logs", async () => {
+  for (const uid of ["admin-a", "manager-a"]) {
+    const db = testEnv.authenticatedContext(uid).firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `auditLogs/valid-${uid}`), {
+        action: "TECHNICIAN_ASSIGNED",
+        entityType: "workOrder",
+        entityId: "WO-123",
+        performedByUid: uid,
+        performedByName: uid === "admin-a" ? "Admin A" : "Manager A",
+        createdAt: serverTimestamp(),
+      }),
+    );
+  }
+});
+
+test("CSKH and TECHNICIAN cannot create assignment audit logs", async () => {
+  for (const uid of ["cskh-a", "tech-a"]) {
+    const db = testEnv.authenticatedContext(uid).firestore();
+    await assertFails(
+      setDoc(doc(db, `auditLogs/forbidden-${uid}`), {
+        action: "TECHNICIAN_ASSIGNED",
+        entityType: "workOrder",
+        entityId: "WO-123",
+        performedByUid: uid,
+        performedByName: uid,
+        createdAt: serverTimestamp(),
+      }),
+    );
+  }
+});
+
+test("audit log rules reject forged actors, invalid actions, and client timestamps", async () => {
+  const db = testEnv.authenticatedContext("admin-a").firestore();
+  await assertFails(
+    setDoc(doc(db, "auditLogs/forged-actor"), {
+      action: "TECHNICIAN_ASSIGNED",
+      entityType: "workOrder",
+      entityId: "WO-123",
+      performedByUid: "manager-a",
+      performedByName: "Forged",
+      createdAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    setDoc(doc(db, "auditLogs/invalid-action"), {
+      action: "MADE_UP_ACTION",
+      entityType: "workOrder",
+      entityId: "WO-123",
+      performedByUid: "admin-a",
+      performedByName: "Admin A",
+      createdAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    setDoc(doc(db, "auditLogs/client-time"), {
+      action: "TECHNICIAN_ASSIGNED",
+      entityType: "workOrder",
+      entityId: "WO-123",
+      performedByUid: "admin-a",
+      performedByName: "Admin A",
+      createdAt: "client-supplied",
+    }),
+  );
+});
+
+test("audit logs cannot be updated or deleted", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "auditLogs/existing"), {
+      action: "TECHNICIAN_ASSIGNED",
+      entityType: "workOrder",
+      entityId: "WO-123",
+      performedByUid: "admin-a",
+      performedByName: "Admin A",
+      createdAt: new Date(),
+    });
+  });
+  const db = testEnv.authenticatedContext("admin-a").firestore();
+  await assertFails(updateDoc(doc(db, "auditLogs/existing"), { performedByName: "Tampered" }));
+  await assertFails(deleteDoc(doc(db, "auditLogs/existing")));
 });
