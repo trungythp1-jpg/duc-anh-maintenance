@@ -579,7 +579,7 @@ async function submitTechnicianReport(status){
   try{
     const isCompleted=status==="completed";
     if(status==="completed"){
-      await completeWorkOrderByTechnician(editingId);
+      await reportWorkOrderByTechnician(editingId,"completed");
     }else{
       await reportWorkOrderByTechnician(editingId,status);
     }
