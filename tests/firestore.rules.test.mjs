@@ -45,6 +45,7 @@ async function seedBaseData() {
     const db = context.firestore();
     await setDoc(doc(db, "users/cskh-a"), { role: "CSKH" });
     await setDoc(doc(db, "users/admin-a"), { role: "ADMIN" });
+    await setDoc(doc(db, "users/manager-a"), { role: "MANAGER" });
     await setDoc(doc(db, "cskhRequests/request-draft"), {
       createdByUid: "cskh-a",
       status: "DRAFT",
@@ -82,6 +83,32 @@ async function seedBaseData() {
       resultNote: "Please provide more information",
       history: [createdEvent, submittedEvent, needInfoEvent],
       description: "Needs additional information",
+      updatedAt: "seed",
+    });
+    await setDoc(doc(db, "cskhRequests/request-admin-review"), {
+      createdByUid: "cskh-a",
+      status: "ADMIN_REVIEW",
+      requestSource: "EXTERNAL_CUSTOMER",
+      requestType: "CUSTOMER_REGISTRATION",
+      assignedAdminUid: "admin-a",
+      assignedAdminName: "Admin A",
+      customerId: "",
+      buildingId: "",
+      elevatorId: "",
+      processedAt: null,
+      resultNote: "",
+      history: [
+        createdEvent,
+        submittedEvent,
+        {
+          action: "ADMIN_RECEIVED",
+          byUid: "admin-a",
+          fromStatus: "SUBMITTED",
+          toStatus: "ADMIN_REVIEW",
+          at: "seed",
+        },
+      ],
+      description: "Ready for master-data completion",
       updatedAt: "seed",
     });
   });
@@ -286,6 +313,86 @@ test("ADMIN can receive a SUBMITTED request and append one event", async () => {
         {
           action: "ADMIN_RECEIVED",
           byUid: "admin-a",
+          fromStatus: "SUBMITTED",
+          toStatus: "ADMIN_REVIEW",
+          at: "client-test",
+        },
+      ],
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("ADMIN can request more information and append one event", async () => {
+  const db = testEnv.authenticatedContext("admin-a").firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "cskhRequests/request-submitted"), {
+      status: "NEED_INFO",
+      assignedAdminUid: "admin-a",
+      assignedAdminName: "Admin A",
+      resultNote: "Please provide a building address",
+      history: [
+        createdEvent,
+        submittedEvent,
+        {
+          action: "NEED_INFO",
+          byUid: "admin-a",
+          fromStatus: "SUBMITTED",
+          toStatus: "NEED_INFO",
+          at: "client-test",
+        },
+      ],
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("ADMIN can complete a request with linked master IDs and append one event", async () => {
+  const db = testEnv.authenticatedContext("admin-a").firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "cskhRequests/request-admin-review"), {
+      status: "CREATED",
+      customerId: "customer-1",
+      buildingId: "building-1",
+      elevatorId: "elevator-1",
+      processedAt: serverTimestamp(),
+      resultNote: "Created successfully",
+      history: [
+        createdEvent,
+        submittedEvent,
+        {
+          action: "ADMIN_RECEIVED",
+          byUid: "admin-a",
+          fromStatus: "SUBMITTED",
+          toStatus: "ADMIN_REVIEW",
+          at: "seed",
+        },
+        {
+          action: "CREATED",
+          byUid: "admin-a",
+          fromStatus: "ADMIN_REVIEW",
+          toStatus: "CREATED",
+          at: "client-test",
+        },
+      ],
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("MANAGER cannot perform an ADMIN-only request transition", async () => {
+  const db = testEnv.authenticatedContext("manager-a").firestore();
+  await assertFails(
+    updateDoc(doc(db, "cskhRequests/request-submitted"), {
+      status: "ADMIN_REVIEW",
+      assignedAdminUid: "manager-a",
+      assignedAdminName: "Manager A",
+      history: [
+        createdEvent,
+        submittedEvent,
+        {
+          action: "ADMIN_RECEIVED",
+          byUid: "manager-a",
           fromStatus: "SUBMITTED",
           toStatus: "ADMIN_REVIEW",
           at: "client-test",
