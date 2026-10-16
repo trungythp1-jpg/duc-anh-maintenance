@@ -339,6 +339,23 @@ service cloud.firestore {
             ])
             && historyAppendsExactlyOne()
           )
+          ||
+          (
+            resource.data.status == 'NEED_INFO'
+            && request.resource.data.status == 'SUBMITTED'
+            && request.resource.data.assignedAdminUid == ''
+            && request.resource.data.assignedAdminName == ''
+            && resource.data.processedAt == null
+            && request.resource.data.processedAt == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status',
+              'assignedAdminUid',
+              'assignedAdminName',
+              'history',
+              'updatedAt'
+            ])
+            && historyAppendsExactlyOne()
+          )
         );
 
       // ADMIN: tiếp nhận phiếu SUBMITTED -> ADMIN_REVIEW.
