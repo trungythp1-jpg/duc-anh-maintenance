@@ -239,9 +239,13 @@ service cloud.firestore {
           && resource.data.createdByUid == request.auth.uid
         );
 
+      // CSKH may list only requests they created; queries must constrain createdByUid.
       allow list: if isAdmin()
         || isManager()
-        || isCSKH();
+        || (
+          isCSKH()
+          && resource.data.createdByUid == request.auth.uid
+        );
 
       allow create: if
         isCSKH()
