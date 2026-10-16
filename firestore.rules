@@ -870,7 +870,10 @@ service cloud.firestore {
         || isManager()
         || isDirector();
 
-      allow create: if isServiceStaff();
+      // Assignment history is written only by management users.
+      // Do not let technicians or CSKH forge audit entries.
+      allow create: if isAdmin()
+        || isManager();
 
       allow update, delete: if false;
     }
