@@ -14,7 +14,8 @@ This document is a test plan for the client-side Firestore security rules. It do
 
 - **PASS expected**: the operation should be allowed by the proposed rule set.
 - **DENY expected**: the operation must be rejected.
-- **KNOWN GAP**: the current main-branch rule may allow the operation; do not mark as passing until a fix is implemented and tested.
+- **KNOWN GAP**: the current main-branch rule may allow the operation.
+- **Tested PASS / Tested DENY**: that exact behavior was asserted by the combined Firestore Emulator suite; this does not mean the entire section is fully covered.
 
 ## 1. CSKH requests — `cskhRequests/{requestId}`
 
@@ -24,13 +25,13 @@ This document is a test plan for the client-side Firestore security rules. It do
 | CR-02 | CSKH-A | Create request with `createdByUid` set to CSKH-B UID | DENY expected |
 | CR-03 | CSKH-A | Get own request | PASS expected |
 | CR-04 | CSKH-B | Get CSKH-A request | DENY expected |
-| CR-05 | CSKH-A | List requests using `where('createdByUid', '==', auth.uid)` | PASS expected after PR #3 |
-| CR-06 | CSKH-A | List without a `createdByUid` constraint | DENY expected after PR #3; Firestore Rules are not query filters |
+| CR-05 | CSKH-A | List requests using `where('createdByUid', '==', auth.uid)` | Tested PASS in combined integration run #17 |
+| CR-06 | CSKH-A | List without a `createdByUid` constraint | Tested DENY in combined integration run #17; Firestore Rules are not query filters |
 | CR-07 | CSKH-A | Edit permitted business fields in `DRAFT` or `NEED_INFO` and append exactly one history event | PASS expected |
 | CR-08 | CSKH-A | Change status from `DRAFT` directly to `CREATED` | DENY expected |
 | CR-09 | CSKH-A | Update business fields without appending one history event | DENY expected |
 | CR-10 | CSKH-A | Append two history events in one ordinary edit | DENY expected |
-| CR-11 | CSKH-A | Append one event but also rewrite/remove/reorder an existing history entry | DENY expected on PR #6 branch; Emulator regression test still required |
+| CR-11 | CSKH-A | Append one event but also rewrite/remove/reorder an existing history entry | Tested DENY in PR #6 run #14 and combined integration run #17 |
 | CR-12 | CSKH-A | Change `createdByUid`, assigned-admin fields, processed fields, or linked master IDs through the CSKH edit path | DENY expected |
 | CR-13 | ADMIN | Move an unassigned `SUBMITTED` request to `ADMIN_REVIEW`, set assignment UID to own UID, append one event | PASS expected |
 | CR-14 | ADMIN | Receive the same already-assigned request again | DENY expected |
@@ -38,7 +39,7 @@ This document is a test plan for the client-side Firestore security rules. It do
 | CR-16 | MANAGER | Perform ADMIN-only request transitions | DENY expected unless a separate explicit manager rule is approved |
 | CR-17 | Any client | Delete a request | DENY expected |
 
-**History integrity note:** `main` still has size-only checks. PR #6 proposes comparing the old history to the prefix of the new list using the Firestore Rules list range operator and list equality. The syntax is documented by Firebase, but the proposed rule has not yet been compiled or exercised in the Emulator. Test legacy documents with missing/invalid `history` before adoption.
+**History integrity note:** `main` still has size-only checks. PR #6 compares the old history to the prefix of the new list using the Firestore Rules list range operator and list equality. This was exercised in the Emulator (PR #6 run #14 and combined integration run #17). Existing documents with missing/invalid `history` still need inspection before adoption.
 
 ## 2. Audit logs — `auditLogs/{logId}` (PR #4)
 
@@ -110,4 +111,9 @@ The current rule grants all service staff read, create, and update access. The U
 
 ## Current validation status
 
-No Firestore Emulator tests are recorded as run by this audit. This document is a planned test matrix, not evidence of a passing test suite.
+- GitHub Actions run #17 passed **20/20 tests** against a temporary integration branch combining the proposed Rules changes from PRs #3, #4, and #6. Run: https://github.com/trungythp1-jpg/duc-anh-maintenance/actions/runs/38926473264
+- PR #6's standalone suite passed **12/12 tests** in run #14. Run: https://github.com/trungythp1-jpg/duc-anh-maintenance/actions/runs/38925962277
+- Covered CSKH own-list query, denial of unfiltered/other-creator queries, ADMIN/MANAGER list access, append-only history, NEED_INFO resubmission, valid ADMIN/MANAGER audit creation, denied CSKH/TECHNICIAN/DIRECTOR audit creation, forged actor, invalid action/entity, empty entity ID, client timestamp, and immutable audit logs.
+- This is not full matrix coverage. Work-order UI flows, audit-log read permissions, users, maintenance, notifications, legacy document compatibility, and end-to-end staging smoke tests remain outstanding.
+- All runs used the local Firestore Emulator with a demo project ID. No production Rules were deployed; Firebase Spark remains the constraint.
+- This document records evidence and remaining gaps; it does not authorize merging or deployment.
