@@ -42,7 +42,7 @@ jobs:
         run: |
           npm install --no-save --no-package-lock \
             @firebase/rules-unit-testing@4.0.1 \
-            firebase@12.1.0 \
+            firebase@11.10.0 \
             firebase-tools@14.12.1
 
       - name: Run Firestore Rules tests in local Emulator
