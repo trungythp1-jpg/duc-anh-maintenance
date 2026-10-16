@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - "security/cskh-history-append-only"
+      - "audit/integration-firestore-rules"
     paths:
       - "firestore.rules"
       - "tests/firestore.rules.test.mjs"
