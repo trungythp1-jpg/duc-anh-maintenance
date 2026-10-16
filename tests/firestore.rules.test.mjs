@@ -52,6 +52,7 @@ async function seedBaseData() {
     await setDoc(doc(db, "users/admin-a"), { role: "ADMIN" });
     await setDoc(doc(db, "users/manager-a"), { role: "MANAGER" });
     await setDoc(doc(db, "users/tech-a"), { role: "TECHNICIAN" });
+    await setDoc(doc(db, "users/director-a"), { role: "DIRECTOR" });
     await setDoc(doc(db, "users/cskh-b"), { role: "CSKH" });
     await setDoc(doc(db, "cskhRequests/request-other-owner"), {
       createdByUid: "cskh-b",
@@ -449,6 +450,14 @@ test("CSKH can list only requests constrained to their own UID", async () => {
   assert.ok(ownRequests.docs.every((snap) => snap.data().createdByUid === "cskh-a"));
 });
 
+test("ADMIN and MANAGER can list CSKH requests across creators", async () => {
+  for (const uid of ["admin-a", "manager-a"]) {
+    const db = testEnv.authenticatedContext(uid).firestore();
+    const requests = await assertSucceeds(getDocs(collection(db, "cskhRequests")));
+    assert.ok(requests.docs.some((snap) => snap.data().createdByUid === "cskh-b"));
+  }
+});
+
 test("CSKH cannot list requests without a creator filter or query another creator", async () => {
   const db = testEnv.authenticatedContext("cskh-a").firestore();
   await assertFails(getDocs(collection(db, "cskhRequests")));
@@ -474,7 +483,7 @@ test("ADMIN and MANAGER can create valid assignment audit logs", async () => {
 });
 
 test("CSKH and TECHNICIAN cannot create assignment audit logs", async () => {
-  for (const uid of ["cskh-a", "tech-a"]) {
+  for (const uid of ["cskh-a", "tech-a", "director-a"]) {
     const db = testEnv.authenticatedContext(uid).firestore();
     await assertFails(
       setDoc(doc(db, `auditLogs/forbidden-${uid}`), {
@@ -519,6 +528,30 @@ test("audit log rules reject forged actors, invalid actions, and client timestam
       performedByUid: "admin-a",
       performedByName: "Admin A",
       createdAt: "client-supplied",
+    }),
+  );
+});
+
+test("audit log rules reject invalid entity types and empty entity IDs", async () => {
+  const db = testEnv.authenticatedContext("admin-a").firestore();
+  await assertFails(
+    setDoc(doc(db, "auditLogs/invalid-entity-type"), {
+      action: "TECHNICIAN_ASSIGNED",
+      entityType: "customer",
+      entityId: "WO-123",
+      performedByUid: "admin-a",
+      performedByName: "Admin A",
+      createdAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    setDoc(doc(db, "auditLogs/empty-entity-id"), {
+      action: "TECHNICIAN_ASSIGNED",
+      entityType: "workOrder",
+      entityId: "",
+      performedByUid: "admin-a",
+      performedByName: "Admin A",
+      createdAt: serverTimestamp(),
     }),
   );
 });
