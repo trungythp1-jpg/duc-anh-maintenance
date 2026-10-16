@@ -159,6 +159,11 @@ test("CSKH cannot remove old history and append a replacement event", async () =
         byUid: "cskh-a",
         toStatus: "SUBMITTED",
         at: "client-test",
+      }, {
+        action: "EXTRA_REPLACEMENT",
+        byUid: "cskh-a",
+        toStatus: "SUBMITTED",
+        at: "client-test",
       }],
       updatedAt: serverTimestamp(),
     }),
