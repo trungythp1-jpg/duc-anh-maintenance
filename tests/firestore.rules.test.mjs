@@ -191,6 +191,26 @@ test("CSKH cannot remove old history and append a replacement event", async () =
   );
 });
 
+test("CSKH cannot reorder existing history entries while appending one", async () => {
+  const db = testEnv.authenticatedContext("cskh-a").firestore();
+  await assertFails(
+    updateDoc(doc(db, "cskhRequests/request-submitted"), {
+      description: "Reordered history",
+      history: [
+        submittedEvent,
+        createdEvent,
+        {
+          action: "EDITED",
+          byUid: "cskh-a",
+          toStatus: "SUBMITTED",
+          at: "client-test",
+        },
+      ],
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
 test("CSKH cannot update request fields without appending one history event", async () => {
   const db = testEnv.authenticatedContext("cskh-a").firestore();
   await assertFails(
