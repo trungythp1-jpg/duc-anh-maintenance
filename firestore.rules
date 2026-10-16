@@ -232,6 +232,15 @@ service cloud.firestore {
     //
 
     match /cskhRequests/{requestId} {
+      // Require the new history to preserve the complete old list in order,
+      // then append exactly one event. A size-only check permits history rewrites.
+      function historyAppendsExactlyOne() {
+        return resource.data.history is list
+          && request.resource.data.history is list
+          && request.resource.data.history.size() == resource.data.history.size() + 1
+          && request.resource.data.history[0:resource.data.history.size()] == resource.data.history;
+      }
+
       allow get: if isAdmin()
         || isManager()
         || (
@@ -261,7 +270,12 @@ service cloud.firestore {
         && request.resource.data.assignedAdminUid == ''
         && request.resource.data.assignedAdminName == ''
         && request.resource.data.processedAt == null
-        && request.resource.data.resultNote == '';
+        && request.resource.data.resultNote == ''
+        && request.resource.data.history is list
+        && request.resource.data.history.size() == 1
+        && request.resource.data.history[0].action == 'CREATED'
+        && request.resource.data.history[0].byUid == request.auth.uid
+        && request.resource.data.history[0].toStatus == 'DRAFT';
 
       // CSKH: sửa dữ liệu nghiệp vụ theo các trạng thái được phép.
       allow update: if
@@ -287,8 +301,7 @@ service cloud.firestore {
               'history',
               'updatedAt'
             ])
-            && request.resource.data.history.size()
-               == resource.data.history.size() + 1
+            && historyAppendsExactlyOne()
           )
           ||
           (
@@ -299,8 +312,7 @@ service cloud.firestore {
               'updatedAt',
               'history'
             ])
-            && request.resource.data.history.size()
-               == resource.data.history.size() + 1
+            && historyAppendsExactlyOne()
           )
           ||
           (
@@ -325,8 +337,7 @@ service cloud.firestore {
               'history',
               'updatedAt'
             ])
-            && request.resource.data.history.size()
-               == resource.data.history.size() + 1
+            && historyAppendsExactlyOne()
           )
         );
 
@@ -349,8 +360,7 @@ service cloud.firestore {
           'updatedAt',
           'history'
         ])
-        && request.resource.data.history.size()
-           == resource.data.history.size() + 1;
+        && historyAppendsExactlyOne();
 
       // ADMIN: hoàn tất phiếu sau khi đã tạo đủ 3 master data.
       // ADMIN_REVIEW -> CREATED, đồng thời liên kết Customer / Building / Elevator.
@@ -379,8 +389,7 @@ service cloud.firestore {
           'updatedAt',
           'history'
         ])
-        && request.resource.data.history.size()
-           == resource.data.history.size() + 1;
+        && historyAppendsExactlyOne();
 
       // ADMIN: yêu cầu CSKH bổ sung thông tin.
       // Có thể từ SUBMITTED hoặc ADMIN_REVIEW -> NEED_INFO.
@@ -403,8 +412,7 @@ service cloud.firestore {
           'updatedAt',
           'history'
         ])
-        && request.resource.data.history.size()
-           == resource.data.history.size() + 1;
+        && historyAppendsExactlyOne();
 
       allow delete: if false;
 
