@@ -100,8 +100,19 @@ async function getPostLoginPath(user) {
   }
 
   /*
-   * Các role quản lý vẫn giữ luồng cũ.
+   * Khi người dùng mở một trang riêng trước khi đăng nhập,
+   * chỉ cho phép quay lại các trang nội bộ đã được cho phép.
+   * Các luồng riêng của TECHNICIAN và CSKH phía trên luôn được ưu tiên.
    */
+  const requestedPath = new URLSearchParams(window.location.search).get("returnTo");
+  if (
+    (role === "ADMIN" || role === "MANAGER") &&
+    ["technicians.html", "kpi.html"].includes(requestedPath)
+  ) {
+    return requestedPath;
+  }
+
+  /* Các role quản lý vẫn giữ luồng mặc định cũ. */
   return "dashboard.html";
 }
 
