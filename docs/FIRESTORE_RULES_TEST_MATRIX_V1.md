@@ -30,7 +30,7 @@ This document is a test plan for the client-side Firestore security rules. It do
 | CR-08 | CSKH-A | Change status from `DRAFT` directly to `CREATED` | DENY expected |
 | CR-09 | CSKH-A | Update business fields without appending one history event | DENY expected |
 | CR-10 | CSKH-A | Append two history events in one ordinary edit | DENY expected |
-| CR-11 | CSKH-A | Append one event but also rewrite/remove/reorder an existing history entry | **KNOWN GAP** — must be DENY after a verified fix |
+| CR-11 | CSKH-A | Append one event but also rewrite/remove/reorder an existing history entry | DENY expected on PR #6 branch; Emulator regression test still required |
 | CR-12 | CSKH-A | Change `createdByUid`, assigned-admin fields, processed fields, or linked master IDs through the CSKH edit path | DENY expected |
 | CR-13 | ADMIN | Move an unassigned `SUBMITTED` request to `ADMIN_REVIEW`, set assignment UID to own UID, append one event | PASS expected |
 | CR-14 | ADMIN | Receive the same already-assigned request again | DENY expected |
@@ -38,7 +38,7 @@ This document is a test plan for the client-side Firestore security rules. It do
 | CR-16 | MANAGER | Perform ADMIN-only request transitions | DENY expected unless a separate explicit manager rule is approved |
 | CR-17 | Any client | Delete a request | DENY expected |
 
-**History integrity note:** the current rule checks that `history.size()` increases by one, but that does not prove the previous entries are unchanged. Do not replace this with an untested list/set expression. A durable design may require moving events to a dedicated append-only subcollection (create allowed, update/delete denied) and updating the client writes and read path together. Preserve compatibility with existing documents and validate atomicity and UX before adoption.
+**History integrity note:** `main` still has size-only checks. PR #6 proposes comparing the old history to the prefix of the new list using the Firestore Rules list range operator and list equality. The syntax is documented by Firebase, but the proposed rule has not yet been compiled or exercised in the Emulator. Test legacy documents with missing/invalid `history` before adoption.
 
 ## 2. Audit logs — `auditLogs/{logId}` (PR #4)
 
@@ -103,7 +103,7 @@ The current rule grants all service staff read, create, and update access. The U
 - [ ] Run tests against the exact proposed `firestore.rules` file for each PR branch, not only `main`.
 - [ ] Assert both allowed and denied operations with `@firebase/rules-unit-testing`.
 - [ ] Include query tests; a query that could return unauthorized documents must be denied.
-- [ ] Include the history-tampering regression case CR-11.
+- [ ] Include the history-tampering regression case CR-11 against both `main` and PR #6; expect the current `main` to expose the gap and PR #6 to deny the tampered write.
 - [ ] Confirm PR #2, #3, and #4 individually and together do not break legitimate flows.
 - [ ] Record the command, emulator version, test count, and pass/fail result in the PR before merge.
 - [ ] Do not merge or deploy as part of this audit.
