@@ -62,7 +62,10 @@ service firebase.storage {
 
     match /company-settings/{companyId}/{allPaths=**} {
 
-      allow read: if signedIn();
+      // Limit company configuration files to the same operational staff
+      // allowed to read other service documents. Validate any special
+      // warehouse/customer access needs before merging or deploying.
+      allow read: if isServiceStaff();
 
       allow write: if isAdmin();
     }
