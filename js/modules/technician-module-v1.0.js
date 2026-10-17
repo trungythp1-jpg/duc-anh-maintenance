@@ -124,7 +124,7 @@ async function loadCurrentUser(user){
   const s=await getDoc(doc(db,"users",user.uid));
   currentRole=s.exists()?String(s.data().role||"").toUpperCase():"";
  }catch(e){console.error(e);currentRole=""}
- $("userRole") && const roleEl=$("userRole");if(roleEl)roleEl.textContent=currentRole||"USER";
+ const roleEl=$("userRole");if(roleEl)roleEl.textContent=currentRole||"USER";
  $("addButton").style.display=(currentRole==="ADMIN"||currentRole==="MANAGER")?"":"none";
  return true;
 }

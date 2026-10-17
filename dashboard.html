@@ -2164,7 +2164,7 @@ async function showTechnicians() {
     </div>`;
 
   try {
-    const module = await import("./js/modules/technician-module-v1.0.js?v=dashboard-technicians-2");
+    const module = await import("./js/modules/technician-module-v1.0.js?v=dashboard-technicians-3");
     if (typeof module.mountTechnicianModule !== "function") {
       throw new Error("MODULE_EXPORT_MISSING: mountTechnicianModule");
     }
