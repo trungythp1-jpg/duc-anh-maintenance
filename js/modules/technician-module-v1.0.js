@@ -7,7 +7,7 @@ import { getTechnicians, createTechnician, updateTechnician } from "../core/fire
 
 export async function mountTechnicianModule(root){
   if(!root) throw new Error("TECHNICIAN_ROOT_MISSING");
-  root.__technicianCleanup?.();
+  if (typeof root.__technicianCleanup === "function") root.__technicianCleanup();
 
   root.innerHTML = `<style>
 :root{--yellow:#f5c400;--yellow-dark:#d9aa00;--black:#111;--bg:#f5f5f5;--line:#e8e8e8;--danger:#d93025;--success:#16803c;--warning:#b77900}
@@ -180,7 +180,7 @@ function render(){
 }
 async function loadData(){
  try{technicians=await getTechnicians();render()}
- catch(error){console.error(error);technicians=[];render();showMessage(error?.message||"Không thể tải danh sách kỹ thuật viên.","error")}
+ catch(error){console.error(error);technicians=[];render();showMessage((error && error.message)||"Không thể tải danh sách kỹ thuật viên.","error")}
 }
 function openModal(item=null){
  editingId=item?String(item.technicianId||item.id):"";
@@ -188,9 +188,9 @@ function openModal(item=null){
  $("modalTitle").textContent=item?"Sửa kỹ thuật viên":"Thêm kỹ thuật viên";
  $("technicianId").value=item?(item.technicianId||item.id||""):"";
  $("technicianId").disabled=Boolean(item);
- $("name").value=item?.name||"";$("phone").value=item?.phone||"";$("email").value=item?.email||"";
- $("position").value=item?.position||"";$("status").value=item?.status||"active";
- $("uid").value=item?.uid||"";$("note").value=item?.note||"";
+ $("name").value=(item && item.name)||"";$("phone").value=(item && item.phone)||"";$("email").value=(item && item.email)||"";
+ $("position").value=(item && item.position)||"";$("status").value=(item && item.status)||"active";
+ $("uid").value=(item && item.uid)||"";$("note").value=(item && item.note)||"";
  updateStatusHelp($("status").value);
  $("modalBackdrop").classList.add("open");setTimeout(()=>$("name").focus(),50);
 }
@@ -207,7 +207,7 @@ async function saveTechnician(){
   if(editingId){await updateTechnician(editingId,payload);showMessage("Đã cập nhật kỹ thuật viên.")}
   else{await createTechnician(payload);showMessage("Đã tạo kỹ thuật viên.")}
   closeModal();await loadData();
- }catch(error){console.error(error);showMessage(error?.message||"Không thể lưu kỹ thuật viên.","error")}
+ }catch(error){console.error(error);showMessage((error && error.message)||"Không thể lưu kỹ thuật viên.","error")}
  finally{button.disabled=false;button.textContent="Lưu kỹ thuật viên"}
 }
 
@@ -223,7 +223,7 @@ $("rows").addEventListener("click",e=>{
 });
 root.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 
-const user=auth?.currentUser||null;
+const user=(auth && auth.currentUser)||null;
 if(!user) throw new Error("TECHNICIAN_AUTH_REQUIRED");
 if(!(await loadCurrentUser(user))) throw new Error("TECHNICIAN_PROFILE_LOAD_FAILED");
 await loadData();
